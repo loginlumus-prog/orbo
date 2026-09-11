@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e2a5e"/><stop offset="1" stop-color="#070b1a"/></linearGradient>
+    <radialGradient id="ball" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#e9f6ff"/><stop offset="1" stop-color="#8fd8ff"/></radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#4cf0ff" stop-opacity="0.5"/><stop offset="1" stop-color="#4cf0ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#4cf0ff"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <g fill="#ffffff" opacity="0.7"><circle cx="96" cy="120" r="3"/><circle cx="410" cy="88" r="2.5"/><circle cx="440" cy="300" r="3"/><circle cx="80" cy="380" r="2"/><circle cx="150" cy="440" r="2.5"/><circle cx="380" cy="420" r="2"/></g>
+  <circle cx="256" cy="256" r="236" fill="url(#glow)"/>
+  <path d="M318 62 A100 208 -18 0 0 194 450" fill="none" stroke="#4cf0ff" stroke-opacity="0.35" stroke-width="66" stroke-linecap="round"/>
+  <path d="M318 62 A100 208 -18 0 0 194 450" fill="none" stroke="#4cf0ff" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="98" fill="url(#ball)"/>
+  <ellipse cx="216" cy="212" rx="26" ry="14" fill="#ffffff" fill-opacity="0.85" transform="rotate(-30 216 212)"/>
+  <path d="M318 62 A100 208 -18 0 1 194 450" fill="none" stroke="#4cf0ff" stroke-opacity="0.35" stroke-width="66" stroke-linecap="round"/>
+  <path d="M318 62 A100 208 -18 0 1 194 450" fill="none" stroke="url(#ring)" stroke-width="30" stroke-linecap="round"/>
+</svg>

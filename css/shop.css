@@ -1,0 +1,95 @@
+/* =====================================================================
+   Loja v2. Raridade via --rc (cor). Prefixo .shop-.
+   ===================================================================== */
+.shop-kicker { font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.shop-rar { font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--rc, var(--muted)); }
+.shop-flavor { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0; }
+.shop-section { font-size: 11px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 14px 4px 8px; }
+.shop-intro { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0 4px 12px; }
+
+/* ---------- destaque ---------- */
+.shop-featured {
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 14px; border-radius: 22px; --rc: #9aa6c9;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--rc) 22%, transparent), rgba(0,0,0,0.3)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 55%, transparent), 0 12px 34px rgba(0,0,0,0.35); overflow: hidden;
+}
+.shop-featured::before { content: ''; position: absolute; left: -30%; top: -60%; width: 60%; height: 220%; background: linear-gradient(100deg, transparent, color-mix(in srgb, var(--rc) 18%, transparent), transparent); transform: skewX(-20deg); pointer-events: none; }
+.shop-featured-art { flex: none; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
+.shop-featured-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.shop-featured-name { font-size: 20px; font-weight: 900; }
+.shop-featured .shop-price { margin-top: 4px; align-self: flex-start; }
+
+/* ---------- grade ---------- */
+.shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.shop-card {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 10px 12px; border-radius: 20px; --rc: #9aa6c9; text-align: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 14%, transparent), rgba(255,255,255,0.03)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 45%, transparent); transition: transform 0.12s;
+}
+.shop-card:active { transform: scale(0.97); }
+.shop-card.rar-legendary { box-shadow: inset 0 0 0 1.5px var(--rc), 0 0 24px color-mix(in srgb, var(--rc) 30%, transparent); }
+.shop-card.equipped { box-shadow: inset 0 0 0 2px var(--green), 0 0 22px rgba(53,226,154,0.25); }
+.shop-card.locked .shop-preview, .shop-card.locked .shop-swatch { filter: grayscale(0.7) brightness(0.6); }
+.shop-preview { border-radius: 50%; }
+.shop-tags { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; gap: 4px; pointer-events: none; }
+.shop-tag { padding: 3px 8px; border-radius: 999px; font-size: 9px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; background: rgba(0,0,0,0.55); color: var(--text); }
+.shop-tag.new { background: var(--accent-2); color: #fff; }
+.shop-tag.on { background: var(--green); color: #06251a; }
+.shop-tag.best { background: linear-gradient(90deg, var(--gold), var(--gold-2)); color: #1b1200; }
+.shop-tag.lock { color: var(--muted); }
+.shop-name { font-size: 14px; font-weight: 800; }
+.shop-price { min-height: 42px; font-size: 13px; padding: 0 14px; gap: 6px; width: auto; margin-top: 4px; }
+.shop-price.is-owned { background: var(--glass); color: var(--text); box-shadow: inset 0 0 0 1.5px var(--stroke); }
+.shop-price.is-on { background: linear-gradient(180deg, #a6ffb3, var(--green)); color: #06251a; }
+.shop-price.is-reward { color: #1b1200; background: linear-gradient(180deg, #ffe89a 0%, var(--gold) 45%, var(--gold-2) 100%); }
+.shop-price.small { min-height: 36px; font-size: 12px; padding: 0 10px; }
+.shop-price:disabled { opacity: 0.5; }
+
+/* ---------- tema (swatch) ---------- */
+.shop-swatch { position: relative; width: 120px; height: 120px; border-radius: 22px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15); }
+.shop-swatch.big { width: 140px; height: 140px; }
+.shop-swatch i { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #fff; opacity: 0.8; }
+.shop-swatch i:nth-child(1) { left: 20%; top: 18%; } .shop-swatch i:nth-child(2) { left: 70%; top: 30%; width: 2px; height: 2px; } .shop-swatch i:nth-child(3) { left: 40%; top: 60%; }
+.shop-swatch i:nth-child(4) { left: 82%; top: 70%; width: 2px; height: 2px; } .shop-swatch i:nth-child(5) { left: 12%; top: 78%; }
+.shop-swatch b { position: absolute; left: 50%; top: 55%; width: 46%; height: 46%; transform: translate(-50%, -50%); border-radius: 50%; border: 5px solid rgba(255,255,255,0.75); box-shadow: 0 0 18px rgba(255,255,255,0.5); }
+
+/* ---------- detalhe ---------- */
+.item-detail.shop-detail { max-width: 340px; gap: 10px; text-align: center; --rc: #9aa6c9; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 60%, transparent), var(--shadow); }
+.shop-detail-art { width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
+.shop-detail h3 { font-size: 24px; font-weight: 900; }
+.shop-detail-meta { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.shop-chip { padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; background: var(--glass); box-shadow: inset 0 0 0 1.5px var(--stroke); }
+.shop-chip.bad { color: var(--danger); }
+
+/* ---------- habilidades ---------- */
+.shop-ab { display: flex; flex-direction: column; gap: 10px; padding: 14px; margin-bottom: 10px; border-radius: 20px; --ac: #4cf0ff; background: linear-gradient(135deg, color-mix(in srgb, var(--ac) 12%, transparent), rgba(255,255,255,0.03)); box-shadow: inset 0 0 0 1.5px var(--stroke); }
+.shop-ab.equipped { box-shadow: inset 0 0 0 2px var(--ac); }
+.shop-ab.locked { opacity: 0.7; }
+.shop-ab > .shop-ab-ic { float: left; }
+.shop-ab-ic { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--ac); background: rgba(0,0,0,0.35); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ac) 60%, transparent), 0 0 18px color-mix(in srgb, var(--ac) 30%, transparent); flex: none; }
+.shop-ab-ic .i { width: 30px; height: 30px; }
+.shop-ab-stats .i { width: 13px; height: 13px; }
+.shop-ab-info { display: flex; flex-direction: column; gap: 4px; margin-left: 68px; min-height: 56px; }
+.shop-ab-info > b { font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.shop-ab-desc { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.shop-ab-stats { display: flex; gap: 12px; font-size: 11px; color: var(--muted); }
+.shop-ab-stats b { color: var(--text); }
+.shop-ab-lv { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+.shop-pips { display: inline-flex; gap: 4px; }
+.shop-pips i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+.shop-pips i.on { background: var(--ac); box-shadow: 0 0 8px var(--ac); }
+.shop-ab-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.shop-ab-actions .btn { flex: 1; }
+
+/* ---------- gemas ---------- */
+.shop-pack { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 10px; border-radius: 20px; background: var(--glass); box-shadow: inset 0 0 0 1.5px var(--stroke); }
+.shop-pack.hot { box-shadow: inset 0 0 0 2px var(--gold), 0 0 24px rgba(255,207,74,0.2); background: linear-gradient(135deg, rgba(255,207,74,0.12), rgba(255,255,255,0.03)); }
+.shop-pack.reward { background: linear-gradient(135deg, rgba(255,207,74,0.16), rgba(255,255,255,0.03)); }
+.shop-pack.done { opacity: 0.75; }
+.shop-pack-art { width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--text); flex: none; background: radial-gradient(circle at 40% 30%, rgba(255,255,255,0.3), rgba(143,107,255,0.2)); }
+.shop-pack-art .i { width: 28px; height: 28px; }
+.shop-pack.hot .shop-pack-art, .shop-pack.reward .shop-pack-art { color: var(--gold); }
+.shop-pack-art .ic-gem { width: 28px; height: 28px; }
+.shop-pack-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.shop-pack-info b { font-size: 15px; }
+.shop-pack-info span { font-size: 11px; color: var(--muted); line-height: 1.35; }
+.shop-pack .shop-tag { position: absolute; top: -8px; left: 14px; }
+.shop-pack .shop-price { min-width: 96px; margin: 0; }

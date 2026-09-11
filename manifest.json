@@ -1,0 +1,23 @@
+{
+  "name": "ORBO",
+  "short_name": "ORBO",
+  "description": "Flutue com a bola, atravesse os arcos e cruze a galáxia. 100 fases, 10 chefes e uma Singularidade sem fim.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#070b1a",
+  "theme_color": "#070b1a",
+  "lang": "pt-BR",
+  "categories": [
+    "games"
+  ],
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

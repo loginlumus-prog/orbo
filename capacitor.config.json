@@ -1,0 +1,24 @@
+{
+  "appId": "com.lumus.orbo",
+  "appName": "ORBO",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "backgroundColor": "#070b1a",
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#070b1a"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#070b1a"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "overlaysWebView": true
+    },
+    "AdMob": {
+      "appId": "ca-app-pub-3940256099942544~3347511713"
+    }
+  }
+}

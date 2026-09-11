@@ -1,0 +1,27 @@
+{
+  "name": "orbo",
+  "version": "2.0.0",
+  "private": true,
+  "description": "ORBO — jogo arcade hiper-casual (HTML5 + Capacitor)",
+  "scripts": {
+    "start": "npx --yes serve -l 8090 .",
+    "cap:init": "npx cap init \"ORBO\" com.lumus.orbo --web-dir .",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@capacitor/haptics": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
+    "@capacitor-community/admob": "^6.0.0",
+    "@revenuecat/purchases-capacitor": "^8.0.0"
+  }
+}

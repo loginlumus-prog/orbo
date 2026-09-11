@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070b1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="ORBO — flutue com a bola, atravesse os arcos e cruze a galáxia. 100 fases, 10 chefes e uma Singularidade sem fim.">
+<title>ORBO</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=20260911e">
+<link rel="stylesheet" href="css/hud.css?v=20260911e">
+<link rel="stylesheet" href="css/shop.css?v=20260911e">
+<link rel="stylesheet" href="css/galaxy.css?v=20260911e">
+</head>
+<body>
+<div id="app" class="app">
+  <canvas id="game"></canvas>
+
+  <!-- ===== LOADING ===== -->
+  <section id="screen-splash" class="screen splash visible">
+    <div class="splash-top"><div class="logo logo-xl" data-logo></div><p class="tagline" data-bind="tagline"></p></div>
+    <div class="splash-showcase" id="splash-showcase"></div>
+    <div class="splash-bottom">
+      <div class="bar"><span class="bar-fill" data-bind="loadFill"></span></div>
+      <p class="splash-status" data-bind="loadText">Carregando…</p>
+      <p class="splash-tip" data-bind="loadTip"></p>
+      <p class="splash-version" data-bind="version"></p>
+    </div>
+  </section>
+
+  <!-- ===== MENU (órbita) ===== -->
+  <section id="screen-menu" class="screen menu">
+    <header class="topbar">
+      <button class="level-ring" data-open="achievements" aria-label="Nível">
+        <svg viewBox="0 0 48 48"><circle class="lr-track" cx="24" cy="24" r="20"/><circle class="lr-fill" cx="24" cy="24" r="20" data-bind="xpRing"/></svg>
+        <b data-bind="level">1</b>
+      </button>
+      <div class="currency-group">
+        <button class="currency" data-open="shop" data-tab="gems"><i class="ic-coin"></i><b data-bind="coins">0</b></button>
+        <button class="currency" data-open="shop" data-tab="gems"><i class="ic-gem"></i><b data-bind="gems">0</b><span class="plus">+</span></button>
+      </div>
+      <button class="btn-icon" id="btn-settings" data-open="settings" aria-label="Configurações"><span class="ic" data-icon="gear"></span></button>
+    </header>
+
+    <div class="brand"><div class="logo logo-lg" data-logo></div><span class="brand-sub" data-bind="levelTitle">Novato</span></div>
+
+    <div class="scene" id="scene">
+      <span class="orbit-line" id="orbit-line"></span>
+      <button class="showcase-tap" id="showcase-tap" aria-label="Jogar"></button>
+      <div class="showcase" id="showcase"></div>
+      <button class="orbit-btn" style="--a:214deg" data-open="shop"><span class="ob-circle"><span class="ic" data-icon="shop"></span></span><span class="ob-label" data-i18n="shop">Loja</span></button>
+      <button class="orbit-btn" style="--a:180deg" data-open="missions"><span class="ob-circle"><span class="ic" data-icon="flag"></span><span class="badge" data-badge="missions"></span></span><span class="ob-label" data-i18n="missions">Missões</span></button>
+      <button class="orbit-btn" style="--a:146deg" data-open="daily" id="orbit-daily"><span class="ob-circle"><span class="ic" data-icon="gift"></span><span class="badge" data-badge="daily"></span></span><span class="ob-label" data-i18n="daily">Diário</span></button>
+      <button class="orbit-btn" style="--a:-34deg" data-open="leaderboard"><span class="ob-circle"><span class="ic" data-icon="trophy"></span></span><span class="ob-label" data-i18n="ranking">Ranking</span></button>
+      <button class="orbit-btn" style="--a:0deg" data-open="galaxy" id="orbit-galaxy"><span class="ob-circle"><span class="ic" data-icon="galaxy"></span><span class="badge" data-badge="galaxy"></span></span><span class="ob-label" data-i18n="galaxy">Galáxia</span></button>
+      <button class="orbit-btn" style="--a:34deg" data-open="abilities"><span class="ob-circle"><span class="ic" data-icon="zap"></span></span><span class="ob-label" data-i18n="abilities_short">Poderes</span></button>
+    </div>
+    <div class="skin-caption">
+      <button class="hero-arrow" id="skin-prev" aria-label="Anterior"><span class="ic" data-icon="chevronLeft"></span></button>
+      <span class="skin-caption-main"><b data-bind="skinName">Clássica</b><span class="muted small" data-bind="skinSub"></span></span>
+      <button class="hero-arrow" id="skin-next" aria-label="Próxima"><span class="ic" data-icon="chevronRight"></span></button>
+    </div>
+
+    <p class="stats-line"><span data-i18n="best">MELHOR</span> <b data-bind="best">0</b><i></i><span data-i18n="rank_short">RANKING</span> <b data-bind="rank">#–</b><i></i><span class="ic i-star" data-icon="star"></span> <b data-bind="starsTotal">0</b></p>
+
+    <div class="bottom-dock">
+      <div class="mode-seg" id="mode-seg">
+        <button class="mode-btn active" data-mode="endless"><span class="ic" data-icon="orbit"></span><span data-i18n="mode_endless">Singularidade</span></button>
+        <button class="mode-btn" data-mode="campaign"><span class="ic" data-icon="galaxy"></span><span data-i18n="mode_campaign">Galáxia</span></button>
+        <button class="mode-btn" data-mode="practice"><span class="ic" data-icon="school"></span><span data-i18n="mode_practice">Treino</span></button>
+      </div>
+      <div class="play-row">
+        <div class="loadout" id="ability-slots"></div>
+        <button class="btn btn-play" id="btn-play"><span class="ic" data-icon="play"></span><span class="btn-label" data-bind="playLabel" data-i18n="play">JOGAR</span></button>
+      </div>
+      <p class="mode-desc" data-bind="modeDesc"></p>
+    </div>
+    <div class="banner-slot" id="banner-slot"></div>
+  </section>
+
+  <!-- ===== TUTORIAL ===== -->
+  <section id="screen-tutorial" class="screen screen-center">
+    <div class="card tutorial-card">
+      <div class="tutorial-hand"></div>
+      <h2 data-i18n="tut_title">Arraste para flutuar</h2>
+      <p class="muted" data-i18n="tut_text">Use o analógico embaixo (ou o mouse) para guiar a bola. Passe pelo centro dos arcos para fazer PERFEITOS.</p>
+      <p class="tap-hint" data-i18n="tap_to_start">Toque para começar</p>
+    </div>
+  </section>
+
+  <!-- ===== HUD ===== -->
+  <section id="screen-hud" class="screen hud">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div class="hud-coins"><i class="ic-coin"></i><b data-bind="runCoins">0</b></div>
+        <div class="hud-status" data-bind="hudStatus"></div>
+      </div>
+      <div class="hud-center">
+        <div class="hud-score" data-bind="score">0</div>
+        <div class="hud-combo" data-bind="combo"></div>
+      </div>
+      <button class="btn-icon hud-pause" id="btn-pause" aria-label="Pausar"><span class="ic" data-icon="pause"></span></button>
+    </div>
+    <div class="hud-progress" id="hud-progress">
+      <div class="hud-phase-label" data-bind="phase"></div>
+      <div class="seg-bar" id="seg-bar"></div>
+    </div>
+    <div class="boss-bar" id="boss-bar">
+      <span class="boss-name"><span class="boss-ic" data-bind="bossIcon"></span><b data-bind="bossName"></b></span>
+      <div class="boss-track"><div class="boss-fill" data-bind="bossFill"></div></div>
+    </div>
+    <div class="hud-banner" id="hud-banner"><b data-bind="bannerTitle"></b><span data-bind="bannerSub"></span></div>
+    <div class="hud-perks" data-bind="hudPerks"></div>
+    <div class="hud-ready" data-bind="ready" data-i18n="tap_to_start">Toque para começar</div>
+    <div class="hud-stick" id="hud-stick" aria-hidden="true"><div class="stick-base"><i class="stick-tick up"></i><i class="stick-tick down"></i><i class="stick-tick left"></i><i class="stick-tick right"></i><div class="stick-knob" id="stick-knob"></div></div></div>
+    <div class="hud-abilities" id="hud-abilities"></div>
+    <div class="fx-vignette" id="fx-vignette"></div>
+  </section>
+
+  <!-- ===== PAUSE ===== -->
+  <section id="screen-pause" class="screen screen-center dim">
+    <div class="card card-menu">
+      <span class="ribbon"><span data-i18n="paused">PAUSADO</span></span>
+      <div class="stat-row"><span data-i18n="score">Pontos</span><b data-bind="pauseScore">0</b></div>
+      <div class="build-row" data-bind="pauseBuild"></div>
+      <button class="btn btn-play" id="btn-resume"><span class="ic" data-icon="play"></span><span class="btn-label" data-i18n="resume">CONTINUAR</span></button>
+      <button class="btn btn-ghost" id="btn-restart"><span class="ic" data-icon="refresh"></span><span class="btn-label" data-i18n="restart">Reiniciar</span></button>
+      <button class="btn btn-ghost" id="btn-pause-auto"><span class="ic" data-icon="sparkle"></span><span class="btn-label" data-i18n="perk_auto">Escolha automática</span><span class="mini-toggle" id="pause-auto-state"></span></button>
+      <div class="row">
+        <button class="btn btn-ghost btn-sq" id="btn-pause-sound" aria-label="Sons"><span class="ic" data-icon="sound"></span></button>
+        <button class="btn btn-ghost btn-sq" id="btn-pause-music" aria-label="Música"><span class="ic" data-icon="music"></span></button>
+        <button class="btn btn-ghost" id="btn-quit"><span class="btn-label" data-i18n="menu">Menu</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== REVIVE ===== -->
+  <section id="screen-revive" class="screen screen-center dim">
+    <div class="card card-menu revive-card">
+      <div class="revive-timer"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="fill" cx="50" cy="50" r="44"/></svg><b data-bind="reviveCount">5</b></div>
+      <h2 data-i18n="revive_title">CONTINUAR?</h2>
+      <p class="muted" data-i18n="revive_text">Mantenha sua pontuação e siga em frente.</p>
+      <button class="btn btn-reward" id="btn-revive-ad"><span class="ic" data-icon="video"></span><span class="btn-label" data-i18n="watch_ad">ASSISTIR ANÚNCIO</span></button>
+      <button class="btn btn-gem" id="btn-revive-gem"><i class="ic-gem"></i><span class="btn-label" data-bind="reviveGemCost">20</span></button>
+      <button class="btn btn-ghost" id="btn-revive-no"><span class="btn-label" data-i18n="no_thanks">Não, obrigado</span></button>
+    </div>
+  </section>
+
+  <!-- ===== GAME OVER (infinito / treino) ===== -->
+  <section id="screen-over" class="screen dim">
+    <div class="over-body">
+      <div class="over-record" data-bind="recordTag" data-i18n="new_record">NOVO RECORDE!</div>
+      <div class="over-score">
+        <span class="kicker" data-i18n="score">PONTOS</span>
+        <b data-bind="overScore">0</b>
+        <span class="muted small"><span data-i18n="best">MELHOR</span> <b data-bind="overBest">0</b></span>
+      </div>
+      <div class="build-row" data-bind="overBuild"></div>
+      <div class="card over-stats">
+        <div class="stat-row"><span><i class="ic-coin"></i> <span data-i18n="coins_earned">Moedas</span></span><b data-bind="overCoins">0</b></div>
+        <div class="stat-row"><span data-i18n="perfects">Perfeitos</span><b data-bind="overPerfects">0</b></div>
+        <div class="stat-row"><span data-i18n="max_combo">Combo máx.</span><b data-bind="overCombo">0</b></div>
+        <div class="stat-row"><span data-i18n="misses">Erros</span><b data-bind="overMisses">0</b></div>
+        <div class="stat-row"><span data-i18n="items_taken">Itens</span><b data-bind="overPickups">0</b></div>
+        <div class="stat-row"><span data-i18n="phase_reached">Fase</span><b data-bind="overPhase">1</b></div>
+        <div class="xp-row">
+          <div class="level-badge"><span data-i18n="lvl">NV</span><b data-bind="overLevel">1</b></div>
+          <div class="bar"><span class="bar-fill" data-bind="overXpFill"></span></div>
+          <span class="muted small" data-bind="overXp">+0 XP</span>
+        </div>
+      </div>
+      <button class="btn btn-reward" id="btn-double-coins"><span class="ic" data-icon="video"></span><span class="btn-label" data-i18n="double_coins">DOBRAR MOEDAS</span></button>
+      <div class="over-actions">
+        <button class="btn btn-play" id="btn-again"><span class="ic" data-icon="refresh"></span><span class="btn-label" data-i18n="play_again">JOGAR DE NOVO</span></button>
+        <div class="row">
+          <button class="btn btn-ghost" id="btn-over-menu"><span class="ic" data-icon="home"></span><span class="btn-label" data-i18n="menu">Menu</span></button>
+          <button class="btn btn-ghost" id="btn-share"><span class="ic" data-icon="share"></span><span class="btn-label" data-i18n="share">Compartilhar</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FIM DE FASE (galáxia) ===== -->
+  <section id="screen-levelend" class="screen dim">
+    <div class="over-body levelend">
+      <span class="kicker" data-bind="levelendKicker"></span>
+      <h2 data-bind="levelendTitle"></h2>
+      <div class="stars-row" data-bind="levelendStars"></div>
+      <div class="card over-stats">
+        <div class="stat-row"><span data-i18n="rings_passed">Arcos</span><b data-bind="lePassed">0</b></div>
+        <div class="stat-row"><span data-i18n="perfects">Perfeitos</span><b data-bind="leCombo">0</b></div>
+        <div class="stat-row"><span data-i18n="misses">Erros</span><b data-bind="leMisses">0</b></div>
+        <div class="stat-row"><span><i class="ic-coin"></i> <span data-i18n="coins_earned">Moedas</span></span><b data-bind="leCoins">0</b></div>
+        <div class="stat-row"><span data-i18n="rewards">Recompensas</span><span class="reward-list compact" data-bind="leRewards"></span></div>
+      </div>
+      <div class="over-actions">
+        <button class="btn btn-play" id="btn-le-next"><span class="ic" data-icon="arrowRight"></span><span class="btn-label" data-i18n="next_level">PRÓXIMA FASE</span></button>
+        <div class="row">
+          <button class="btn btn-ghost" id="btn-le-retry"><span class="ic" data-icon="refresh"></span><span class="btn-label" data-i18n="retry">Tentar de novo</span></button>
+          <button class="btn btn-ghost" id="btn-le-menu"><span class="ic" data-icon="galaxy"></span><span class="btn-label" data-i18n="galaxy">Galáxia</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== LOJA ===== -->
+  <section id="screen-shop" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="shop">Loja</span></h2>
+      <div class="currency-group compact">
+        <span class="currency"><i class="ic-coin"></i><b data-bind="coins">0</b></span>
+        <span class="currency"><i class="ic-gem"></i><b data-bind="gems">0</b></span>
+      </div>
+    </header>
+    <div class="tabs" id="shop-tabs">
+      <button class="tab active" data-tab="skins" data-i18n="tab_balls">Bolas</button>
+      <button class="tab" data-tab="trails" data-i18n="tab_trails">Rastros</button>
+      <button class="tab" data-tab="themes" data-i18n="tab_themes">Temas</button>
+      <button class="tab" data-tab="abilities" data-i18n="abilities_short">Poderes</button>
+      <button class="tab" data-tab="gems" data-i18n="tab_gems">Gemas</button>
+    </div>
+    <div class="panel-body" id="shop-body"></div>
+  </section>
+
+  <!-- ===== GALÁXIA (mapa) ===== -->
+  <section id="screen-galaxy" class="screen panel galaxy-screen">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="galaxy">Galáxia</span></h2>
+      <span class="currency"><span class="ic i-star" data-icon="star"></span><b data-bind="starsTotal">0</b></span>
+    </header>
+    <div class="galaxy-body" id="galaxy-body">
+      <canvas id="galaxy-canvas"></canvas>
+      <div class="galaxy-nodes" id="galaxy-nodes"></div>
+    </div>
+    <div class="galaxy-foot" id="galaxy-foot"></div>
+  </section>
+
+  <!-- ===== REGIÃO (ficha + 10 fases) ===== -->
+  <section id="screen-region" class="screen panel region-screen">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-bind="regionTitle">Região</span></h2>
+      <span class="currency"><span class="ic i-star" data-icon="star"></span><b data-bind="regionStars">0</b></span>
+    </header>
+    <div class="panel-body" id="region-body"></div>
+  </section>
+
+  <!-- ===== HABILIDADES (poderes) ===== -->
+  <section id="screen-abilities" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="abilities">Habilidades</span></h2>
+      <div class="currency-group compact">
+        <span class="currency"><i class="ic-coin"></i><b data-bind="coins">0</b></span>
+        <span class="currency"><i class="ic-gem"></i><b data-bind="gems">0</b></span>
+      </div>
+    </header>
+    <div class="panel-body" id="abilities-body"></div>
+  </section>
+
+  <!-- ===== MISSÕES ===== -->
+  <section id="screen-missions" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="missions">Missões</span></h2>
+      <span class="head-note" data-bind="missionTimer"></span>
+    </header>
+    <div class="tabs" id="missions-tabs">
+      <button class="tab active" data-tab="daily" data-i18n="tab_daily_missions">Diárias</button>
+      <button class="tab" data-tab="weekly" data-i18n="tab_weekly">Semanais</button>
+    </div>
+    <div class="panel-body" id="missions-body"></div>
+  </section>
+
+  <!-- ===== CONQUISTAS ===== -->
+  <section id="screen-achievements" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="album">Álbum</span></h2>
+      <span class="head-note" data-bind="achCount"></span>
+    </header>
+    <div class="tabs scroll" id="ach-tabs"></div>
+    <div class="panel-body" id="ach-body"></div>
+  </section>
+
+  <!-- ===== RECOMPENSA DIÁRIA ===== -->
+  <section id="screen-daily" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="daily_reward">Diário</span></h2>
+      <span></span>
+    </header>
+    <div class="panel-body" id="daily-body"></div>
+  </section>
+
+  <!-- ===== RANKING ===== -->
+  <section id="screen-leaderboard" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="ranking">Ranking</span></h2>
+      <span></span>
+    </header>
+    <div class="tabs" id="lb-tabs">
+      <button class="tab active" data-tab="global" data-i18n="tab_global">Global</button>
+      <button class="tab" data-tab="local" data-i18n="tab_mine">Meus recordes</button>
+    </div>
+    <div class="panel-body" id="lb-body"></div>
+  </section>
+
+  <!-- ===== CONFIGURAÇÕES ===== -->
+  <section id="screen-settings" class="screen panel">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="settings">Ajustes</span></h2>
+      <span></span>
+    </header>
+    <div class="panel-body" id="settings-body"></div>
+  </section>
+
+  <!-- ===== ESCOLHA DE PERK (roguelike) ===== -->
+  <div id="modal-perks" class="modal perks-modal">
+    <div class="perks-wrap">
+      <span class="ribbon ribbon-sm"><span data-i18n="perk_title">ESCOLHA UM PODER</span></span>
+      <span class="perks-sub" data-bind="perkSub"></span>
+      <div class="perk-cards" id="perk-cards"></div>
+      <button type="button" class="perk-auto" id="perk-auto"><span class="toggle" id="perk-auto-toggle"></span><span class="perk-auto-text"><b data-i18n="perk_auto">Escolha automática</b><small data-i18n="perk_auto_d">Os próximos perks são escolhidos sozinhos, sem pausar.</small></span></button>
+      <div class="perks-actions">
+        <button class="btn btn-ghost small-btn" id="btn-perk-reroll"><span class="ic" data-icon="refresh"></span><span class="btn-label" data-i18n="perk_reroll">Trocar opções</span></button>
+        <button class="btn btn-ghost small-btn" id="btn-perk-skip"><span class="btn-label" data-i18n="perk_skip">Pular (+15 moedas)</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ESCOLHA DE HABILIDADE (slot) ===== -->
+  <div id="modal-abilities" class="modal">
+    <div class="modal-card abilities-card">
+      <span class="ribbon ribbon-sm"><span data-i18n="ability_slot_empty">Escolher habilidade</span></span>
+      <div class="ability-picker" id="ability-picker"></div>
+      <button class="btn btn-ghost" id="btn-abilities-close"><span class="btn-label" data-i18n="close">Fechar</span></button>
+    </div>
+  </div>
+
+  <!-- ===== LEVEL UP (modal) ===== -->
+  <div id="modal-levelup" class="modal">
+    <div class="modal-card levelup-card">
+      <div class="levelup-glow"></div>
+      <span class="kicker" data-i18n="level_up">SUBIU DE NÍVEL</span>
+      <div class="levelup-num" data-bind="levelupNum">2</div>
+      <div class="levelup-title" data-bind="levelupTitle"></div>
+      <div class="reward-list" data-bind="levelupRewards"></div>
+      <button class="btn" id="btn-levelup-ok"><span class="btn-label" data-i18n="awesome">INCRÍVEL!</span></button>
+    </div>
+  </div>
+
+  <!-- ===== ANÚNCIO SIMULADO ===== -->
+  <div id="modal-ad" class="modal ad-modal">
+    <div class="ad-frame">
+      <div class="ad-label" data-i18n="ad_sim">ANÚNCIO (SIMULAÇÃO)</div>
+      <div class="ad-content">
+        <div class="ad-art"></div>
+        <h3 data-i18n="ad_headline">Aqui entra o anúncio real (AdMob / Unity Ads)</h3>
+        <p class="muted small" data-i18n="ad_sub">No app publicado, este espaço é preenchido pela rede de anúncios.</p>
+      </div>
+      <div class="ad-footer">
+        <span class="muted small"><span data-i18n="reward_in">Recompensa em</span> <b data-bind="adCount">5</b>s</span>
+        <button class="btn btn-ghost small-btn" id="btn-ad-skip"><span class="btn-label" data-i18n="skip">Pular</span></button>
+        <button class="btn small-btn" id="btn-ad-close"><span class="btn-label" data-i18n="close">Fechar</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CONFIRM (modal) ===== -->
+  <div id="modal-confirm" class="modal">
+    <div class="modal-card">
+      <h3 data-bind="confirmTitle"></h3>
+      <p class="muted" data-bind="confirmText"></p>
+      <div class="row">
+        <button class="btn btn-ghost" id="btn-confirm-no"><span class="btn-label" data-i18n="cancel">Cancelar</span></button>
+        <button class="btn" id="btn-confirm-yes"><span class="btn-label" data-i18n="confirm">Confirmar</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DETALHE (loja / fase) ===== -->
+  <div id="modal-item" class="modal"><div class="modal-card item-detail" id="item-detail"></div></div>
+
+  <div id="toast-host"></div>
+  <div id="rotate-hint" class="rotate-hint"><div><span class="ic" data-icon="rotate"></span><p data-i18n="rotate">Gire o aparelho para o modo retrato</p></div></div>
+</div>
+
+<script src="js/config.js?v=20260911e"></script>
+<script src="js/utils.js?v=20260911e"></script>
+<script src="js/icons.js?v=20260911e"></script>
+<script src="js/i18n.js?v=20260911e"></script>
+<script src="js/brand.js?v=20260911e"></script>
+<script src="js/storage.js?v=20260911e"></script>
+<script src="js/audio.js?v=20260911e"></script>
+<script src="js/music.js?v=20260911e"></script>
+<script src="js/input.js?v=20260911e"></script>
+<script src="js/services.js?v=20260911e"></script>
+<script src="js/content.js?v=20260911e"></script>
+<script src="js/systems.js?v=20260911e"></script>
+<script src="js/perks.js?v=20260911e"></script>
+<script src="js/modes.js?v=20260911e"></script>
+<script src="js/render.js?v=20260911e"></script>
+<script src="js/game.js?v=20260911e"></script>
+<script src="js/ui.js?v=20260911e"></script>
+<script src="js/ui-hud.js?v=20260911e"></script>
+<script src="js/ui-shop.js?v=20260911e"></script>
+<script src="js/ui-galaxy.js?v=20260911e"></script>
+<script src="js/main.js?v=20260911e"></script>
+</body>
+</html>

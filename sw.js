@@ -1,0 +1,18 @@
+/* Service worker: cache do app shell para jogar offline (PWA). Suba a versão ao publicar. */
+const CACHE = 'orbo-v2.0.0';
+const ASSETS = [
+  './', './index.html', './manifest.json', './assets/icon.svg',
+  './css/style.css', './css/hud.css', './css/shop.css', './css/galaxy.css',
+  './js/config.js', './js/utils.js', './js/icons.js', './js/i18n.js', './js/brand.js', './js/storage.js', './js/audio.js', './js/music.js', './js/input.js',
+  './js/services.js', './js/content.js', './js/systems.js', './js/perks.js', './js/modes.js', './js/render.js', './js/game.js',
+  './js/ui.js', './js/ui-hud.js', './js/ui-shop.js', './js/ui-galaxy.js', './js/main.js'
+];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+    if (res.ok && new URL(e.request.url).origin === location.origin) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); }
+    return res;
+  }).catch(() => hit)));
+});
