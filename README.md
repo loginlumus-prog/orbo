@@ -2,6 +2,10 @@
 
 Jogo arcade hiper-casual: uma bola flutuante atravessa arcos de luz e cruza uma galáxia de 10 regiões (100 fases, 10 chefes) com a **Singularidade** (modo infinito) no centro. A cor de cada arco diz o que ele faz (azul reto, verde onda, amarelo inclinado, vermelho gira, roxo pulsa, branco aparece tarde, dourado bônus, anomalia imune a poderes); errar um arco não mata, só a borda e os obstáculos; itens no campo (estrela, vida, escudo, ímã, lenta, moedas, gema); no infinito, perks míticos de ascensão, escolha automática de perks e anomalias que exigem a mão do jogador. HTML5 + Canvas + JavaScript puro, pronto para web/PWA e para Android/iOS via Capacitor, com anúncios (AdMob), compras (RevenueCat), missões diárias e semanais, 52 conquistas, recompensa diária, loja, habilidades, perks roguelike, níveis, ranking e 12 temas musicais procedurais.
 
+## Jogar online
+
+https://loginlumus-prog.github.io/orbo/
+
 ## Rodar
 
 Duplo clique em `index.html`, ou:
@@ -47,7 +51,7 @@ e abra http://localhost:8090.
 
 ## Controles
 
-- Celular: arraste em qualquer direção (relativo) ou "Seguir" o dedo (Ajustes). A bola vai para cima, para baixo, para frente e para trás.
+- Celular: analógico no centro de baixo (padrão), ou arrastar de qualquer lugar (Relativo) ou "Seguir" o dedo, nos Ajustes. A bola vai para cima, para baixo, para frente e para trás.
 - Desktop: mouse segue automaticamente; setas ou WASD; Q/E usam as habilidades; Espaço/Enter começa; Esc pausa.
 
 ## Licença

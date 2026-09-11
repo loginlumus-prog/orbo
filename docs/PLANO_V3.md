@@ -192,3 +192,12 @@ Tudo aplicado sobre o layout e o visual aprovados; nada foi refeito, só acresce
 - Simulação de fase 3-6: arcos azuis/amarelos/verdes misturados, obstáculos e itens gerados, 3 estrelas. Simulação de 7 min na Singularidade com piloto: 520 arcos, 4 anomalias vencidas (a bola precisou ir até elas), perks míticos tomados (Momento, Overclock, Fluxo, Intangível, Regeneração → 6 escudos), 14 itens pegos, 1 erro, zero dano de obstáculo (o piloto segue o centro dos arcos e os obstáculos nunca nascem ali). Sem erros de console.
 - Capturas: HUD com obstáculos, itens (escudo, vida), anomalia e rastro quente; região Maré com água; pausa com "Escolha automática"; mapa da galáxia pré-renderizado; Álbum (Arcos, Itens, Bolas) sem vazamento de texto.
 - Ajustes futuros sugeridos: probabilidade de obstáculos (`OBSTACLE`/`obs`), frequência das anomalias (`ANOMALY.every`), chance de itens (`PICKUP.chance`), curva de velocidade (`RUN.baseSpeed/speedPerRing/maxSpeed`) e `passNeed` (60 %).
+
+## Analógico e publicação web (2026-09-11)
+
+- **Analógico virtual** no centro de baixo do HUD, entre as duas habilidades. É o controle padrão no celular; no computador com mouse continua "Seguir".
+- O toque pode começar em qualquer ponto da tela. A origem do analógico fica onde o dedo encostou e é arrastada junto quando o dedo passa do raio, então não há salto ao encostar.
+- A inclinação vira velocidade da bola, com zona morta e curva de resposta. Ao soltar, a bola para quase na hora.
+- Ajustes: `CONFIG.BALL.stickSpeed`, `stickDead`, `stickCurve`, `stickLead`. A sensibilidade dos Ajustes multiplica a velocidade.
+- Ajustes > Controle tem três opções: Analógico, Relativo e Seguir.
+- **No ar:** https://loginlumus-prog.github.io/orbo/ (repositório público `loginlumus-prog/orbo`, GitHub Pages na branch `main`). Para atualizar: subir `?v=` no index.html e `CACHE` no sw.js, commit e push. Para tirar do ar: desligar o Pages ou apagar o repositório.
