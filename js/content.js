@@ -77,7 +77,38 @@ HR.ACHIEVEMENTS = [
   { id: 'anomaly_10',  cat: 'flight',     stat: 'anomaliesBeaten', target: 10,   gems: 60,  icon: 'orbit' },
   { id: 'rings_found', cat: 'collection', stat: 'ringsFound',      target: 7,    gems: 30,  icon: 'ring' },
   { id: 'items_found', cat: 'collection', stat: 'itemsFound',      target: 7,    gems: 30,  icon: 'gift' },
-  { id: 'star_10',     cat: 'secret', hidden: true, stat: 'starsUsed', target: 10, gems: 25, icon: 'sparkle' }
+  { id: 'star_10',     cat: 'secret', hidden: true, stat: 'starsUsed', target: 10, gems: 25, icon: 'sparkle' },
+  // v4: fluxo, eventos, contratos, núcleo, coleção, temporadas
+  { id: 'flow_100',     cat: 'precision',  stat: 'flowMax',           target: 100,  gems: 20,  icon: 'wind' },
+  { id: 'flow_60s',     cat: 'precision',  stat: 'flowTime',          target: 60,   gems: 30,  icon: 'wind' },
+  { id: 'flow_300s',    cat: 'precision',  stat: 'flowTime',          target: 300,  gems: 80,  icon: 'wind', title: 't_flow' },
+  { id: 'center_25',    cat: 'power',      stat: 'centerPickups',     target: 25,   gems: 25,  icon: 'target' },
+  { id: 'center_150',   cat: 'power',      stat: 'centerPickups',     target: 150,  gems: 70,  icon: 'target' },
+  { id: 'events_10',    cat: 'flight',     stat: 'eventsDone',        target: 10,   gems: 25,  icon: 'zap' },
+  { id: 'events_50',    cat: 'flight',     stat: 'eventsDone',        target: 50,   gems: 60,  icon: 'zap' },
+  { id: 'events_200',   cat: 'flight',     stat: 'eventsDone',        target: 200,  gems: 150, icon: 'zap', title: 't_survivor' },
+  { id: 'guardians_5',  cat: 'flight',     stat: 'guardians',         target: 5,    gems: 30,  icon: 'crown' },
+  { id: 'guardians_25', cat: 'flight',     stat: 'guardians',         target: 25,   gems: 90,  icon: 'crown', title: 't_guardian' },
+  { id: 'sentinels_5',  cat: 'flight',     stat: 'sentinels',         target: 5,    gems: 30,  icon: 'eye' },
+  { id: 'sentinels_25', cat: 'flight',     stat: 'sentinels',         target: 25,   gems: 90,  icon: 'eye' },
+  { id: 'warps_10',     cat: 'flight',     stat: 'warps',             target: 10,   gems: 30,  icon: 'zap' },
+  { id: 'rocks_50',     cat: 'power',      stat: 'asteroidsDestroyed', target: 50,  gems: 40,  icon: 'skull' },
+  { id: 'shatter_30',   cat: 'power',      stat: 'shattered',         target: 30,   gems: 40,  icon: 'sparkle' },
+  { id: 'contracts_5',  cat: 'galaxy',     stat: 'contractsDone',     target: 5,    gems: 20,  icon: 'flag' },
+  { id: 'contracts_20', cat: 'galaxy',     stat: 'contractsDone',     target: 20,   gems: 60,  icon: 'flag' },
+  { id: 'contracts_50', cat: 'galaxy',     stat: 'contractsDone',     target: 50,   gems: 200, icon: 'flag', title: 't_contractor' },
+  { id: 'core_5',       cat: 'power',      stat: 'coreLevel',         target: 5,    gems: 15,  icon: 'orbit' },
+  { id: 'core_15',      cat: 'power',      stat: 'coreLevel',         target: 15,   gems: 50,  icon: 'orbit' },
+  { id: 'core_30',      cat: 'power',      stat: 'coreLevel',         target: 30,   gems: 200, icon: 'orbit', title: 't_core' },
+  { id: 'visited_5',    cat: 'galaxy',     stat: 'regionsVisited',    target: 5,    gems: 30,  icon: 'map' },
+  { id: 'visited_10',   cat: 'galaxy',     stat: 'regionsVisited',    target: 10,   gems: 100, icon: 'galaxy', title: 't_astronomer' },
+  { id: 'rank_20',      cat: 'dedication', stat: 'level',             target: 20,   gems: 60,  icon: 'award' },
+  { id: 'rank_40',      cat: 'dedication', stat: 'level',             target: 40,   gems: 250, icon: 'award' },
+  { id: 'skins_12',     cat: 'collection', stat: 'skinsOwned',        target: 12,   gems: 60,  icon: 'ring' },
+  { id: 'skins_20',     cat: 'collection', stat: 'skinsOwned',        target: 20,   gems: 150, icon: 'ring', title: 't_curator' },
+  { id: 'trails_6',     cat: 'collection', stat: 'trailsOwned',       target: 6,    gems: 40,  icon: 'sparkle' },
+  { id: 'themes_6',     cat: 'collection', stat: 'themesOwned',       target: 6,    gems: 40,  icon: 'layers' },
+  { id: 'season_1',     cat: 'secret', hidden: true, stat: 'seasonItems', target: 1, gems: 30, icon: 'calendar' }
 ];
 HR.ACH_CATS = ['flight', 'precision', 'wealth', 'galaxy', 'power', 'collection', 'dedication', 'secret'];
 
@@ -136,14 +167,47 @@ HR.MISSIONS = [
   { id: 'coins_taken',   icon: 'coin',     kind: 'run',   src: 'coinsTaken',     tiers: [[8, 60, 0, 30], [15, 120, 0, 60], [25, 200, 5, 100]] },
   { id: 'pickups',       icon: 'star',     kind: 'total', src: 'pickups',        tiers: [[3, 70, 0, 30], [6, 130, 0, 60], [12, 210, 5, 100]], weekly: true },
   { id: 'anomalies',     icon: 'orbit',    kind: 'total', src: 'anomaliesBeaten', tiers: [[1, 100, 0, 50], [2, 180, 5, 90], [4, 300, 10, 160]], weekly: true },
-  { id: 'no_miss',       icon: 'target',   kind: 'run',   src: 'noMissRings',    tiers: [[12, 80, 0, 40], [20, 150, 0, 80], [35, 240, 8, 140]] }
+  { id: 'no_miss',       icon: 'target',   kind: 'run',   src: 'noMissRings',    tiers: [[12, 80, 0, 40], [20, 150, 0, 80], [35, 240, 8, 140]] },
+  // v4
+  { id: 'flow_max',      icon: 'wind',     kind: 'run',   src: 'flowMax',        tiers: [[60, 70, 0, 30], [85, 130, 0, 60], [100, 220, 5, 100]] },
+  { id: 'flow_time',     icon: 'wind',     kind: 'total', src: 'flowTime',       tiers: [[20, 80, 0, 40], [60, 150, 0, 80], [150, 260, 8, 140]], weekly: true },
+  { id: 'center_items',  icon: 'target',   kind: 'total', src: 'centerPickups',  tiers: [[2, 70, 0, 30], [5, 130, 0, 60], [10, 210, 5, 100]], weekly: true },
+  { id: 'events',        icon: 'zap',      kind: 'total', src: 'eventsDone',     tiers: [[1, 90, 0, 40], [3, 170, 5, 80], [6, 280, 10, 140]], weekly: true },
+  { id: 'events_run',    icon: 'zap',      kind: 'run',   src: 'eventsDone',     tiers: [[1, 80, 0, 40], [2, 160, 0, 80], [3, 260, 8, 140]] },
+  { id: 'guardians',     icon: 'crown',    kind: 'total', src: 'guardians',      tiers: [[1, 100, 0, 50], [2, 180, 5, 90], [4, 300, 10, 160]], weekly: true },
+  { id: 'sentinels',     icon: 'eye',      kind: 'total', src: 'sentinels',      tiers: [[1, 100, 0, 50], [2, 180, 5, 90], [4, 300, 10, 160]], weekly: true },
+  { id: 'warps',         icon: 'zap',      kind: 'total', src: 'warps',          tiers: [[1, 80, 0, 40], [3, 150, 0, 80], [6, 250, 8, 140]] },
+  { id: 'asteroids',     icon: 'skull',    kind: 'total', src: 'asteroidsDestroyed', tiers: [[3, 80, 0, 40], [8, 150, 0, 80], [15, 250, 8, 140]], weekly: true },
+  { id: 'shattered',     icon: 'sparkle',  kind: 'total', src: 'shattered',      tiers: [[2, 70, 0, 30], [5, 130, 0, 60], [10, 210, 5, 100]] },
+  { id: 'pulse',         icon: 'pulse',    kind: 'total', src: 'ab_pulse',       tiers: [[2, 60, 0, 30], [5, 110, 0, 50], [10, 190, 5, 90]] },
+  { id: 'lens',          icon: 'target',   kind: 'total', src: 'ab_lens',        tiers: [[2, 60, 0, 30], [5, 110, 0, 50], [10, 190, 5, 90]] },
+  { id: 'echo',          icon: 'sparkle',  kind: 'total', src: 'ab_echo',        tiers: [[2, 60, 0, 30], [5, 110, 0, 50], [10, 190, 5, 90]] },
+  { id: 'coins_big',     icon: 'coins',    kind: 'run',   src: 'coins',          tiers: [[80, 120, 0, 50], [140, 200, 5, 90], [220, 320, 10, 160]] },
+  { id: 'score_big',     icon: 'ring',     kind: 'run',   src: 'score',          tiers: [[60, 120, 0, 60], [90, 220, 5, 110], [130, 340, 12, 180]] },
+  { id: 'items_run',     icon: 'gift',     kind: 'run',   src: 'pickups',        tiers: [[3, 70, 0, 30], [6, 130, 0, 60], [10, 210, 5, 100]] },
+  { id: 'stars_run',     icon: 'star',     kind: 'total', src: 'starsUsed',      tiers: [[1, 70, 0, 30], [3, 130, 0, 60], [6, 210, 5, 100]] },
+  { id: 'obstacles',     icon: 'skull',    kind: 'total', src: 'obstaclesDestroyed', tiers: [[2, 70, 0, 30], [5, 130, 0, 60], [10, 210, 5, 100]] },
+  { id: 'gems_found',    icon: 'gem',      kind: 'total', src: 'gemsFound',      tiers: [[1, 80, 0, 40], [2, 150, 5, 80], [4, 250, 10, 140]], weekly: true },
+  { id: 'auto_perks',    icon: 'sparkle',  kind: 'total', src: 'autoPerks',      tiers: [[2, 60, 0, 30], [5, 110, 0, 50], [10, 190, 5, 90]] },
+  { id: 'season',        icon: 'calendar', kind: 'total', src: 'one',            tiers: [[2, 120, 5, 60], [3, 200, 8, 100], [5, 300, 12, 160]], season: true },
+  { id: 'boss_flawless', icon: 'crown',    kind: 'total', src: 'bossFlawlessRun', tiers: [[1, 200, 10, 120], [1, 260, 15, 160], [2, 400, 25, 240]], weekly: true }
 ];
 
 // títulos de jogador dados por conquistas (além dos títulos por nível)
-HR.TITLES = ['t_centurion', 't_singular', 't_surgeon', 't_tycoon', 't_navigator', 't_supreme'];
+HR.TITLES = ['t_centurion', 't_singular', 't_surgeon', 't_tycoon', 't_navigator', 't_supreme', 't_flow', 't_survivor', 't_guardian', 't_contractor', 't_core', 't_astronomer', 't_curator'];
 
 /* ---------------- textos ---------------- */
 Object.assign(HR.I18N.pt, {
+  a_flow_100: 'Fluxo total', a_flow_60s: 'Um minuto no fluxo', a_flow_300s: 'Cinco minutos no fluxo', a_center_25: 'No alvo', a_center_150: 'Centro perfeito', a_events_10: 'Sobrevivente', a_events_50: 'Veterano', a_events_200: 'Imortal',
+  a_guardians_5: 'Caça-guardiões', a_guardians_25: 'Domador de guardiões', a_sentinels_5: 'Antirradar', a_sentinels_25: 'Fantasma da sentinela', a_warps_10: 'Dobra dez', a_rocks_50: 'Britadeira', a_shatter_30: 'Quebra-arcos',
+  a_contracts_5: 'Contratado', a_contracts_20: 'Empreiteiro', a_contracts_50: 'Contratante-mor', a_core_5: 'Núcleo aceso', a_core_15: 'Núcleo forte', a_core_30: 'Núcleo máximo', a_visited_5: 'Viajante', a_visited_10: 'Astrônomo',
+  a_rank_20: 'Patente 20', a_rank_40: 'Patente 40', a_skins_12: 'Doze bolas', a_skins_20: 'Curador', a_trails_6: 'Seis rastros', a_themes_6: 'Seis temas', a_season_1: 'Sazonal',
+  a_d_flowMax: 'Chegue a {n} % de fluxo', a_d_flowTime: 'Fique {n} s no fluxo máximo', a_d_centerPickups: 'Pegue {n} itens no centro do arco', a_d_eventsDone: 'Vença {n} eventos', a_d_guardians: 'Vença {n} guardiões', a_d_sentinels: 'Sobreviva a {n} sentinelas', a_d_warps: 'Atravesse {n} dobras',
+  a_d_asteroidsDestroyed: 'Destrua {n} asteroides', a_d_shattered: 'Despedace {n} arcos com poderes', a_d_contractsDone: 'Conclua {n} contratos', a_d_coreLevel: 'Leve o Núcleo ao nível {n}', a_d_regionsVisited: 'Jogue em {n} galáxias', a_d_level: 'Chegue à patente {n}', a_d_seasonItems: 'Compre um item de temporada',
+  t_flow: 'Mestre do Fluxo', t_survivor: 'Sobrevivente', t_guardian: 'Domador', t_contractor: 'Contratante', t_core: 'Núcleo Puro', t_astronomer: 'Astrônomo', t_curator: 'Curador',
+  m_flow_max: 'Chegue a {n} % de fluxo em uma partida', m_flow_time: 'Fique {n} s no fluxo máximo', m_center_items: 'Pegue {n} itens no centro do arco', m_events: 'Vença {n} eventos', m_events_run: 'Vença {n} eventos em uma partida', m_guardians: 'Vença {n} guardiões', m_sentinels: 'Sobreviva a {n} sentinelas',
+  m_warps: 'Atravesse {n} dobras', m_asteroids: 'Destrua {n} asteroides (estrela ou Pulso)', m_shattered: 'Despedace {n} arcos com um poder', m_pulse: 'Use Pulso {n} vezes', m_lens: 'Use Lente {n} vezes', m_echo: 'Use Eco {n} vezes', m_coins_big: 'Colete {n} moedas em uma partida', m_score_big: 'Faça {n} pontos em uma partida',
+  m_items_run: 'Pegue {n} itens em uma partida', m_stars_run: 'Pegue {n} estrelas', m_obstacles: 'Destrua {n} obstáculos', m_gems_found: 'Encontre {n} gemas no campo', m_auto_perks: 'Deixe a escolha automática pegar {n} perks', m_season: 'Jogue {n} partidas na temporada', m_boss_flawless: 'Vença {n} chefe sem dano',
   a_pickups_25: 'Catador', a_pickups_150: 'Colecionador de itens', a_anomaly_10: 'Caça-anomalias', a_rings_found: 'Leitor de cores', a_items_found: 'Todos os itens', a_star_10: 'Invencível',
   a_d_pickups: 'Pegue {n} itens no campo', a_d_anomaliesBeaten: 'Vença {n} anomalias', a_d_ringsFound: 'Descubra {n} tipos de arco', a_d_itemsFound: 'Descubra {n} itens', a_d_starsUsed: 'Pegue {n} estrelas',
   m_pickups: 'Pegue {n} itens no campo', m_anomalies: 'Vença {n} anomalias', m_no_miss: 'Passe {n} arcos seguidos sem errar',
@@ -179,6 +243,16 @@ Object.assign(HR.I18N.pt, {
   m_region_play: 'Jogue {n} fases em regiões diferentes', m_no_ability: 'Faça {n} pontos sem usar habilidades', m_top_dir: 'Passe {n} arcos vindos de cima', m_side_dir: 'Passe {n} arcos vindos da esquerda', m_coins_taken: 'Pegue {n} moedas de arco em uma partida'
 });
 Object.assign(HR.I18N.en, {
+  a_flow_100: 'Full flow', a_flow_60s: 'A minute in flow', a_flow_300s: 'Five minutes in flow', a_center_25: 'On target', a_center_150: 'Perfect center', a_events_10: 'Survivor', a_events_50: 'Veteran', a_events_200: 'Immortal',
+  a_guardians_5: 'Guardian hunter', a_guardians_25: 'Guardian tamer', a_sentinels_5: 'Under the radar', a_sentinels_25: 'Sentinel ghost', a_warps_10: 'Warp ten', a_rocks_50: 'Rock crusher', a_shatter_30: 'Ring breaker',
+  a_contracts_5: 'Contracted', a_contracts_20: 'Contractor', a_contracts_50: 'Master contractor', a_core_5: 'Core lit', a_core_15: 'Strong core', a_core_30: 'Max core', a_visited_5: 'Traveler', a_visited_10: 'Astronomer',
+  a_rank_20: 'Rank 20', a_rank_40: 'Rank 40', a_skins_12: 'Twelve balls', a_skins_20: 'Curator', a_trails_6: 'Six trails', a_themes_6: 'Six themes', a_season_1: 'Seasonal',
+  a_d_flowMax: 'Reach {n}% flow', a_d_flowTime: 'Spend {n} s at max flow', a_d_centerPickups: 'Grab {n} items at a ring center', a_d_eventsDone: 'Beat {n} events', a_d_guardians: 'Beat {n} guardians', a_d_sentinels: 'Survive {n} sentinels', a_d_warps: 'Ride {n} warps',
+  a_d_asteroidsDestroyed: 'Destroy {n} asteroids', a_d_shattered: 'Shatter {n} rings with powers', a_d_contractsDone: 'Complete {n} contracts', a_d_coreLevel: 'Raise the Core to level {n}', a_d_regionsVisited: 'Play in {n} galaxies', a_d_level: 'Reach rank {n}', a_d_seasonItems: 'Buy a seasonal item',
+  t_flow: 'Flow Master', t_survivor: 'Survivor', t_guardian: 'Tamer', t_contractor: 'Contractor', t_core: 'Pure Core', t_astronomer: 'Astronomer', t_curator: 'Curator',
+  m_flow_max: 'Reach {n}% flow in one run', m_flow_time: 'Spend {n} s at max flow', m_center_items: 'Grab {n} items at a ring center', m_events: 'Beat {n} events', m_events_run: 'Beat {n} events in one run', m_guardians: 'Beat {n} guardians', m_sentinels: 'Survive {n} sentinels',
+  m_warps: 'Ride {n} warps', m_asteroids: 'Destroy {n} asteroids (star or Pulse)', m_shattered: 'Shatter {n} rings with a power', m_pulse: 'Use Pulse {n} times', m_lens: 'Use Lens {n} times', m_echo: 'Use Echo {n} times', m_coins_big: 'Collect {n} coins in one run', m_score_big: 'Score {n} in one run',
+  m_items_run: 'Grab {n} items in one run', m_stars_run: 'Grab {n} stars', m_obstacles: 'Destroy {n} obstacles', m_gems_found: 'Find {n} gems in the field', m_auto_perks: 'Let auto pick take {n} perks', m_season: 'Play {n} runs during the season', m_boss_flawless: 'Beat {n} boss without damage',
   a_pickups_25: 'Gatherer', a_pickups_150: 'Item collector', a_anomaly_10: 'Anomaly hunter', a_rings_found: 'Color reader', a_items_found: 'Every item', a_star_10: 'Invincible',
   a_d_pickups: 'Grab {n} field items', a_d_anomaliesBeaten: 'Beat {n} anomalies', a_d_ringsFound: 'Discover {n} ring types', a_d_itemsFound: 'Discover {n} items', a_d_starsUsed: 'Grab {n} stars',
   m_pickups: 'Grab {n} field items', m_anomalies: 'Beat {n} anomalies', m_no_miss: 'Pass {n} rings in a row without missing',
@@ -214,6 +288,16 @@ Object.assign(HR.I18N.en, {
   m_region_play: 'Play {n} levels in different regions', m_no_ability: 'Score {n} without using abilities', m_top_dir: 'Pass {n} rings coming from the top', m_side_dir: 'Pass {n} rings coming from the left', m_coins_taken: 'Grab {n} ring coins in one run'
 });
 Object.assign(HR.I18N.es, {
+  a_flow_100: 'Flujo total', a_flow_60s: 'Un minuto en flujo', a_flow_300s: 'Cinco minutos en flujo', a_center_25: 'En el blanco', a_center_150: 'Centro perfecto', a_events_10: 'Superviviente', a_events_50: 'Veterano', a_events_200: 'Inmortal',
+  a_guardians_5: 'Cazaguardianes', a_guardians_25: 'Domador de guardianes', a_sentinels_5: 'Bajo el radar', a_sentinels_25: 'Fantasma del centinela', a_warps_10: 'Salto diez', a_rocks_50: 'Trituradora', a_shatter_30: 'Rompearos',
+  a_contracts_5: 'Contratado', a_contracts_20: 'Contratista', a_contracts_50: 'Gran contratista', a_core_5: 'Núcleo encendido', a_core_15: 'Núcleo fuerte', a_core_30: 'Núcleo máximo', a_visited_5: 'Viajero', a_visited_10: 'Astrónomo',
+  a_rank_20: 'Rango 20', a_rank_40: 'Rango 40', a_skins_12: 'Doce bolas', a_skins_20: 'Curador', a_trails_6: 'Seis estelas', a_themes_6: 'Seis temas', a_season_1: 'De temporada',
+  a_d_flowMax: 'Llega al {n} % de flujo', a_d_flowTime: 'Pasa {n} s en flujo máximo', a_d_centerPickups: 'Recoge {n} objetos en el centro del aro', a_d_eventsDone: 'Supera {n} eventos', a_d_guardians: 'Vence {n} guardianes', a_d_sentinels: 'Sobrevive a {n} centinelas', a_d_warps: 'Atraviesa {n} saltos',
+  a_d_asteroidsDestroyed: 'Destruye {n} asteroides', a_d_shattered: 'Destroza {n} aros con poderes', a_d_contractsDone: 'Completa {n} contratos', a_d_coreLevel: 'Lleva el Núcleo al nivel {n}', a_d_regionsVisited: 'Juega en {n} galaxias', a_d_level: 'Llega al rango {n}', a_d_seasonItems: 'Compra un objeto de temporada',
+  t_flow: 'Maestro del Flujo', t_survivor: 'Superviviente', t_guardian: 'Domador', t_contractor: 'Contratista', t_core: 'Núcleo Puro', t_astronomer: 'Astrónomo', t_curator: 'Curador',
+  m_flow_max: 'Llega al {n} % de flujo en una partida', m_flow_time: 'Pasa {n} s en flujo máximo', m_center_items: 'Recoge {n} objetos en el centro del aro', m_events: 'Supera {n} eventos', m_events_run: 'Supera {n} eventos en una partida', m_guardians: 'Vence {n} guardianes', m_sentinels: 'Sobrevive a {n} centinelas',
+  m_warps: 'Atraviesa {n} saltos', m_asteroids: 'Destruye {n} asteroides (estrella o Pulso)', m_shattered: 'Destroza {n} aros con un poder', m_pulse: 'Usa Pulso {n} veces', m_lens: 'Usa Lente {n} veces', m_echo: 'Usa Eco {n} veces', m_coins_big: 'Recoge {n} monedas en una partida', m_score_big: 'Haz {n} puntos en una partida',
+  m_items_run: 'Recoge {n} objetos en una partida', m_stars_run: 'Recoge {n} estrellas', m_obstacles: 'Destruye {n} obstáculos', m_gems_found: 'Encuentra {n} gemas en el campo', m_auto_perks: 'Deja que la elección automática tome {n} perks', m_season: 'Juega {n} partidas en la temporada', m_boss_flawless: 'Vence a {n} jefe sin daño',
   a_pickups_25: 'Recolector', a_pickups_150: 'Coleccionista de objetos', a_anomaly_10: 'Cazador de anomalías', a_rings_found: 'Lector de colores', a_items_found: 'Todos los objetos', a_star_10: 'Invencible',
   a_d_pickups: 'Recoge {n} objetos del campo', a_d_anomaliesBeaten: 'Vence {n} anomalías', a_d_ringsFound: 'Descubre {n} tipos de aro', a_d_itemsFound: 'Descubre {n} objetos', a_d_starsUsed: 'Recoge {n} estrellas',
   m_pickups: 'Recoge {n} objetos del campo', m_anomalies: 'Vence {n} anomalías', m_no_miss: 'Pasa {n} aros seguidos sin fallar',

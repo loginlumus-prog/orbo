@@ -172,6 +172,8 @@ HR.UI = {
     $('[data-badge="daily"]').classList.toggle('on', daily);
     $('[data-badge="galaxy"]').classList.toggle('on', !d.hints.galaxy);
     $('#orbit-daily').classList.toggle('glow', daily);
+    const S = HR.Seasons.current(), sc = $('#season-chip'); if (sc) { sc.hidden = !S; if (S) { sc.style.setProperty('--sc', S.accent); this.bind('seasonChip', HR.t('season_until', { name: HR.t('season_' + S.id), d: HR.Seasons.endLabel() })); } }
+    this.game.bg.season = S;
     this.refreshMode();
     this.renderSlots();
     this.updateShowcaseCaption();
@@ -237,7 +239,7 @@ HR.UI = {
     scene.style.setProperty('--ball-d', (rad * 2).toFixed(0) + 'px');
     this.game.setShowcase((sr.left + sr.width / 2 - cr.left) / this.game.scale, (sr.top + sr.height / 2 - cr.top) / this.game.scale, rad / this.game.scale);
   },
-  showcaseList() { return HR.CONFIG.SKINS.filter(s => s.cur !== 'pack' || HR.Unlocks.owned('skins', s.id)); },
+  showcaseList() { return HR.CONFIG.SKINS.filter(s => (s.cur !== 'pack' && s.cur !== 'iap' && !s.season) || HR.Unlocks.owned('skins', s.id)); },
   cycleSkin(dir) {
     HR.Audio.sfx('click');
     const list = this.showcaseList();
@@ -378,6 +380,9 @@ HR.UI = {
     HR.Economy.addCoins(s.coins, 'run_' + s.mode);
     const ups = s.xp > 0 ? HR.Progress.addXp(s.xp) : [];
     if (s.mode !== 'practice') HR.Missions.onRunEnd(s);
+    st.flowMax = Math.max(st.flowMax || 0, s.flowMax || 0); st.flowTime = (st.flowTime || 0) + (s.flowTime || 0); st.centerPickups = (st.centerPickups || 0) + (s.centerPickups || 0); st.eventsDone = (st.eventsDone || 0) + (s.eventsDone || 0); st.guardians = (st.guardians || 0) + (s.guardians || 0); st.shattered = (st.shattered || 0) + (s.shattered || 0); st.sentinels = (st.sentinels || 0) + (s.sentinels || 0); st.warps = (st.warps || 0) + (s.warps || 0); st.asteroidsDestroyed = (st.asteroidsDestroyed || 0) + (s.asteroidsDestroyed || 0);
+    const contracts = HR.Campaign.onRunEnd(s);
+    contracts.forEach((c, i) => { setTimeout(() => this.toast(HR.icon('flag') + ' ' + HR.t('contract_done', { name: HR.Campaign.contractText(c) }) + ' +' + c.coins + ' <i class="ic-coin"></i> +' + c.gems + ' <i class="ic-gem"></i> +' + c.xp + ' XP', 'good'), 900 + i * 800); ups.push.apply(ups, HR.Progress.addXp(c.xp)); });
     const ach = HR.Achievements.check();
     HR.Analytics.log('run_end', { mode: s.mode, levelId: s.levelId, success: s.success, score: s.score, coins: s.coins, perfects: s.perfects, phase: s.phase, duration: s.duration, revives: s.revives, perks: Object.keys(s.perks).length, record: isRecord });
     s.isRecord = isRecord; s.doubled = false;
@@ -574,7 +579,7 @@ Object.assign(HR.I18N.pt, {
   tip_3: 'A cada 10 arcos você escolhe um perk. Monte sua build.', tip_4: 'Os arcos podem vir de cima, de baixo ou dos lados. Fique atento ao aviso de direção.',
   tip_5: 'No modo Treino não existe morte. Use para aprender.', tip_6: 'Escudos absorvem um erro. Vidas extras continuam a corrida na hora.',
   tip_7: 'A bola pode ir para frente e para trás. Recue para ganhar tempo.', tip_8: 'Cada região da galáxia tem a própria música e o próprio chefe.',
-  tip_9: 'Vença o chefe ou junte 18 estrelas para abrir a próxima região.', tip_10: 'Missões semanais renovam na segunda-feira e pagam quatro vezes mais.',
+  tip_9: 'Cada região tem um Portal: chefe, estrelas, patente, Núcleo e contratos.', tip_10: 'Missões semanais renovam na segunda-feira e pagam quatro vezes mais.',
   tip_11: 'Raspar a borda de um arco conta como "por um fio" — há uma conquista secreta.', tip_12: 'Domine a Singularidade (chefe da região 10) para ganhar +25 % de moedas no infinito.',
   load_fonts: 'Carregando fontes', load_audio: 'Preparando áudio', load_save: 'Lendo progresso', load_ready: 'Pronto', load_galaxy: 'Desenhando a galáxia',
   abilities_short: 'Poderes', near_miss: 'POR UM FIO', audio: 'Áudio', sfx_vol: 'Volume dos sons', music_vol: 'Volume da música', profile: 'Perfil', account: 'Conta',
@@ -585,7 +590,7 @@ Object.assign(HR.I18N.en, {
   tip_3: 'Every 10 rings you pick a perk. Build your run.', tip_4: 'Rings can come from the top, bottom or sides. Watch the direction warning.',
   tip_5: 'Practice mode has no death. Use it to learn.', tip_6: 'Shields absorb one mistake. Extra lives continue the run instantly.',
   tip_7: 'The ball can move forward and back. Fall back to buy time.', tip_8: 'Each galaxy region has its own music and its own boss.',
-  tip_9: 'Beat the boss or collect 18 stars to open the next region.', tip_10: 'Weekly missions reset on Monday and pay four times more.',
+  tip_9: 'Every region has a Portal: boss, stars, rank, Core and contracts.', tip_10: 'Weekly missions reset on Monday and pay four times more.',
   tip_11: 'Grazing a ring rim counts as "by a hair" — there is a secret achievement.', tip_12: 'Master the Singularity (region 10 boss) for +25% coins in endless.',
   load_fonts: 'Loading fonts', load_audio: 'Preparing audio', load_save: 'Reading progress', load_ready: 'Ready', load_galaxy: 'Drawing the galaxy',
   abilities_short: 'Powers', near_miss: 'BY A HAIR', audio: 'Audio', sfx_vol: 'Sound volume', music_vol: 'Music volume', profile: 'Profile', account: 'Account',
@@ -596,7 +601,7 @@ Object.assign(HR.I18N.es, {
   tip_3: 'Cada 10 aros eliges un perk. Arma tu build.', tip_4: 'Los aros pueden venir de arriba, abajo o los lados. Atento al aviso de dirección.',
   tip_5: 'En Práctica no hay muerte. Úsala para aprender.', tip_6: 'Los escudos absorben un error. Las vidas extra continúan la partida al instante.',
   tip_7: 'La bola puede ir adelante y atrás. Retrocede para ganar tiempo.', tip_8: 'Cada región de la galaxia tiene su música y su jefe.',
-  tip_9: 'Vence al jefe o reúne 18 estrellas para abrir la siguiente región.', tip_10: 'Las misiones semanales se renuevan el lunes y pagan cuatro veces más.',
+  tip_9: 'Cada región tiene un Portal: jefe, estrellas, rango, Núcleo y contratos.', tip_10: 'Las misiones semanales se renuevan el lunes y pagan cuatro veces más.',
   tip_11: 'Rozar el borde de un aro cuenta como "por un pelo": hay un logro secreto.', tip_12: 'Domina la Singularidad (jefe de la región 10) para +25 % de monedas en infinito.',
   load_fonts: 'Cargando fuentes', load_audio: 'Preparando audio', load_save: 'Leyendo progreso', load_ready: 'Listo', load_galaxy: 'Dibujando la galaxia',
   abilities_short: 'Poderes', near_miss: 'POR UN PELO', audio: 'Audio', sfx_vol: 'Volumen de sonidos', music_vol: 'Volumen de música', profile: 'Perfil', account: 'Cuenta',

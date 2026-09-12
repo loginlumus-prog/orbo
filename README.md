@@ -18,7 +18,8 @@ e abra http://localhost:8090.
 
 ## Documentos
 
-- [docs/PLANO_V3.md](docs/PLANO_V3.md) — **versão atual**: marca ORBO, galáxia (regiões, gerador de fases, chefes), música, sistema visual v4, conteúdo, arquitetura e estado
+- [docs/PLANO_V4.md](docs/PLANO_V4.md) — **versão atual (v4)**: fluxo e parallax, mapa TON 618 com galáxias reais, Portal/Núcleo/contratos, eventos, biomas, poderes com sinalização, conteúdo e temporadas
+- [docs/PLANO_V3.md](docs/PLANO_V3.md) — v3/v3.1: marca ORBO, galáxia (regiões, gerador de fases, chefes), música, sistema visual v4, conteúdo, arquitetura e estado
 - [docs/PLANO_V2.md](docs/PLANO_V2.md) — direções, perks, habilidades, controle da bola (base da jogabilidade)
 - [docs/REFERENCIAS_DESIGN.md](docs/REFERENCIAS_DESIGN.md) — pesquisa de referências de HUD, loja, menu, mapa e feedback
 - [docs/PLANO.md](docs/PLANO.md) — conceito original, core loop, economia
@@ -44,7 +45,8 @@ e abra http://localhost:8090.
 | `js/ui.js` | navegação, menu órbita, fluxo de partida, pausa, continuar, resultado, missões, diário, ranking, ajustes |
 | `js/ui-hud.js` | HUD, botões de habilidade, avisos, escolha de perk, fim de fase |
 | `js/ui-shop.js` | loja (destaque, raridade, detalhe, habilidades, gemas) |
-| `js/ui-galaxy.js` | mapa da galáxia (canvas), ficha da região, ficha da fase, Singularidade, habilidades (loadout), conquistas |
+| `js/ui-galaxy.js` | mapa TON 618 (canvas tela inteira), ficha da galáxia animada, Portal, contratos, Núcleo, ficha da fase, Álbum |
+| `js/seasons.js` | temporadas por data: itens exclusivos, missão extra, enfeites |
 | `js/brand.js` · `js/icons.js` · `js/i18n.js` | letreiro ORBO · ícones vetoriais · textos base PT/EN/ES |
 | `js/storage.js` · `js/services.js` · `js/input.js` · `js/main.js` | save (migra do Halo Rush v1) · analytics/anúncios/compras/ranking/compartilhar · toque, mouse e teclado · boot e loading |
 | `src/native.js` | ponte para plugins Capacitor (gerar `js/native.js` com esbuild) |

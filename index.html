@@ -15,10 +15,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260911e">
-<link rel="stylesheet" href="css/hud.css?v=20260911e">
-<link rel="stylesheet" href="css/shop.css?v=20260911e">
-<link rel="stylesheet" href="css/galaxy.css?v=20260911e">
+<link rel="stylesheet" href="css/style.css?v=20260912j">
+<link rel="stylesheet" href="css/hud.css?v=20260912j">
+<link rel="stylesheet" href="css/shop.css?v=20260912j">
+<link rel="stylesheet" href="css/galaxy.css?v=20260912j">
 </head>
 <body>
 <div id="app" class="app">
@@ -50,7 +50,7 @@
       <button class="btn-icon" id="btn-settings" data-open="settings" aria-label="Configurações"><span class="ic" data-icon="gear"></span></button>
     </header>
 
-    <div class="brand"><div class="logo logo-lg" data-logo></div><span class="brand-sub" data-bind="levelTitle">Novato</span></div>
+    <div class="brand"><div class="logo logo-lg" data-logo></div><span class="brand-sub" data-bind="levelTitle">Novato</span><button class="season-chip" id="season-chip" data-open="shop" hidden><span class="ic" data-icon="calendar"></span><span data-bind="seasonChip"></span></button></div>
 
     <div class="scene" id="scene">
       <span class="orbit-line" id="orbit-line"></span>
@@ -118,6 +118,8 @@
       <div class="boss-track"><div class="boss-fill" data-bind="bossFill"></div></div>
     </div>
     <div class="hud-banner" id="hud-banner"><b data-bind="bannerTitle"></b><span data-bind="bannerSub"></span></div>
+    <div class="hud-powers" id="hud-powers"></div>
+    <div class="hud-event" id="hud-event"><span class="ev-ic" data-bind="evIcon"></span><b data-bind="evName"></b><i class="ev-bar"><span data-bind="evFill"></span></i></div>
     <div class="hud-perks" data-bind="hudPerks"></div>
     <div class="hud-ready" data-bind="ready" data-i18n="tap_to_start">Toque para começar</div>
     <div class="hud-stick" id="hud-stick" aria-hidden="true"><div class="stick-base"><i class="stick-tick up"></i><i class="stick-tick down"></i><i class="stick-tick left"></i><i class="stick-tick right"></i><div class="stick-knob" id="stick-knob"></div></div></div>
@@ -238,7 +240,7 @@
       <h2 class="ribbon"><span data-i18n="galaxy">Galáxia</span></h2>
       <span class="currency"><span class="ic i-star" data-icon="star"></span><b data-bind="starsTotal">0</b></span>
     </header>
-    <div class="galaxy-body" id="galaxy-body">
+    <div class="galaxy-body galaxy-body--full" id="galaxy-body">
       <canvas id="galaxy-canvas"></canvas>
       <div class="galaxy-nodes" id="galaxy-nodes"></div>
     </div>
@@ -398,26 +400,27 @@
   <div id="rotate-hint" class="rotate-hint"><div><span class="ic" data-icon="rotate"></span><p data-i18n="rotate">Gire o aparelho para o modo retrato</p></div></div>
 </div>
 
-<script src="js/config.js?v=20260911e"></script>
-<script src="js/utils.js?v=20260911e"></script>
-<script src="js/icons.js?v=20260911e"></script>
-<script src="js/i18n.js?v=20260911e"></script>
-<script src="js/brand.js?v=20260911e"></script>
-<script src="js/storage.js?v=20260911e"></script>
-<script src="js/audio.js?v=20260911e"></script>
-<script src="js/music.js?v=20260911e"></script>
-<script src="js/input.js?v=20260911e"></script>
-<script src="js/services.js?v=20260911e"></script>
-<script src="js/content.js?v=20260911e"></script>
-<script src="js/systems.js?v=20260911e"></script>
-<script src="js/perks.js?v=20260911e"></script>
-<script src="js/modes.js?v=20260911e"></script>
-<script src="js/render.js?v=20260911e"></script>
-<script src="js/game.js?v=20260911e"></script>
-<script src="js/ui.js?v=20260911e"></script>
-<script src="js/ui-hud.js?v=20260911e"></script>
-<script src="js/ui-shop.js?v=20260911e"></script>
-<script src="js/ui-galaxy.js?v=20260911e"></script>
-<script src="js/main.js?v=20260911e"></script>
+<script src="js/config.js?v=20260912j"></script>
+<script src="js/utils.js?v=20260912j"></script>
+<script src="js/icons.js?v=20260912j"></script>
+<script src="js/i18n.js?v=20260912j"></script>
+<script src="js/brand.js?v=20260912j"></script>
+<script src="js/storage.js?v=20260912j"></script>
+<script src="js/audio.js?v=20260912j"></script>
+<script src="js/music.js?v=20260912j"></script>
+<script src="js/input.js?v=20260912j"></script>
+<script src="js/services.js?v=20260912j"></script>
+<script src="js/content.js?v=20260912j"></script>
+<script src="js/seasons.js?v=20260912j"></script>
+<script src="js/systems.js?v=20260912j"></script>
+<script src="js/perks.js?v=20260912j"></script>
+<script src="js/modes.js?v=20260912j"></script>
+<script src="js/render.js?v=20260912j"></script>
+<script src="js/game.js?v=20260912j"></script>
+<script src="js/ui.js?v=20260912j"></script>
+<script src="js/ui-hud.js?v=20260912j"></script>
+<script src="js/ui-shop.js?v=20260912j"></script>
+<script src="js/ui-galaxy.js?v=20260912j"></script>
+<script src="js/main.js?v=20260912j"></script>
 </body>
 </html>

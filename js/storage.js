@@ -6,8 +6,8 @@ HR.Store = {
 
   defaults() {
     return {
-      v: 3, created: Date.now(), lastOpen: Date.now(),
-      coins: 0, gems: 0, xp: 0, level: 1,
+      v: 4, created: Date.now(), lastOpen: Date.now(),
+      coins: 0, gems: 0, xp: 0, level: 1, core: 0,
       best: 0, runs: 0, totalRings: 0, totalCoins: 0, totalPerfects: 0, bestCombo: 0, bestPhase: 0, revives: 0, powerupsUsed: 0,
       noAds: false, vip: false, vipSince: null,
       owned: { skins: ['classic'], trails: ['none'], themes: ['aurora'] },
@@ -25,13 +25,14 @@ HR.Store = {
       seenShopHint: false,
       mode: 'endless',
       abilities: { owned: ['slowmo'], equipped: ['slowmo', null], levels: {} },
-      campaign: { stars: {}, best: {}, last: null, lastRegion: 0 },
+      campaign: { stars: {}, best: {}, last: null, lastRegion: 0, contracts: {}, rstats: {} },
       stats: {
         endlessRuns: 0, campaignClears: 0, practiceRuns: 0, perksTaken: 0, abilitiesUsed: 0,
         levelsCleared: 0, starsTotal: 0, bossesBeaten: 0, regionsCleared: 0, flawlessLevels: 0,
         dirChanges: 0, nearMisses: 0, timePlayed: 0, distance: 0, itemsBought: 0, coinsSpent: 0, gemsSpent: 0,
         dailyClaims: 0, bestStreak: 0, shieldsAbsorbed: 0, bestPerksRun: 0, abilitiesMaxed: 0, doubleRings: 0, goldRings: 0, comboBonuses: 0,
-        pickups: 0, anomaliesBeaten: 0, misses: 0, starsUsed: 0, obstaclesDestroyed: 0
+        pickups: 0, anomaliesBeaten: 0, misses: 0, starsUsed: 0, obstaclesDestroyed: 0,
+        flowMax: 0, flowTime: 0, centerPickups: 0, eventsDone: 0, guardians: 0, sentinels: 0, warps: 0, asteroidsDestroyed: 0, contractsDone: 0, coreLevel: 0, regionsVisited: [], seasonItems: 0, shattered: 0
       },
       codex: { rings: [], items: [] },
       hints: { ability: false, direction: false, perk: false, galaxy: false }
@@ -54,7 +55,7 @@ HR.Store = {
     };
     d = merge(def, d);
     if (legacy) { d.v = 3; d.migratedFrom = 'halorush'; }
-    if (d.v < 3) d.v = 3;
+    if (d.v < 4) d.v = 4;
     d.lastOpen = Date.now();
     this.data = d;
     this.save();

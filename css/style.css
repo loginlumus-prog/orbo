@@ -440,3 +440,9 @@ input[type=range] { width: 120px; accent-color: var(--accent); }
 .setting.setting-stack .s-ctl { flex: 1 1 100%; justify-content: flex-end; }
 .setting.setting-stack .seg { width: 100%; }
 .setting.setting-stack .seg button { flex: 1; }
+
+/* v4: temporada */
+.season-chip { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; padding: 5px 12px; border-radius: 999px; --sc: #ff8a3d; background: rgba(4,6,14,0.55); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sc) 70%, transparent), 0 0 14px color-mix(in srgb, var(--sc) 30%, transparent); font-family: var(--display); font-size: 12px; font-weight: 600; color: var(--text); }
+.season-chip .ic { display: inline-flex; color: var(--sc); } .season-chip .ic .i { width: 14px; height: 14px; }
+.season-chip[hidden] { display: none; }
+.brand { display: flex; flex-direction: column; align-items: center; }

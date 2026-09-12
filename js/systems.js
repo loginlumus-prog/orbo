@@ -69,7 +69,7 @@ HR.Progress = {
   },
   unlocksAt(level) {
     const C = HR.CONFIG, out = [];
-    C.SKINS.forEach(s => { if (s.lvl === level && s.cur !== 'pack') out.push({ type: 'skin', id: s.id }); });
+    C.SKINS.forEach(s => { if (s.lvl === level && s.cur !== 'pack' && s.cur !== 'iap' && !s.season) out.push({ type: 'skin', id: s.id }); });
     C.TRAILS.forEach(s => { if (s.lvl === level) out.push({ type: 'trail', id: s.id }); });
     C.THEMES.forEach(s => { if (s.lvl === level) out.push({ type: 'theme', id: s.id }); });
     return out;
@@ -93,17 +93,19 @@ HR.Missions = {
   ensureDaily() {
     const d = HR.Store.data, C = HR.CONFIG, today = HR.U.dateKey();
     let changed = false;
-    if (d.missions.date !== today || d.missions.list.length !== C.MISSIONS_DAILY) {
+    const wantDaily = C.MISSIONS_DAILY + (HR.Seasons && HR.Seasons.current() ? 1 : 0);
+    if (d.missions.date !== today || d.missions.list.length !== wantDaily) {
       d.missions.date = today; d.missions.rerolls = 0;
       const seed = today.split('-').reduce((a, b) => a * 31 + parseInt(b, 10), 7) + d.level;
-      d.missions.list = this.pickN(HR.MISSIONS, C.MISSIONS_DAILY, seed).map(t => this.make(t, false));
+      d.missions.list = this.pickN(HR.MISSIONS.filter(t => !t.season), C.MISSIONS_DAILY, seed).map(t => this.make(t, false));
+      if (HR.Seasons && HR.Seasons.current()) { const st = HR.MISSIONS.find(t => t.season); if (st) d.missions.list.push(this.make(st, false)); }
       changed = true;
     }
     const wk = this.weekKey();
     if (d.missions.weekKey !== wk || d.missions.weekly.length !== C.MISSIONS_WEEKLY) {
       d.missions.weekKey = wk;
       const seed = wk.split('-').reduce((a, b) => a * 17 + parseInt(b, 10), 3);
-      d.missions.weekly = this.pickN(HR.MISSIONS.filter(t => t.weekly), C.MISSIONS_WEEKLY, seed).map(t => this.make(t, true));
+      d.missions.weekly = this.pickN(HR.MISSIONS.filter(t => t.weekly && !t.season), C.MISSIONS_WEEKLY, seed).map(t => this.make(t, true));
       changed = true;
     }
     if (changed) HR.Store.save();
@@ -161,7 +163,7 @@ HR.Missions = {
     const i = d.missions.list.findIndex(x => x.uid === uid);
     if (i < 0 || d.missions.rerolls >= HR.CONFIG.MISSION_REROLLS) return false;
     const used = d.missions.list.map(x => x.id);
-    const pool = HR.MISSIONS.filter(t => !used.includes(t.id));
+    const pool = HR.MISSIONS.filter(t => !used.includes(t.id) && !t.season);
     d.missions.list[i] = this.make(HR.U.pick(pool), false);
     d.missions.rerolls++;
     HR.Store.save();
@@ -216,7 +218,8 @@ HR.Achievements = {
       runs: d.runs, best: d.best, totalCoins: d.totalCoins, totalPerfects: d.totalPerfects, bestPhase: d.bestPhase, level: d.level, bestCombo: d.bestCombo,
       skinsOwned: d.owned.skins.length, trailsOwned: d.owned.trails.length, themesOwned: d.owned.themes.length, revives: d.revives, abilitiesMaxed: maxed,
       levelsCleared: HR.Campaign ? HR.Campaign.levelsCleared() : 0, starsTotal: HR.Campaign ? HR.Campaign.totalStars() : 0, regionsCleared: HR.Campaign ? HR.Campaign.regionsCleared() : 0,
-      ringsFound: d.codex ? d.codex.rings.length : 0, itemsFound: d.codex ? d.codex.items.length : 0
+      ringsFound: d.codex ? d.codex.rings.length : 0, itemsFound: d.codex ? d.codex.items.length : 0,
+      coreLevel: d.core || 0, regionsVisited: (s.regionsVisited || []).length, contractsDone: s.contractsDone || 0
     });
   },
   check() {
@@ -255,6 +258,25 @@ HR.Achievements = {
   counts() { const d = HR.Store.data; return { a: d.achievements.length, b: HR.ACHIEVEMENTS.length }; }
 };
 
+/* ---------------- Núcleo da bola (v4) ---------------- */
+HR.Core = {
+  level() { return HR.Store.data.core || 0; },
+  cost(n) { n = n == null ? this.level() : n; return n >= HR.CONFIG.CORE.maxLevel ? null : HR.CONFIG.CORE.cost(n); },
+  mods(n) {
+    const C = HR.CONFIG.CORE; n = n == null ? this.level() : n;
+    return { level: n, coinMul: 1 + C.coinMul * n, forgive: C.forgive * n, perfect: 1 + C.perfect * n, xp: 1 + C.xp * n, shieldCap: C.shieldAt.filter(k => n >= k).length, startShield: n >= C.startShieldAt ? 1 : 0, life: n >= C.lifeAt ? 1 : 0, pickupMul: n >= C.pickupAt ? 1.5 : 1 };
+  },
+  milestone(n) { const C = HR.CONFIG.CORE; if (C.shieldAt.includes(n)) return 'core_ms_shield'; if (n === C.startShieldAt) return 'core_ms_start'; if (n === C.lifeAt) return 'core_ms_life'; if (n === C.pickupAt) return 'core_ms_pickup'; return null; },
+  nextMilestone(n) { const C = HR.CONFIG.CORE; const all = C.shieldAt.concat([C.startShieldAt, C.lifeAt, C.pickupAt]).sort((a, b) => a - b); return all.find(k => k > n) || null; },
+  upgrade() {
+    const c = this.cost(); if (c == null) return false;
+    if (!HR.Economy.spendCoins(c, 'core')) return false;
+    HR.Store.data.core = this.level() + 1; HR.Store.data.stats.coreLevel = HR.Store.data.core; HR.Store.save();
+    HR.Audio.sfx('levelup'); HR.Analytics.log('core_up', { level: HR.Store.data.core });
+    return true;
+  }
+};
+
 /* ---------------- Cosméticos / desbloqueios ---------------- */
 HR.Unlocks = {
   catalog(type) { return type === 'skins' ? HR.CONFIG.SKINS : type === 'trails' ? HR.CONFIG.TRAILS : HR.CONFIG.THEMES; },
@@ -271,11 +293,12 @@ HR.Unlocks = {
     const item = this.catalog(type).find(i => i.id === id);
     if (!item || this.owned(type, id)) return false;
     if (HR.Store.data.level < item.lvl) return false;
-    if (item.cur === 'pack') return false;
+    if (item.cur === 'pack' || item.cur === 'iap') return false;
+    if (item.season && !(HR.Seasons && HR.Seasons.isActive(item.season))) return false;
     const ok = item.cur === 'gems' ? HR.Economy.spendGems(item.price, type + '_' + id) : HR.Economy.spendCoins(item.price, type + '_' + id);
     if (!ok) return false;
     HR.Store.data.owned[type].push(id);
-    HR.Store.data.stats.itemsBought++;
+    HR.Store.data.stats.itemsBought++; if (item.season) HR.Store.data.stats.seasonItems = (HR.Store.data.stats.seasonItems || 0) + 1;
     this.equip(type, id);
     HR.Audio.sfx('buy');
     HR.Analytics.log('cosmetic_buy', { type, id, cur: item.cur, price: item.price });

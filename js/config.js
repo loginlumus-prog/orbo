@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '2.0.0',
+  VERSION: '3.0.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -49,8 +49,12 @@ HR.CONFIG = {
     loopRadiusMul: 0.96, loopTbMul: 0.95,
     masteredCoinMul: 1.25,       // Singularidade dominada (chefe da região 10)
     passNeed: 0.60,              // Galáxia: fração dos arcos que precisa passar para vencer a fase
-    shieldCap: 3
+    shieldCap: 3,
+    flowSpeedMul: 0.08           // velocidade extra dos arcos no fluxo máximo (v4)
   },
+
+  // Fluxo (ritmo): sobe a cada arco, zera ao errar/levar dano; move o fundo (parallax) e a música
+  FLOW: { perPass: 0.045, perPerfect: 0.07, rise: 1.6, fall: 5.0, bgMul: 2.6, bgBase: 0.6 },
 
   // Linguagem de cores: a cor do arco diz o que ele faz (ver docs/PLANO_V3.md v3.1)
   RING_TYPES: {
@@ -61,7 +65,8 @@ HR.CONFIG = {
     pulse:   { color: '#a29bfe', icon: 'target' },
     ghost:   { color: '#e8f0ff', icon: 'eye' },
     gold:    { color: '#ffcf4a', icon: 'coins' },
-    anomaly: { color: '#ff3d2e', icon: 'orbit' }
+    anomaly: { color: '#ff3d2e', icon: 'orbit' },
+    guardian: { color: '#c3b8ff', icon: 'crown' }
   },
 
   // Itens que aparecem fora da linha dos arcos (o jogador sai da linha para pegar)
@@ -74,26 +79,53 @@ HR.CONFIG = {
     { id: 'life',   w: 8,  color: '#ff5e7e', icon: 'heart' },
     { id: 'gem',    w: 3,  color: '#c39bff', icon: 'gem' }
   ],
-  PICKUP: { chance: 0.16, minGap: 4, offset: [90, 230], r: 20, starDur: 6, magnetDur: 8, slowDur: 4, coins: 10, magnetRange: 170 },
-  OBSTACLE: { fromPhase: 3, fromRegion: 1, keepAway: 70, r: [12, 20] },
+  PICKUP: { chance: 0.20, centerChance: 0.4, minGap: 4, offset: [90, 230], r: 20, starDur: 6, magnetDur: 8, slowDur: 4, coins: 10, magnetRange: 170 },
+  OBSTACLE: { fromPhase: 3, fromRegion: 1, keepAway: 70, r: [12, 20], rock: [11, 24] },
   ANOMALY: { fromRing: 60, every: 75, jitter: 15, warn: 2.6, radiusMul: 1.25, bonusCoins: 25, bonusScore: 5 },
   ASCENSION: { fromRing: 100, chance: 0.35 },
+  // Progressão longa (v4): cada região tem um Portal com 5 portas — ver docs/PLANO_V4.md §4
+  PROGRESSION: {
+    regionRank:  [1, 3, 6, 10, 14, 18, 22, 26, 30, 34],   // nível do jogador (XP) para entrar na região
+    regionStars: [0, 14, 16, 18, 20, 20, 22, 22, 24, 24], // estrelas na região anterior
+    regionCore:  [0, 2, 4, 6, 9, 12, 15, 18, 22, 26],     // nível do Núcleo
+    contractsNeed: 3,                                     // contratos da região anterior (de 5)
+    xpRunCap: 900                                         // XP máximo por partida
+  },
+  // Núcleo da bola: 30 níveis comprados com moedas; bônus por nível e marcos
+  CORE: { maxLevel: 30, cost(n) { return 120 + 16 * n * n + 50 * n; }, coinMul: 0.02, forgive: 0.008, perfect: 0.005, xp: 0.01, shieldAt: [5, 15, 25], startShieldAt: 10, lifeAt: 20, pickupAt: 30 },
   AUTOPERK: { afterOffers: 3 },
+  // Eventos (v4): mudam a dinâmica no meio da partida — ver docs/PLANO_V4.md §5
+  EVENTS: {
+    asteroids: { dur: 9,  color: '#ff9f43', icon: 'skull', coins: 15, score: 3, every: 0.2 },
+    warp:      { dur: 8,  color: '#4cf0ff', icon: 'zap',   speed: 1.65, radius: 1.35 },
+    sentinel:  { dur: 14, color: '#ff5e7e', icon: 'eye',   coins: 20, score: 5, fire: 1.6, shot: 270 },
+    bonanza:   { dur: 7,  color: '#ffcf4a', icon: 'coins', every: 0.13, val: 3 },
+    guardian:  { dur: 0,  color: '#c3b8ff', icon: 'crown', coins: 30, score: 10, sizes: [2.0, 1.6, 1.25] }
+  },
+  EVENT: { endlessFrom: 18, every: [22, 30], warnMin: 1.2 },
   COMBO_MILESTONES: [5, 10, 20, 35],
+  // Temporadas (mês-dia, inclusive). HR.SEASON_FORCE = 'natal' força uma para teste.
+  SEASONS: [
+    { id: 'verao',     from: '01-02', to: '01-31', accent: '#4cf0ff', sprinkle: 'bubbles' },
+    { id: 'carnaval',  from: '02-08', to: '02-26', accent: '#ff5ecf', sprinkle: 'confetti' },
+    { id: 'junina',    from: '06-08', to: '06-30', accent: '#ffcf4a', sprinkle: 'balloons' },
+    { id: 'halloween', from: '10-15', to: '11-02', accent: '#ff8a3d', sprinkle: 'bats' },
+    { id: 'natal',     from: '12-06', to: '01-01', accent: '#ff5e7e', sprinkle: 'snow' }
+  ],
 
   // Fases do modo Singularidade (infinito): 10 arcos cada. Cada fase adiciona uma mecânica.
   // tiltVar: inclinação máxima (rad) | osc: amplitude vertical | rot: oscilação da inclinação
   // dir: de onde os arcos vêm (right | top | left | bottom | swap = troca a cada 5 arcos)
   PHASES: [
-    { key: 'phase_1', dir: 'right',  accent: '#4cf0ff', radius: 1.00, tiltVar: 0.00, osc: 0,   oscF: 0,   rot: 0,    rotF: 0,   yDelta: 200, tbMul: 1.00, coin: 0.45, dbl: 0.00, mix: 0, obs: 0, pick: 0.16 },
-    { key: 'phase_2', dir: 'right',  accent: '#7cff6b', radius: 0.96, tiltVar: 0.00, osc: 0,   oscF: 0,   rot: 0,    rotF: 0,   yDelta: 290, tbMul: 0.96, coin: 0.45, dbl: 0.00, mix: 0.35, obs: 0, pick: 0.16 },
-    { key: 'phase_3', dir: 'right',  accent: '#ffd93d', radius: 0.93, tiltVar: 0.00, osc: 70,  oscF: 1.3, rot: 0,    rotF: 0,   yDelta: 290, tbMul: 0.95, coin: 0.45, dbl: 0.00, mix: 0.5, obs: 0.18, pick: 0.16 },
-    { key: 'phase_4', dir: 'top',    accent: '#ff7ad9', radius: 0.91, tiltVar: 0.48, osc: 0,   oscF: 0,   rot: 0,    rotF: 0,   yDelta: 310, tbMul: 0.94, coin: 0.45, dbl: 0.00, mix: 0.55, obs: 0.24, pick: 0.16 },
-    { key: 'phase_5', dir: 'top',    accent: '#ff9f43', radius: 0.89, tiltVar: 0.52, osc: 80,  oscF: 1.6, rot: 0,    rotF: 0,   yDelta: 330, tbMul: 0.93, coin: 0.45, dbl: 0.00, mix: 0.6, obs: 0.3, pick: 0.16 },
-    { key: 'phase_6', dir: 'bottom', accent: '#a29bfe', radius: 0.87, tiltVar: 0.30, osc: 0,   oscF: 0,   rot: 0.60, rotF: 1.3, yDelta: 340, tbMul: 0.92, coin: 0.45, dbl: 0.15, mix: 0.65, obs: 0.34, pick: 0.16 },
-    { key: 'phase_7', dir: 'right',  accent: '#ff5e7e', radius: 0.74, tiltVar: 0.36, osc: 45,  oscF: 1.4, rot: 0,    rotF: 0,   yDelta: 340, tbMul: 0.92, coin: 0.50, dbl: 0.20, mix: 0.7, obs: 0.38, pick: 0.16 },
-    { key: 'phase_8', dir: 'left',   accent: '#00e5a8', radius: 0.80, tiltVar: 0.62, osc: 90,  oscF: 1.9, rot: 0.50, rotF: 1.6, yDelta: 380, tbMul: 0.90, coin: 0.50, dbl: 0.30, mix: 0.75, obs: 0.42, pick: 0.16 },
-    { key: 'phase_9', dir: 'swap',   accent: '#ffffff', radius: 0.78, tiltVar: 0.65, osc: 100, oscF: 2.1, rot: 0.65, rotF: 1.9, yDelta: 420, tbMul: 0.88, coin: 0.55, dbl: 0.40, mix: 0.85, obs: 0.5, pick: 0.16 }
+    { key: 'phase_1', dir: 'right',  fx: 'aurora',  accent: '#4cf0ff', radius: 1.00, tiltVar: 0.00, osc: 0,   oscF: 0,   rot: 0,    rotF: 0,   yDelta: 200, tbMul: 1.00, coin: 0.45, dbl: 0.00, mix: 0, obs: 0, pick: 0.16 },
+    { key: 'phase_2', dir: 'right',  fx: 'garden',  accent: '#7cff6b', radius: 0.96, tiltVar: 0.00, osc: 0,   oscF: 0,   rot: 0,    rotF: 0,   yDelta: 290, tbMul: 0.96, coin: 0.45, dbl: 0.00, mix: 0.35, obs: 0, pick: 0.16 },
+    { key: 'phase_3', dir: 'right',  fx: 'water',   accent: '#ffd93d', radius: 0.93, tiltVar: 0.00, osc: 70,  oscF: 1.3, rot: 0,    rotF: 0,   yDelta: 290, tbMul: 0.95, coin: 0.45, dbl: 0.00, mix: 0.5, obs: 0.18, pick: 0.16 },
+    { key: 'phase_4', dir: 'top',    fx: 'crystal', accent: '#ff7ad9', radius: 0.91, tiltVar: 0.48, osc: 0,   oscF: 0,   rot: 0,    rotF: 0,   yDelta: 310, tbMul: 0.94, coin: 0.45, dbl: 0.00, mix: 0.55, obs: 0.24, pick: 0.16 },
+    { key: 'phase_5', dir: 'top',    fx: 'ember',   accent: '#ff9f43', radius: 0.89, tiltVar: 0.52, osc: 80,  oscF: 1.6, rot: 0,    rotF: 0,   yDelta: 330, tbMul: 0.93, coin: 0.45, dbl: 0.00, mix: 0.6, obs: 0.3, pick: 0.16 },
+    { key: 'phase_6', dir: 'bottom', fx: 'mist',    accent: '#a29bfe', radius: 0.87, tiltVar: 0.30, osc: 0,   oscF: 0,   rot: 0.60, rotF: 1.3, yDelta: 340, tbMul: 0.92, coin: 0.45, dbl: 0.15, mix: 0.65, obs: 0.34, pick: 0.16 },
+    { key: 'phase_7', dir: 'right',  fx: 'storm',   accent: '#ff5e7e', radius: 0.74, tiltVar: 0.36, osc: 45,  oscF: 1.4, rot: 0,    rotF: 0,   yDelta: 340, tbMul: 0.92, coin: 0.50, dbl: 0.20, mix: 0.7, obs: 0.38, pick: 0.16 },
+    { key: 'phase_8', dir: 'left',   fx: 'abyss',   accent: '#00e5a8', radius: 0.80, tiltVar: 0.62, osc: 90,  oscF: 1.9, rot: 0.50, rotF: 1.6, yDelta: 380, tbMul: 0.90, coin: 0.50, dbl: 0.30, mix: 0.75, obs: 0.42, pick: 0.16 },
+    { key: 'phase_9', dir: 'swap',   fx: 'vortex',  accent: '#ffffff', radius: 0.78, tiltVar: 0.65, osc: 100, oscF: 2.1, rot: 0.65, rotF: 1.9, yDelta: 420, tbMul: 0.88, coin: 0.55, dbl: 0.40, mix: 0.85, obs: 0.5, pick: 0.16 }
   ],
 
   ECONOMY: {
@@ -136,7 +168,24 @@ HR.CONFIG = {
     { id: 'ghost',   price: 90,   cur: 'gems',  lvl: 8,  base: '#e8f4ff', dark: '#6f8dc9', glow: '#cfe9ff', pattern: 'ghost' },
     { id: 'eye',     price: 1600, cur: 'coins', lvl: 10, base: '#ffffff', dark: '#1b1b1b', glow: '#ff5e7e', pattern: 'eye' },
     { id: 'rainbow', price: 150,  cur: 'gems',  lvl: 12, base: '#ffffff', dark: '#ff5ecf', glow: '#ffffff', pattern: 'rainbow' },
-    { id: 'plasma',  price: 0,    cur: 'pack',  lvl: 1,  base: '#ff9df5', dark: '#5a13c9', glow: '#ff5ecf', pattern: 'plasma' }
+    { id: 'plasma',  price: 0,    cur: 'pack',  lvl: 1,  base: '#ff9df5', dark: '#5a13c9', glow: '#ff5ecf', pattern: 'plasma' },
+    // v4
+    { id: 'eight',   price: 550,  cur: 'coins', lvl: 2,  base: '#f4f4f4', dark: '#141418', glow: '#ffffff', pattern: 'eight' },
+    { id: 'moon',    price: 450,  cur: 'coins', lvl: 2,  base: '#e6e9f2', dark: '#7f889e', glow: '#cfd8ff', pattern: 'craters' },
+    { id: 'bee',     price: 700,  cur: 'coins', lvl: 3,  base: '#ffd93d', dark: '#2b2410', glow: '#ffe27a', pattern: 'stripes', stripe: '#1b1a12' },
+    { id: 'sun',     price: 900,  cur: 'coins', lvl: 4,  base: '#fff0a0', dark: '#ff7a1a', glow: '#ffb347', pattern: 'corona' },
+    { id: 'toxic',   price: 1000, cur: 'coins', lvl: 5,  base: '#7cff6b', dark: '#0e4a1c', glow: '#35e29a', pattern: 'toxic' },
+    { id: 'saturn',  price: 70,   cur: 'gems',  lvl: 6,  base: '#ffe1a8', dark: '#a0612c', glow: '#ffcf4a', pattern: 'saturn' },
+    { id: 'pearl',   price: 80,   cur: 'gems',  lvl: 7,  base: '#fff5fb', dark: '#b7a7d6', glow: '#ffd6f2', pattern: 'pearl' },
+    { id: 'void',    price: 110,  cur: 'gems',  lvl: 9,  base: '#2a1b4a', dark: '#05030d', glow: '#8f6bff', pattern: 'void' },
+    { id: 'comet',   price: 0,    cur: 'iap',   lvl: 1,  base: '#e9fbff', dark: '#3b8cff', glow: '#9be7ff', pattern: 'comet', product: 'skin_comet' },
+    { id: 'dragon',  price: 0,    cur: 'iap',   lvl: 1,  base: '#ff9d3d', dark: '#7a1216', glow: '#ff5e3d', pattern: 'scales', product: 'skin_dragon' },
+    // sazonais (só na janela da temporada; o que foi comprado fica)
+    { id: 'pumpkin',   price: 900,  cur: 'coins', lvl: 1, base: '#ff9d3d', dark: '#8a3a08', glow: '#ff8a3d', pattern: 'pumpkin', season: 'halloween' },
+    { id: 'candycane', price: 900,  cur: 'coins', lvl: 1, base: '#ffffff', dark: '#c9102f', glow: '#ff5e7e', pattern: 'stripes', stripe: '#e0173a', season: 'natal' },
+    { id: 'balloon',   price: 900,  cur: 'coins', lvl: 1, base: '#ffcf4a', dark: '#c0392b', glow: '#ffcf4a', pattern: 'stripes', stripe: '#2e86de', season: 'junina' },
+    { id: 'confetti',  price: 900,  cur: 'coins', lvl: 1, base: '#ffffff', dark: '#8f6bff', glow: '#ff5ecf', pattern: 'confetti', season: 'carnaval' },
+    { id: 'beach',     price: 900,  cur: 'coins', lvl: 1, base: '#fff3a0', dark: '#0b7fb0', glow: '#4cf0ff', pattern: 'stripes', stripe: '#4cf0ff', season: 'verao' }
   ],
 
   TRAILS: [
@@ -145,7 +194,12 @@ HR.CONFIG = {
     { id: 'stars',   price: 450, cur: 'coins', lvl: 3 },
     { id: 'fire',    price: 700, cur: 'coins', lvl: 5 },
     { id: 'bubbles', price: 40,  cur: 'gems',  lvl: 4 },
-    { id: 'rainbow', price: 80,  cur: 'gems',  lvl: 7 }
+    { id: 'rainbow', price: 80,  cur: 'gems',  lvl: 7 },
+    { id: 'comet',     price: 900, cur: 'coins', lvl: 6 },
+    { id: 'petals',    price: 60,  cur: 'gems',  lvl: 8 },
+    { id: 'lightning', price: 90,  cur: 'gems',  lvl: 10 },
+    { id: 'snow',      price: 600, cur: 'coins', lvl: 1, season: 'natal' },
+    { id: 'bats',      price: 600, cur: 'coins', lvl: 1, season: 'halloween' }
   ],
 
   THEMES: [
@@ -154,7 +208,12 @@ HR.CONFIG = {
     { id: 'ocean',  price: 750,  cur: 'coins', lvl: 3, colors: ['#0b3c5d', '#07253d', '#03111f'], shapes: 'bubbles', stars: false },
     { id: 'cyber',  price: 50,   cur: 'gems',  lvl: 5, colors: ['#1a0b3d', '#0c0620', '#040210'], shapes: 'grid',   stars: false },
     { id: 'space',  price: 1100, cur: 'coins', lvl: 8, colors: ['#0a0f2a', '#05081a', '#000000'], shapes: 'nebula', stars: true },
-    { id: 'candy',  price: 60,   cur: 'gems',  lvl: 6, colors: ['#5b1e63', '#3c1650', '#1a0b2a'], shapes: 'orbs',   stars: true }
+    { id: 'candy',  price: 60,   cur: 'gems',  lvl: 6, colors: ['#5b1e63', '#3c1650', '#1a0b2a'], shapes: 'orbs',   stars: true },
+    { id: 'forest',    price: 900,  cur: 'coins', lvl: 4,  colors: ['#0f3d2e', '#0a2620', '#04120e'], shapes: 'bubbles', stars: false, fx: 'garden' },
+    { id: 'inferno',   price: 1300, cur: 'coins', lvl: 9,  colors: ['#4a1d0c', '#2b1008', '#120604'], shapes: 'orbs',    stars: true,  fx: 'ember' },
+    { id: 'prism',     price: 90,   cur: 'gems',  lvl: 11, colors: ['#4a1a48', '#2c1030', '#140818'], shapes: 'orbs',    stars: true,  fx: 'crystal' },
+    { id: 'halloween', price: 700,  cur: 'coins', lvl: 1,  colors: ['#3a1a4a', '#1f0d2a', '#0a0510'], shapes: 'nebula',  stars: true,  fx: 'mist', season: 'halloween' },
+    { id: 'natal',     price: 700,  cur: 'coins', lvl: 1,  colors: ['#0d3b2e', '#08261f', '#04120e'], shapes: 'orbs',    stars: true,  season: 'natal' }
   ],
 
   // ----- Compras (IAP). Preços de exibição; a loja real envia o preço localizado -----
@@ -166,7 +225,11 @@ HR.CONFIG = {
     { id: 'gems_550',     type: 'gems', gems: 550,  price: { pt: 'R$ 19,90', en: '$4.99',  es: '$4.99' }, tag: 'best' },
     { id: 'gems_1200',    type: 'gems', gems: 1200, price: { pt: 'R$ 39,90', en: '$9.99',  es: '$9.99' } },
     { id: 'gems_2600',    type: 'gems', gems: 2600, price: { pt: 'R$ 79,90', en: '$19.99', es: '$19.99' } },
-    { id: 'gems_7000',    type: 'gems', gems: 7000, price: { pt: 'R$ 189,90', en: '$49.99', es: '$49.99' } }
+    { id: 'gems_7000',    type: 'gems', gems: 7000, price: { pt: 'R$ 189,90', en: '$49.99', es: '$49.99' } },
+    // bolas pagas (menor preço que existe nas duas lojas: tier 1 da App Store)
+    { id: 'skin_comet',   type: 'skin', skins: ['comet'],  price: { pt: 'R$ 4,90', en: '$0.99', es: '$0.99' } },
+    { id: 'skin_dragon',  type: 'skin', skins: ['dragon'], price: { pt: 'R$ 4,90', en: '$0.99', es: '$0.99' } },
+    { id: 'legends_pack', type: 'pack', skins: ['comet', 'dragon'], gems: 200, price: { pt: 'R$ 9,90', en: '$1.99', es: '$1.99' }, tag: 'best' }
   ],
 
   // missões: 3 diárias + 3 semanais (modelos em js/content.js)

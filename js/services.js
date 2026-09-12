@@ -192,6 +192,7 @@ HR.IAP = {
     if (product.type === 'noads') d.noAds = true;
     if (product.type === 'sub') { d.vip = true; d.vipSince = Date.now(); }
     if (product.skin && !d.owned.skins.includes(product.skin)) d.owned.skins.push(product.skin);
+    (product.skins || []).forEach(id => { if (!d.owned.skins.includes(id)) d.owned.skins.push(id); });
     HR.Store.save();
     if (HR.Ads.noAds) HR.Ads.banner(false);
   },

@@ -17,112 +17,145 @@
   const regionName = R => HR.t('reg_' + R.id);
   const cosmeticName = rw => { if (!rw) return ''; const key = rw.skin ? 'skin_' + rw.skin : rw.trail ? 'trail_' + rw.trail : rw.theme ? 'theme_' + rw.theme : null; return key ? HR.t(key) : ''; };
 
-  /* =================== MAPA DA GALÁXIA =================== */
-  let gxStars = null, gxImg = null;
-  function spiralPt(geo, k) { // k contínuo 0..10 (10 = centro)
-    const th = -Math.PI * 0.55 + k * 0.86;
-    const kk = k >= 9 ? 0.5 * (1 - (k - 9)) : 1 - 0.5 * (k / 9);
-    return { x: geo.cx + Math.cos(th) * geo.ax * kk, y: geo.cy + Math.sin(th) * geo.ay * kk };
-  }
+  /* =================== MAPA DA GALÁXIA (v4) =================== */
+  // Tela inteira. Fundo profundo cacheado (estrelas, nebulosas na cor de cada galáxia, poeira quente em volta do
+  // centro), TON 618 no meio, 10 galáxias (mini espirais desenhadas no canvas) ligadas por um caminho de segmentos
+  // que dá a volta e entra até o centro. Posições em fração da tela; rótulos em DOM por cima.
+  const NODE_POS = [[0.18, 0.79], [0.50, 0.76], [0.82, 0.70], [0.87, 0.55], [0.84, 0.40], [0.69, 0.26], [0.43, 0.19], [0.16, 0.25], [0.15, 0.43], [0.22, 0.61]];
+  const LABEL_TOP = [false, false, false, false, false, true, true, false, false, false];
+  const galName = R => HR.t('gal_' + R.gal);
+  let gxStatic = null, gxTw = null, gxRaf = null;
   function geometry(W, H) {
-    const cx = W / 2, cy = H * 0.5;
-    const ax = Math.max(120, W / 2 - 40), ay = Math.max(140, H / 2 - 56);
-    const geo = { cx, cy, ax, ay, pts: [] };
-    for (let i = 0; i < 10; i++) { const p = spiralPt(geo, i); geo.pts.push({ x: p.x, y: p.y }); }
-    return geo;
+    return { cx: W / 2, cy: H * 0.47, W, H, pts: NODE_POS.map(p => ({ x: Math.round(p[0] * W), y: Math.round(p[1] * H) })) };
   }
-  // desenhada uma vez por tamanho: fundo, estrelas de campo, dois braços espirais (o das regiões e o simétrico),
-  // nuvens de gás coloridas, faixas de poeira e bojo central
-  function buildGalaxyImage(W, H, geo) {
+  function ctrl(a, b, i) { const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1, s = (i % 2 ? 1 : -1) * Math.min(34, L * 0.2); return { x: mx - dy / L * s, y: my + dx / L * s }; }
+  function buildStatic(W, H, geo) {
     const cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.width = W * dpr; cv.height = H * dpr;
     const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const U = HR.U;
-    const g = ctx.createRadialGradient(geo.cx, geo.cy, 10, geo.cx, geo.cy, Math.max(W, H) * 0.8);
-    g.addColorStop(0, '#1b2458'); g.addColorStop(0.45, '#0c1233'); g.addColorStop(1, '#04060f');
+    const U = HR.U, cx = geo.cx, cy = geo.cy;
+    let seed = 777; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const g = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(W, H) * 0.9);
+    g.addColorStop(0, '#1a2258'); g.addColorStop(0.35, '#0d1335'); g.addColorStop(1, '#03050d');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    let seed = 1234567; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-    const gauss = () => (rnd() + rnd() + rnd() - 1.5) * 1.15;
-    for (let i = 0; i < 260; i++) { ctx.globalAlpha = 0.15 + rnd() * 0.5; ctx.fillStyle = rnd() < 0.2 ? '#cfe3ff' : '#ffffff'; ctx.beginPath(); ctx.arc(rnd() * W, rnd() * H, 0.4 + rnd() * 1.1, 0, 6.283); ctx.fill(); }
-    ctx.globalAlpha = 1;
-    const arm = (k, mirror) => { const p = spiralPt(geo, Math.max(0, k)); return mirror ? { x: 2 * geo.cx - p.x, y: 2 * geo.cy - p.y } : p; };
-    ctx.globalCompositeOperation = 'lighter';
-    for (let m = 0; m < 2; m++) for (let k = 0; k <= 10; k += 0.25) {
-      const p = arm(k, m === 1), kk = k / 10, rad = 74 - kk * 34, ri = Math.min(9, Math.floor(k));
-      const col = m === 0 ? HR.REGIONS[ri].accent : (k > 7 ? '#ffb070' : '#5a7cff');
-      const cg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rad);
-      cg.addColorStop(0, U.rgba(col, m === 0 ? 0.11 : 0.06)); cg.addColorStop(1, U.rgba(col, 0));
-      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(p.x, p.y, rad, 0, 6.283); ctx.fill();
-    }
-    ctx.globalCompositeOperation = 'source-over';
+    // poeira quente em volta do centro (elíptica) e dois filamentos espirais bem discretos
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.72);
+    const dg = ctx.createRadialGradient(0, 0, 30, 0, 0, 330); dg.addColorStop(0, 'rgba(255,220,170,0.18)'); dg.addColorStop(0.45, 'rgba(255,150,120,0.07)'); dg.addColorStop(1, 'rgba(120,90,200,0)');
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(0, 0, 330, 0, 6.283); ctx.fill(); ctx.restore();
+    ctx.lineCap = 'round';
     for (let m = 0; m < 2; m++) {
-      for (let k = -1.2; k <= 10; k += 0.02) {
-        const kk = Math.max(0, k) / 10, p = arm(k, m === 1), tail = k < 0 ? 1 - k * 0.8 : 1;
-        const sig = (36 - kk * 18) * tail;
-        for (let i = 0; i < 6; i++) {
-          const x = p.x + gauss() * sig, y = p.y + gauss() * sig * 0.85;
-          const warm = kk > 0.7 ? rnd() < 0.5 : rnd() < 0.12;
-          ctx.fillStyle = warm ? '#ffe2b0' : (rnd() < 0.3 ? '#bcd8ff' : '#ffffff');
-          ctx.globalAlpha = (0.2 + rnd() * 0.6) * (k < 0 ? 0.5 : 1);
-          ctx.beginPath(); ctx.arc(x, y, 0.35 + rnd() * (kk > 0.75 ? 1.6 : 1.1), 0, 6.283); ctx.fill();
-        }
-      }
-    }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'multiply'; ctx.lineCap = 'round';
-    for (let m = 0; m < 2; m++) {
-      ctx.strokeStyle = 'rgba(8,10,28,0.6)'; ctx.lineWidth = 9; ctx.beginPath();
-      for (let k = 0.3; k <= 9.4; k += 0.05) {
-        const p = arm(k, m === 1), q = arm(k + 0.02, m === 1);
-        const dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy) || 1, off = 15 - (k / 10) * 7;
-        const x = p.x - dy / L * off, y = p.y + dx / L * off;
-        k === 0.3 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
+      ctx.strokeStyle = 'rgba(180,200,255,0.05)'; ctx.lineWidth = 42; ctx.beginPath();
+      for (let k = 0; k <= 40; k++) { const f = k / 40, rr = 70 + f * Math.max(W, H) * 0.75, an = m * Math.PI + f * 2.4 + 0.6; const x = cx + Math.cos(an) * rr, y = cy + Math.sin(an) * rr * 0.72; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
       ctx.stroke();
     }
-    ctx.globalCompositeOperation = 'source-over';
-    const bg = ctx.createRadialGradient(geo.cx, geo.cy, 6, geo.cx, geo.cy, 150);
-    bg.addColorStop(0, 'rgba(255,238,200,0.55)'); bg.addColorStop(0.25, 'rgba(255,210,150,0.22)'); bg.addColorStop(0.6, 'rgba(255,120,200,0.08)'); bg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(geo.cx, geo.cy, 150, 0, 6.283); ctx.fill();
+    // nebulosa na cor de cada galáxia (em volta do nó)
+    geo.pts.forEach((p, i) => {
+      const col = HR.REGIONS[i].accent;
+      const ng = ctx.createRadialGradient(p.x, p.y, 4, p.x, p.y, 96); ng.addColorStop(0, U.rgba(col, 0.13)); ng.addColorStop(0.5, U.rgba(col, 0.05)); ng.addColorStop(1, U.rgba(col, 0));
+      ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(p.x, p.y, 96, 0, 6.283); ctx.fill();
+      for (let k = 0; k < 26; k++) { const a = rnd() * 6.283, d = 20 + rnd() * 70; ctx.globalAlpha = 0.25 + rnd() * 0.5; ctx.fillStyle = rnd() < 0.5 ? '#ffffff' : col; ctx.beginPath(); ctx.arc(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d * 0.8, 0.5 + rnd() * 1.2, 0, 6.283); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    });
+    // estrelas de campo; algumas com brilho em cruz
+    for (let i = 0; i < 460; i++) {
+      const x = rnd() * W, y = rnd() * H, s = 0.4 + rnd() * 1.3, big = rnd() < 0.05;
+      ctx.globalAlpha = 0.15 + rnd() * 0.6; ctx.fillStyle = rnd() < 0.22 ? '#cfe3ff' : rnd() < 0.1 ? '#ffe2b0' : '#ffffff';
+      ctx.beginPath(); ctx.arc(x, y, big ? s + 0.8 : s, 0, 6.283); ctx.fill();
+      if (big) { ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+    const vg = ctx.createRadialGradient(cx, cy, H * 0.3, cx, cy, H * 0.85); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     return { W, H, cv };
+  }
+  // mini galáxia: elipse inclinada com dois braços de pontos girando; a cor é a da região
+  function drawMiniGalaxy(ctx, x, y, s, color, t, i, st) {
+    const U = HR.U, locked = st === 'locked';
+    const col = locked ? '#7d879f' : color, tilt = 0.5 + (i % 3) * 0.13, spin = t * (0.3 + (i % 4) * 0.08) * (i % 2 ? 1 : -1);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(i * 0.7);
+    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 2.3); g.addColorStop(0, U.rgba(col, locked ? 0.2 : 0.45)); g.addColorStop(0.5, U.rgba(col, locked ? 0.06 : 0.13)); g.addColorStop(1, U.rgba(col, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, s * 2.3, s * 2.3 * tilt, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = U.rgba(col, locked ? 0.08 : 0.16); ctx.beginPath(); ctx.ellipse(0, 0, s * 1.2, s * 1.2 * tilt, 0, 0, 6.283); ctx.fill();
+    for (let arm = 0; arm < 2; arm++) for (let k = 0; k < 18; k++) {
+      const f = k / 18, r = s * (0.2 + f * 1.1), a = spin + arm * Math.PI + f * 3.6;
+      ctx.fillStyle = k % 3 === 0 ? '#ffffff' : col; ctx.globalAlpha = (locked ? 0.35 : 0.95) * (1 - f * 0.65);
+      ctx.beginPath(); ctx.arc(Math.cos(a) * r, Math.sin(a) * r * tilt, 1 + (1 - f) * 1.3, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = locked ? 0.6 : 1;
+    const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 0.55); cg.addColorStop(0, '#ffffff'); cg.addColorStop(0.35, U.mix(col, '#ffffff', 0.5)); cg.addColorStop(1, U.rgba(col, 0));
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(0, 0, s * 0.55, 0, 6.283); ctx.fill();
+    ctx.restore();
+    if (st === 'current') { const k = (t % 1.8) / 1.8; ctx.strokeStyle = U.rgba(color, 0.7 * (1 - k)); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, s * 1.6 + k * 16, 0, 6.283); ctx.stroke(); }
   }
   function drawGalaxy(cv, geo, W, H, t) {
     const ctx = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1), U = HR.U, C = HR.Campaign;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (!gxImg || gxImg.W !== W || gxImg.H !== H) gxImg = buildGalaxyImage(W, H, geo);
-    ctx.drawImage(gxImg.cv, 0, 0, W, H);
-    if (!gxStars || gxStars.W !== W || gxStars.H !== H) { gxStars = { W, H, list: [] }; for (let i = 0; i < 70; i++) gxStars.list.push({ x: Math.random() * W, y: Math.random() * H, s: U.rand(0.6, 1.7), p: U.rand(0, 6.28), v: U.rand(0.6, 1.6) }); }
+    if (!gxStatic || gxStatic.W !== W || gxStatic.H !== H) gxStatic = buildStatic(W, H, geo);
+    ctx.drawImage(gxStatic.cv, 0, 0, W, H);
+    if (!gxTw || gxTw.W !== W || gxTw.H !== H) { gxTw = { W, H, list: [] }; for (let i = 0; i < 70; i++) gxTw.list.push({ x: Math.random() * W, y: Math.random() * H, s: U.rand(0.6, 1.6), p: U.rand(0, 6.28), v: U.rand(0.6, 1.6) }); }
     ctx.fillStyle = '#fff';
-    gxStars.list.forEach(st => { ctx.globalAlpha = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(t * st.v + st.p)); ctx.beginPath(); ctx.arc(st.x, st.y, st.s, 0, 6.283); ctx.fill(); });
+    gxTw.list.forEach(st => { ctx.globalAlpha = 0.3 + 0.55 * (0.5 + 0.5 * Math.sin(t * st.v + st.p)); ctx.beginPath(); ctx.arc(st.x, st.y, st.s, 0, 6.283); ctx.fill(); });
     ctx.globalAlpha = 1;
-    // trilha das regiões (estado muda com o progresso) + nebulosa de cada nó
+    // caminho: nó → nó → centro. Estado por segmento: done (sólido, brilho) · next (tracejado animado) · locked (fraco)
+    const pts = geo.pts.concat([{ x: geo.cx, y: geo.cy }]);
     ctx.lineCap = 'round';
     for (let i = 0; i < 10; i++) {
-      const R = HR.REGIONS[i], st = C.regionState(i), p = geo.pts[i];
-      const alpha = st === 'locked' ? 0.12 : st === 'done' ? 0.6 : 0.42;
-      ctx.strokeStyle = U.rgba(R.accent, alpha); ctx.lineWidth = st === 'locked' ? 5 : 8; ctx.setLineDash(st === 'locked' ? [4, 12] : []);
-      ctx.beginPath();
-      for (let k = i; k <= i + 1.001; k += 0.05) { const q = spiralPt(geo, Math.min(10, k)); k === i ? ctx.moveTo(q.x, q.y) : ctx.lineTo(q.x, q.y); }
-      ctx.stroke(); ctx.setLineDash([]);
-      const ng = ctx.createRadialGradient(p.x, p.y, 4, p.x, p.y, 58);
-      ng.addColorStop(0, U.rgba(R.accent, st === 'locked' ? 0.14 : 0.4)); ng.addColorStop(1, U.rgba(R.accent, 0));
-      ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(p.x, p.y, 58, 0, 6.283); ctx.fill();
+      const a = pts[i], b = pts[i + 1], c = ctrl(a, b, i);
+      const R = HR.REGIONS[Math.min(9, i)];
+      const done = i < 9 ? C.isRegionUnlocked(i + 1) : C.singularityMastered();
+      const next = !done && C.isRegionUnlocked(i);
+      const col = done ? R.accent : next ? R.accent : '#7d879f';
+      if (done) { ctx.strokeStyle = U.rgba(col, 0.28); ctx.lineWidth = 11; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(c.x, c.y, b.x, b.y); ctx.stroke(); }
+      ctx.strokeStyle = U.rgba(col, done ? 0.9 : next ? 0.7 : 0.22); ctx.lineWidth = done ? 4 : 3;
+      ctx.setLineDash(done ? [] : [6, 10]); ctx.lineDashOffset = next ? -t * 40 : 0;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(c.x, c.y, b.x, b.y); ctx.stroke(); ctx.setLineDash([]);
+      if (next) { for (let k = 0; k < 3; k++) { const f = ((t * 0.25 + k / 3) % 1), x = (1 - f) * (1 - f) * a.x + 2 * (1 - f) * f * c.x + f * f * b.x, y = (1 - f) * (1 - f) * a.y + 2 * (1 - f) * f * c.y + f * f * b.y; ctx.fillStyle = U.rgba('#ffffff', 0.9 * Math.sin(f * Math.PI)); ctx.beginPath(); ctx.arc(x, y, 3, 0, 6.283); ctx.fill(); } }
     }
-    // Singularidade: buraco negro com disco de acreção girando
-    const cx = geo.cx, cy = geo.cy;
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.25);
-    for (let i = 0; i < 3; i++) {
-      ctx.strokeStyle = U.rgba(['#ffcf4a', '#ff5ecf', '#4cf0ff'][i], 0.6 - i * 0.12); ctx.lineWidth = 4 - i;
-      ctx.beginPath(); ctx.ellipse(0, 0, 36 + i * 9, 13 + i * 4, i * 0.6, 0, 6.283); ctx.stroke();
-    }
-    ctx.restore();
-    const hg = ctx.createRadialGradient(cx, cy, 18, cx, cy, 60);
-    hg.addColorStop(0, 'rgba(255,230,180,0.5)'); hg.addColorStop(1, 'rgba(255,230,180,0)');
-    ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(cx, cy, 60, 0, 6.283); ctx.fill();
-    ctx.fillStyle = '#02030a'; ctx.beginPath(); ctx.arc(cx, cy, 26, 0, 6.283); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,240,200,0.95)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, 27, 0, 6.283); ctx.stroke();
+    const cur = C.currentRegion();
+    geo.pts.forEach((p, i) => { const st = C.regionState(i); drawMiniGalaxy(ctx, p.x, p.y, 17, HR.REGIONS[i].accent, t, i, st === 'locked' ? 'locked' : (i === cur ? 'current' : st)); });
+    drawBlackHole(ctx, geo, W, H, t, dpr, gxStatic.cv);
   }
-  let gxRaf = null;
+  // TON 618: lente gravitacional (a própria imagem redesenhada em coroas com zoom e giro), disco de acreção em dois
+  // planos com Doppler (lado que vem até nós mais claro), anel de fótons, sombra com borda azulada, partículas caindo.
+  function drawBlackHole(ctx, geo, W, H, t, dpr, img) {
+    const U = HR.U, cx = geo.cx, cy = geo.cy;
+    const lens = [[30, 48, 1.28, 0.06], [48, 68, 1.15, -0.04], [68, 92, 1.07, 0.02]];
+    lens.forEach(([r0, r1, z, rot], i) => {
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r1, 0, 6.283); ctx.arc(cx, cy, r0, 0, 6.283, true); ctx.clip();
+      ctx.translate(cx, cy); ctx.rotate(t * rot + i * 0.4); ctx.scale(z, z); ctx.translate(-cx, -cy);
+      ctx.drawImage(img, 0, 0, W * dpr, H * dpr, 0, 0, W, H);
+      ctx.restore();
+    });
+    const glow = ctx.createRadialGradient(cx, cy, 20, cx, cy, 110);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.3);
+    glow.addColorStop(0, 'rgba(255,225,170,' + (0.34 + pulse * 0.1).toFixed(3) + ')'); glow.addColorStop(0.5, 'rgba(255,150,90,0.11)'); glow.addColorStop(1, 'rgba(255,150,90,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, 110, 0, 6.283); ctx.fill();
+    if (!gxTw.fall) { gxTw.fall = []; for (let i = 0; i < 26; i++) gxTw.fall.push({ a: U.rand(0, 6.28), p: U.rand(0, 1), v: U.rand(0.5, 1.2) }); }
+    gxTw.fall.forEach(f => {
+      const k = (t * 0.09 * f.v + f.p) % 1, rr = 118 - k * 90, an = f.a + k * 3.2 + t * 0.3;
+      const x = cx + Math.cos(an) * rr, y = cy + Math.sin(an) * rr * 0.9, fade = Math.min(1, (rr - 28) / 12);
+      ctx.strokeStyle = 'rgba(255,235,200,' + (0.15 + k * 0.55 * fade).toFixed(3) + ')'; ctx.lineWidth = 1 + k;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx + Math.cos(an - 0.12) * (rr + 4), cy + Math.sin(an - 0.12) * (rr + 4) * 0.9); ctx.stroke();
+    });
+    const tilt = -0.32, RX = 66, RY = 20;
+    const disc = (front) => {
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt);
+      const g = ctx.createLinearGradient(-RX, 0, RX, 0);
+      g.addColorStop(0, 'rgba(255,252,235,0.95)'); g.addColorStop(0.35, 'rgba(255,190,110,0.9)'); g.addColorStop(0.7, 'rgba(255,110,70,0.7)'); g.addColorStop(1, 'rgba(160,40,40,0.45)');
+      const a0 = front ? 0 : Math.PI, a1 = front ? Math.PI : Math.PI * 2;
+      ctx.strokeStyle = 'rgba(255,170,100,0.22)'; ctx.lineWidth = 22; ctx.beginPath(); ctx.ellipse(0, 0, RX, RY, 0, a0, a1); ctx.stroke();
+      ctx.strokeStyle = g; ctx.lineWidth = 9; ctx.beginPath(); ctx.ellipse(0, 0, RX, RY, 0, a0, a1); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 0, RX * 0.9, RY * 0.9, 0, a0, a1); ctx.stroke();
+      for (let i = 0; i < 5; i++) { const an = t * 1.4 + i * 1.257; const sn = Math.sin(an); if (front ? sn < 0 : sn >= 0) continue; ctx.fillStyle = 'rgba(255,250,230,' + (0.5 + 0.4 * Math.max(0, -Math.cos(an))).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Math.cos(an) * RX * 0.93, sn * RY * 0.93, 2.6, 0, 6.283); ctx.fill(); }
+      ctx.restore();
+    };
+    disc(false);
+    ctx.fillStyle = '#02030a'; ctx.beginPath(); ctx.arc(cx, cy, 27, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = 'rgba(130,170,255,0.4)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 27.5, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,246,225,0.35)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(cx, cy, 30, 0, 6.283); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,250,235,0.95)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx, cy, 30, 0, 6.283); ctx.stroke();
+    disc(true);
+  }
   function renderGalaxy() {
     const body = $('#galaxy-body'), cv = $('#galaxy-canvas'), host = $('#galaxy-nodes'); if (!body || !cv) return;
     const C = HR.Campaign, d = HR.Store.data;
@@ -139,20 +172,23 @@
     HR.REGIONS.forEach((R, i) => {
       const st = C.regionState(i), p = geo.pts[i], stars = C.regionStars(i);
       const isCur = i === cur && st !== 'locked';
-      h += '<button type="button" class="gx-node is-' + st + (isCur ? ' is-current' : '') + '" data-region="' + i + '" style="left:' + p.x.toFixed(0) + 'px;top:' + p.y.toFixed(0) + 'px;' + accentVars(R.accent) + '" aria-label="' + esc(regionName(R)) + '">';
-      h += '<span class="gx-disc">' + (st === 'locked' ? HR.icon('lock') : st === 'done' ? HR.icon('check') : '<b>' + (i + 1) + '</b>') + '</span>';
-      h += '<span class="gx-name">' + esc(regionName(R)) + (st !== 'locked' ? '<small>' + stars + '/30</small>' : '') + '</span>';
+      const gate = st === 'locked' && C.isRegionUnlocked(i - 1) ? C.gate(i) : null;
+      h += '<button type="button" class="gx-node is-' + st + (isCur ? ' is-current' : '') + (LABEL_TOP[i] ? ' lbl-top' : '') + '" data-region="' + i + '" style="left:' + p.x + 'px;top:' + p.y + 'px;' + accentVars(R.accent) + '" aria-label="' + esc(galName(R)) + '">';
+      h += '<span class="gx-badge">' + (st === 'locked' ? HR.icon('lock') : st === 'done' ? HR.icon('check') : '<b>' + (i + 1) + '</b>') + '</span>';
+      h += '<span class="gx-name"><b>' + esc(galName(R)) + '</b><small>' + esc(regionName(R)) + (st !== 'locked' ? ' · <em>' + stars + '/30</em>' : gate ? ' · <em class="gx-portal">' + esc(HR.t('portal')) + ' ' + gate.open + '/5</em>' : '') + '</small></span>';
       h += '</button>';
     });
     const mastered = C.singularityMastered();
-    h += '<button type="button" class="gx-core' + (mastered ? ' is-mastered' : '') + '" id="gx-core" style="left:' + geo.cx.toFixed(0) + 'px;top:' + geo.cy.toFixed(0) + 'px" aria-label="' + esc(HR.t('singularity')) + '"><span class="gx-core-hit"></span><span class="gx-name">' + esc(HR.t('singularity')) + (mastered ? '<small>' + HR.icon('crown') + '</small>' : '') + '</span></button>';
+    h += '<button type="button" class="gx-core' + (mastered ? ' is-mastered' : '') + '" id="gx-core" style="left:' + geo.cx.toFixed(0) + 'px;top:' + geo.cy.toFixed(0) + 'px" aria-label="' + esc(HR.t('bh_name')) + '"><span class="gx-core-hit"></span><span class="gx-name"><b>' + esc(HR.t('bh_name')) + '</b><small>' + esc(HR.t('bh_sub')) + (mastered ? ' ' + HR.icon('crown') : '') + '</small></span></button>';
     host.innerHTML = h;
-    // rodapé: continuar
     const foot = $('#galaxy-foot');
     const level = C.currentLevel(), done = C.levelsCleared();
     const complete = done >= 100;
+    const nextRi = C.nextPortal(), gate = nextRi != null ? C.gate(nextRi) : null;
+    const portalTxt = gate ? ' · ' + esc(HR.t('portal')) + ' ' + gate.open + '/5' : '';
+    const regionDone = C.regionCleared(level.ri) && gate != null;
     foot.innerHTML = '<div class="gx-foot-card" style="' + accentVars(HR.REGIONS[level.ri].accent) + '">' +
-      '<div class="gx-foot-main"><span class="kicker gx-kicker">' + done + '/100 ' + esc(HR.t('levels')) + ' · ' + C.totalStars() + ' ' + HR.icon('star', '', true) + '</span><b>' + esc(complete ? HR.t('camp_complete') : HR.t('continue_campaign', { n: level.id }) + ' · ' + regionName(HR.REGIONS[level.ri])) + '</b></div>' +
+      '<div class="gx-foot-main"><span class="kicker gx-kicker">' + done + '/100 ' + esc(HR.t('levels')) + ' · ' + C.totalStars() + ' ' + HR.icon('star', '', true) + portalTxt + '</span><b>' + esc(complete ? HR.t('camp_complete') : regionDone ? HR.t('portal') + ': ' + galName(HR.REGIONS[nextRi]) + ' ' + gate.open + '/5' : HR.t('continue_campaign', { n: level.id }) + ' · ' + galName(HR.REGIONS[level.ri])) + '</b></div>' +
       '<button type="button" class="btn btn-play small-btn" id="gx-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t(complete ? 'levels' : 'play_mode')) + '</span></button></div>';
     if (!body.dataset.bound) {
       body.dataset.bound = '1';
@@ -160,73 +196,143 @@
         const core = e.target.closest('#gx-core'); if (core) { e.stopPropagation(); sfx('click'); openSingularityDetail(); return; }
         const btn = e.target.closest('[data-region]'); if (!btn) return; e.stopPropagation();
         const ri = +btn.getAttribute('data-region');
-        if (!C.isRegionUnlocked(ri)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('region_locked_hint', { name: regionName(HR.REGIONS[ri - 1]) }), 'bad'); btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); return; }
+        if (!C.isRegionUnlocked(ri) && !C.isRegionUnlocked(ri - 1)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('region_locked_hint', { name: galName(HR.REGIONS[ri - 1]) }), 'bad'); btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); return; }
         sfx('click'); HR.UI.open('region', ri);
       });
     }
-    $('#gx-continue').addEventListener('click', e => { e.stopPropagation(); sfx('click'); HR.UI.open('region', level.ri); });
+    $('#gx-continue').addEventListener('click', e => { e.stopPropagation(); sfx('click'); HR.UI.open('region', regionDone ? nextRi : level.ri); });
     d.hints.galaxy = true; HR.Store.save();
+  }
+
+  /* =================== PORTAL / CONTRATOS / NÚCLEO (v4) =================== */
+  const GATE_ICON = { boss: 'crown', stars: 'star', rank: 'award', core: 'orbit', contracts: 'flag' };
+  function gateHtml(ri) {
+    const C = HR.Campaign; if (ri <= 0) return '';
+    const gt = C.gate(ri), Rp = HR.REGIONS[ri - 1];
+    let h = '<div class="reg-card portal' + (gt.ok ? ' open' : '') + '"><span class="reg-card-ic">' + HR.icon(gt.ok ? 'unlock' : 'lock') + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('portal')) + ' · ' + gt.open + '/5</span><b>' + esc(HR.t(gt.ok ? 'portal_open' : 'portal_locked')) + '</b><p>' + esc(HR.t('portal_d', { name: regionName(Rp) })) + '</p><div class="gate-list">';
+    gt.items.forEach(it => { h += '<span class="gate' + (it.ok ? ' ok' : '') + '"><span class="gate-ic">' + HR.icon(it.ok ? 'check' : GATE_ICON[it.id]) + '</span><span class="gate-txt">' + esc(HR.t('gate_' + it.id, { n: it.b, name: regionName(Rp) })) + '</span><b>' + (it.id === 'boss' ? '' : Math.min(it.a, it.b) + '/' + it.b) + '</b></span>'; });
+    return h + '</div></div></div>';
+  }
+  function contractsHtml(ri) {
+    const C = HR.Campaign, list = C.contractsOf(ri), done = C.contractsDone(ri);
+    let h = '<div class="section-title">' + esc(HR.t('contracts')) + ' <span class="muted">' + done + '/5</span></div><p class="lb-note contracts-note">' + esc(HR.t('contracts_d', { n: HR.CONFIG.PROGRESSION.contractsNeed })) + '</p>';
+    list.forEach(c => {
+      const ok = C.contractDone(c), p = ok ? c.target : C.contractProgress(c);
+      h += '<div class="contract' + (ok ? ' done' : '') + '"><span class="m-ic">' + HR.icon(ok ? 'check' : c.icon) + '</span><div class="m-info"><div class="m-title">' + esc(C.contractText(c)) + '</div><div class="bar' + (ok ? ' green' : '') + '"><span class="bar-fill" style="width:' + (p / c.target * 100).toFixed(0) + '%"></span></div><div class="m-meta"><span class="num">' + HR.U.fmt(p) + ' / ' + HR.U.fmt(c.target) + '</span><span class="m-reward"><i class="ic-coin"></i>' + c.coins + ' <i class="ic-gem"></i>' + c.gems + ' <b class="xp">+' + c.xp + ' XP</b></span></div></div></div>';
+    });
+    return h;
+  }
+  function coreHtml() {
+    const n = HR.Core.level(), C = HR.CONFIG.CORE, m = HR.Core.mods(), cost = HR.Core.cost(), nm = HR.Core.nextMilestone(n);
+    const pct = v => Math.round(v * 100);
+    let h = '<div class="core-card"><div class="core-head"><span class="core-orb"><i></i></span><div class="core-main"><span class="kicker">' + esc(HR.t('core')) + '</span><b>' + esc(HR.t('core_level', { n })) + ' <small>/ ' + C.maxLevel + '</small></b><p>' + esc(HR.t('core_d')) + '</p></div></div>';
+    h += '<div class="core-bonus"><span>' + HR.icon('coin') + ' ' + esc(HR.t('core_b_coins', { n: pct(C.coinMul * n) })) + '</span><span>' + HR.icon('ring') + ' ' + esc(HR.t('core_b_forgive', { n: pct(C.forgive * n) })) + '</span><span>' + HR.icon('target') + ' ' + esc(HR.t('core_b_perfect', { n: (C.perfect * n * 100).toFixed(1).replace('.0', '') })) + '</span><span>' + HR.icon('award') + ' ' + esc(HR.t('core_b_xp', { n: pct(C.xp * n) })) + '</span>';
+    if (m.shieldCap) h += '<span>' + HR.icon('shield') + ' +' + m.shieldCap + ' ' + esc(HR.t('core_ms_shield').replace('+1 ', '')) + '</span>';
+    if (m.startShield) h += '<span>' + HR.icon('shield') + ' ' + esc(HR.t('core_ms_start')) + '</span>';
+    if (m.life) h += '<span>' + HR.icon('heart') + ' ' + esc(HR.t('core_ms_life')) + '</span>';
+    if (m.pickupMul > 1) h += '<span>' + HR.icon('gift') + ' ' + esc(HR.t('core_ms_pickup')) + '</span>';
+    h += '</div>';
+    if (nm) h += '<p class="core-next">' + HR.icon('sparkle') + ' ' + esc(HR.t('core_next_ms', { n: nm })) + ': ' + esc(HR.t(HR.Core.milestone(nm))) + '</p>';
+    h += '<button type="button" class="btn ' + (cost == null ? 'btn-ghost' : 'btn-play') + '" id="core-up"' + (cost == null ? ' disabled' : '') + '><span class="ic">' + HR.icon(cost == null ? 'check' : 'arrowUp') + '</span><span class="btn-label">' + (cost == null ? esc(HR.t('core_max')) : esc(HR.t('upgrade')) + ' · <i class="ic-coin"></i>' + HR.U.fmt(cost)) + '</span></button></div>';
+    return h;
+  }
+  function bindCore(body) {
+    const b = $('#core-up', body); if (!b) return;
+    b.addEventListener('click', e => { e.stopPropagation(); if (HR.Core.upgrade()) { const n = HR.Core.level(); HR.UI.toast(HR.icon('orbit') + ' ' + HR.t('core_up_toast', { n }) + (HR.Core.milestone(n) ? ' · ' + HR.t(HR.Core.milestone(n)) : ''), 'good'); const ach = HR.Achievements.check(); ach.forEach((a, i) => HR.UI.achToast(a, i)); HR.UI.rerenderAbilities(); } });
   }
 
   /* =================== FICHA DA REGIÃO =================== */
   let curRegion = 0, previewOn = false;
-  function levelNodes(R, ri) {
+  function levelNodes(R, ri, bodyW) {
     const C = HR.Campaign, levels = C.levelsOf(ri), current = C.currentLevel();
-    // caminho em "serpentina": 3 por linha (esq→dir, dir→esq…), chefe sozinho na última linha
-    const cols = [18, 50, 82], pitch = 92, top = 46;
+    // caminho em "serpentina": 3 por linha (esq→dir, dir→esq…), chefe sozinho na última linha; ligações curvas
+    const cols = [18, 50, 82], pitch = 88, top = 44;
     const pts = levels.map((l, i) => {
-      if (i === 9) return { x: 50, y: top + 3 * pitch + 14 };
+      if (i === 9) return { x: 50, y: top + 3 * pitch + 16 };
       const row = Math.floor(i / 3), col = i % 3;
       return { x: row % 2 ? cols[2 - col] : cols[col], y: top + row * pitch };
     });
-    const height = pts[9].y + 76;
+    const height = pts[9].y + 78, W = bodyW || 340;
     let h = '<div class="lv-path" style="height:' + height + 'px"><svg class="lv-links" aria-hidden="true">';
     for (let i = 0; i < 9; i++) {
-      const a = pts[i], b = pts[i + 1], sA = C.stars(levels[i].id), sB = C.stars(levels[i + 1].id);
+      const a = { x: pts[i].x / 100 * W, y: pts[i].y }, b = { x: pts[i + 1].x / 100 * W, y: pts[i + 1].y }, c = ctrl(a, b, i);
+      const sA = C.stars(levels[i].id), sB = C.stars(levels[i + 1].id);
       const state = sB > 0 ? 'done' : sA > 0 ? 'next' : '';
-      const at = 'x1="' + a.x + '%" y1="' + a.y + '" x2="' + b.x + '%" y2="' + b.y + '"';
-      if (state === 'done') h += '<line class="lv-link-glow" ' + at + '/>';
-      h += '<line class="lv-link' + (state ? ' ' + state : '') + '" ' + at + '/>';
+      const dd = 'd="M' + a.x.toFixed(1) + ' ' + a.y + ' Q' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ' ' + b.x.toFixed(1) + ' ' + b.y + '"';
+      if (state === 'done') h += '<path class="lv-link-glow" ' + dd + '/>';
+      h += '<path class="lv-link' + (state ? ' ' + state : '') + '" ' + dd + '/>';
     }
     h += '</svg>';
     levels.forEach((l, i) => {
       const p = pts[i], isBoss = !!l.boss, stars = C.stars(l.id), unlocked = C.isUnlocked(l.id), isCur = current && current.id === l.id;
       const cls = ['lv-node', isBoss ? 'lv-node--boss' : '', stars > 0 ? 'is-done' : '', isCur ? 'is-current' : '', unlocked ? '' : 'is-locked'].filter(Boolean).join(' ');
       h += '<button type="button" class="' + cls + '" data-level="' + esc(l.id) + '" style="left:' + p.x + '%;top:' + p.y + 'px" aria-label="' + esc(HR.t('level_n', { n: l.id })) + '">';
-      h += '<span class="lv-circle-wrap">' + (isCur ? '<span class="lv-halo"></span>' : '') + '<span class="lv-circle">' + (isBoss ? '<span class="lv-boss-ic">' + HR.icon(HR.BOSSES[l.boss].icon) + '</span>' : '<b>' + (i + 1) + '</b>') + '</span>' + (!unlocked ? '<span class="lv-lock">' + HR.icon('lock') + '</span>' : '') + (isBoss ? '<span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span>' : '') + '</span>';
+      h += '<span class="lv-circle-wrap">' + (isCur ? '<span class="lv-halo"></span>' : '') + '<span class="lv-circle">' + (isBoss ? '<span class="lv-boss-ic">' + HR.icon(HR.BOSSES[l.boss].icon) + '</span>' : '<b>' + (i + 1) + '</b>') + '</span>' + (stars > 0 && !isBoss ? '<span class="lv-orbit"></span>' : '') + (!unlocked ? '<span class="lv-lock">' + HR.icon('lock') + '</span>' : '') + (isBoss ? '<span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span>' : '') + ((l.mods && l.mods.length) || (l.events && l.events.length) ? '<span class="lv-dot-ev"></span>' : '') + '</span>';
       h += starsHtml(stars);
       if (isBoss) h += '<span class="lv-boss-name">' + esc(HR.t('boss_' + l.boss)) + '</span>';
       h += '</button>';
     });
     return h + '</div>';
   }
+  // cabeçalho animado da galáxia: fundo do bioma (o mesmo motor do jogo) + a galáxia + um arco e a bola
+  let heroRaf = null;
+  function startRegionHero(R, ri) {
+    const cv = $('#reg-hero-cv'); if (!cv) return;
+    const host = cv.parentElement, rect = host.getBoundingClientRect();
+    const W = Math.round(rect.width) || 340, H = Math.round(rect.height) || 150, dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const ctx = cv.getContext('2d');
+    const bg = new HR.Render.Background(); bg.resize(W, H); bg.setTheme({ colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx }); bg.setFx(R.fx || null); bg.setTint(R.accent);
+    const skin = HR.CONFIG.SKINS.find(s => s.id === HR.Store.data.equipped.skin) || HR.CONFIG.SKINS[0];
+    const t0 = performance.now(); let last = t0;
+    const draw = now => {
+      const t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      bg.update(dt, 110, { x: -1, y: 0 }, 0.35); bg.draw(ctx, t);
+      const gx = W * 0.76, gy = H * 0.5;
+      drawMiniGalaxy(ctx, gx + 26, gy - 30, 22, R.accent, t, ri, 'open');
+      const ring = { x: gx, y: gy + 6, r: H * 0.33, tilt: Math.sin(t * 0.45) * 0.55, accent: R.accent, color: R.accent, flash: 0, hit: false, type: 'plain', fx: R.fx, index: ri };
+      HR.Render.drawRing(ctx, ring, 'back', { t });
+      HR.Render.drawBall(ctx, gx - 6, gy + 6 + Math.sin(t * 1.5) * 9, 15, skin, t, { vy: Math.cos(t * 1.5) * 400 });
+      HR.Render.drawRing(ctx, ring, 'front', { t });
+      const sh = ctx.createLinearGradient(0, 0, W * 0.7, 0); sh.addColorStop(0, 'rgba(4,6,14,0.55)'); sh.addColorStop(1, 'rgba(4,6,14,0)');
+      ctx.fillStyle = sh; ctx.fillRect(0, 0, W * 0.7, H);
+    };
+    if (heroRaf) cancelAnimationFrame(heroRaf);
+    const loop = now => { if (!HR.UI.stack.includes('region')) { heroRaf = null; return; } draw(now); heroRaf = requestAnimationFrame(loop); };
+    loop(performance.now());
+  }
   function renderRegion(ri) {
     const C = HR.Campaign;
     if (ri == null || isNaN(ri)) ri = curRegion; curRegion = ri;
     const R = HR.REGIONS[ri], body = $('#region-body'); if (!R || !body) return;
     HR.Store.data.campaign.lastRegion = ri;
-    HR.UI.bind('regionTitle', (ri + 1) + ' · ' + regionName(R));
+    HR.UI.bind('regionTitle', galName(R)); const rb = $('#screen-region .ribbon span'); if (rb) rb.style.fontSize = galName(R).length > 12 ? '17px' : '';
     $$('#screen-region .ribbon').forEach(el => { el.style.cssText = accentVars(R.accent); });
     HR.UI.bind('regionStars', C.regionStars(ri) + '/30');
     const boss = C.level((ri + 1) + '-10'), info = HR.BOSSES[R.boss];
-    const stars = C.regionStars(ri), cleared = C.bossBeaten(ri);
+    const stars = C.regionStars(ri), cleared = C.bossBeaten(ri), unlocked = C.isRegionUnlocked(ri);
     const musicName = HR.t('region_music') + ': ' + HR.t('music_' + R.music);
     let h = '<div class="reg-wrap" style="' + accentVars(R.accent) + '">';
-    h += '<div class="reg-hero" style="background:linear-gradient(160deg,' + R.colors[0] + ',' + R.colors[1] + ' 60%,' + R.colors[2] + ')"><i></i><i></i><i></i><i></i><i></i><span class="reg-hero-ring"></span><span class="reg-hero-ball"></span>';
-    h += '<div class="reg-hero-text"><span class="kicker">' + esc(HR.t('region_n', { n: ri + 1 })) + '</span><h3>' + esc(regionName(R)) + '</h3><p>' + esc(HR.t('reg_' + R.id + '_t')) + '</p></div>';
+    h += '<div class="reg-hero reg-hero--live" style="background:linear-gradient(160deg,' + R.colors[0] + ',' + R.colors[1] + ' 60%,' + R.colors[2] + ')"><canvas id="reg-hero-cv"></canvas>';
+    h += '<div class="reg-hero-text"><span class="kicker">' + esc(HR.t('galaxy_n', { n: ri + 1 })) + ' · ' + esc(HR.t('gal_' + R.gal + '_c')) + '</span><h3>' + esc(galName(R)) + '</h3><p><b>' + esc(regionName(R)) + '</b> · ' + esc(HR.t('reg_' + R.id + '_t')) + '</p></div>';
     h += '<span class="reg-hero-stars">' + HR.icon('star', '', true) + ' <b>' + stars + '</b>/30</span></div>';
+    h += '<p class="reg-gal-fact">' + HR.icon('galaxy') + ' <span>' + esc(HR.t('gal_' + R.gal + '_d')) + '</span></p>';
+    if (!unlocked) h += gateHtml(ri);
     h += '<div class="reg-card"><span class="reg-card-ic">' + HR.icon('compass') + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('region_mech')) + '</span><p>' + esc(HR.t('reg_' + R.id + '_d')) + '</p></div></div>';
     h += '<div class="reg-card boss' + (cleared ? ' done' : '') + '"><span class="reg-card-ic">' + HR.icon(info.icon) + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('region_boss')) + (cleared ? ' · ' + esc(HR.t('ach_unlocked')) : '') + '</span><b>' + esc(HR.t('boss_' + R.boss)) + '</b><p>' + esc(HR.t('boss_' + R.boss + '_d')) + '</p><span class="reg-chip">' + HR.icon('wave') + ' ' + esc(HR.t('camp_waves_n', { n: info.waves })) + ' · ' + esc(HR.t('rings_n', { n: boss.rings })) + '</span></div></div>';
     h += '<div class="reg-row"><span class="reg-chip gift">' + HR.icon('gift') + ' <span>' + esc(HR.t('region_reward')) + ': <b>' + esc(cosmeticName(R.reward)) + '</b></span></span>';
     h += '<button type="button" class="reg-chip music" id="reg-music">' + HR.icon('music') + ' <span>' + esc(musicName) + '</span></button></div>';
+    if (unlocked) h += contractsHtml(ri);
     h += '<div class="section-title">' + esc(HR.t('levels')) + '</div>';
-    h += levelNodes(R, ri);
+    h += levelNodes(R, ri, body.clientWidth - 4);
     const next = C.levelsOf(ri).find(l => C.stars(l.id) === 0 && C.isUnlocked(l.id));
-    if (next) h += '<button type="button" class="btn btn-play" id="reg-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: next.id })) + '</span></button>';
+    if (next && unlocked) h += '<button type="button" class="btn btn-play" id="reg-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: next.id })) + '</span></button>';
     else if (cleared) h += '<p class="lb-note">' + esc(HR.t('world_progress', { a: stars, b: 30 })) + '</p>';
     h += '</div>';
     body.innerHTML = h;
     body.scrollTop = 0;
+    startRegionHero(R, ri);
     if (!body.dataset.bound) {
       body.dataset.bound = '1';
       body.addEventListener('click', e => {
@@ -249,7 +355,7 @@
     const R = HR.REGIONS[level.ri], stars = C.stars(id), isBoss = !!level.boss, info = isBoss ? HR.BOSSES[level.boss] : null;
     const best = (HR.Store.data.campaign.best && HR.Store.data.campaign.best[id]) || 0;
     let h = '<div class="lv-detail-head">';
-    h += '<span class="kicker">' + esc(HR.t('region_n', { n: level.ri + 1 })) + ' · ' + esc(regionName(R)) + '</span>';
+    h += '<span class="kicker">' + esc(galName(R)) + ' · ' + esc(regionName(R)) + '</span>';
     if (isBoss) h += '<span class="lv-detail-boss"><span class="lv-boss-ic">' + HR.icon(info.icon) + '</span><span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span></span><h3 class="lv-detail-title">' + esc(HR.t('boss_' + level.boss)) + '</h3><span class="lv-detail-sub">' + esc(HR.t('level_n', { n: level.id })) + '</span>';
     else h += '<span class="lv-detail-num"><b>' + (level.li + 1) + '</b></span><h3 class="lv-detail-title">' + esc(HR.t('level_n', { n: level.id })) + '</h3>';
     h += starsHtml(stars, 'lv-stars--big');
@@ -261,6 +367,12 @@
     level.dirs.forEach((dir, i) => { if (i) h += '<span class="lv-dir-sep">›</span>'; h += '<span class="lv-dir"><b>' + esc(HR.t('dir_' + dir)) + '</b><small>' + esc(HR.t('camp_dir_' + dir)) + '</small></span>'; });
     h += '</div></div>';
     if (isBoss) h += '<p class="lv-boss-desc">' + esc(HR.t('boss_' + level.boss + '_d')) + '</p>';
+    if ((level.mods && level.mods.length) || (level.events && level.events.length)) {
+      h += '<div class="lv-mods">';
+      (level.mods || []).forEach(m => { h += '<span class="reg-chip mut">' + HR.icon('sliders') + ' <span><b>' + esc(HR.t('mut_' + m)) + '</b> · ' + esc(HR.t('mut_' + m + '_d')) + '</span></span>'; });
+      (level.events || []).forEach(ev => { const E = HR.CONFIG.EVENTS && HR.CONFIG.EVENTS[ev.id]; h += '<span class="reg-chip ev" style="--ev:' + (E ? E.color : '#fff') + '">' + HR.icon(E ? E.icon : 'zap') + ' <span><b>' + esc(HR.t('ev_' + ev.id)) + '</b> · ' + esc(HR.t(ev.wave ? 'ev_between_waves' : 'ev_at_ring', { n: ev.at })) + '</span></span>'; });
+      h += '</div>';
+    }
     h += '<div class="lv-criteria"><span class="section-title">' + esc(HR.t('camp_criteria')) + '</span>';
     ['star_finish', 'star_perfects', 'star_flawless'].forEach((k, i) => { const on = i < stars; h += '<div class="lv-crit' + (on ? ' on' : '') + '"><span class="lv-star' + (on ? ' on' : '') + '">' + HR.icon('star', '', true) + '</span><span>' + esc(HR.t(k)) + '</span>' + (on ? '<span class="lv-crit-check">' + HR.icon('check') + '</span>' : '') + '</div>'; });
     h += '</div>';
@@ -282,7 +394,7 @@
   }
   function openSingularityDetail() {
     const modal = $('#modal-item'), host = $('#item-detail'), d = HR.Store.data, mastered = HR.Campaign.singularityMastered();
-    let h = '<div class="lv-detail-head"><span class="sg-core">' + HR.icon('orbit') + '</span><h3 class="lv-detail-title">' + esc(HR.t('singularity')) + '</h3><span class="lv-detail-sub">' + esc(HR.t('singularity_d')) + '</span></div>';
+    let h = '<div class="lv-detail-head"><span class="sg-core">' + HR.icon('orbit') + '</span><span class="kicker">' + esc(HR.t('bh_sub')) + '</span><h3 class="lv-detail-title">' + esc(HR.t('bh_name')) + '</h3><span class="lv-detail-sub">' + esc(HR.t('singularity_d')) + '</span></div><p class="reg-gal-fact">' + HR.icon('galaxy') + ' <span>' + esc(HR.t('bh_d')) + '</span></p>';
     h += '<div class="lv-chips"><span class="reg-chip">' + HR.icon('trophy') + ' ' + esc(HR.t('best')) + ' <b>' + HR.U.fmt(d.best) + '</b></span><span class="reg-chip">' + HR.icon('layers') + ' ' + esc(HR.t('phase_reached')) + ' <b>' + d.bestPhase + '</b></span></div>';
     h += mastered ? '<p class="lv-boss-desc gold">' + HR.icon('crown') + ' ' + esc(HR.t('singularity_mastered')) + '</p>' : '<p class="lb-note">' + esc(HR.t('singularity_hint')) + '</p>';
     h += '<button type="button" class="btn btn-play" id="sg-play"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_endless')) + '</span></button>';
@@ -306,6 +418,7 @@
   function renderAbilities() {
     const body = $('#abilities-body'); if (!body) return; body.innerHTML = '';
     const eq = HR.Abilities.equipped(), slots = HR.Abilities.slots();
+    const coreWrap = HR.U.el('div', '', coreHtml()); body.appendChild(coreWrap); bindCore(coreWrap);
     body.appendChild(HR.U.el('div', 'section-title', HR.t('loadout')));
     const lo = HR.U.el('div', 'lo-row');
     for (let i = 0; i < 2; i++) {
@@ -378,7 +491,7 @@
     const add = o => { total++; if (o.on) got++; grid.appendChild(albCard(o)); };
     if (tab === 'rings') Object.keys(T.RING_TYPES).forEach(k => { const on = d.codex.rings.includes(k); const ring = HR.U.el('span', 'alb-ring'); add({ on, color: T.RING_TYPES[k].color, node: ring, name: HR.t('rt_' + k), desc: HR.t('rt_' + k + '_d'), descHidden: HR.t('rt_' + k + '_hint') }); });
     else if (tab === 'items') T.PICKUPS.forEach(p => { const on = d.codex.items.includes(p.id); add({ on, color: p.color, html: HR.icon(p.icon), name: HR.t('pk_' + p.id), desc: HR.t('pk_' + p.id + '_d') }); });
-    else if (tab === 'bosses') HR.REGIONS.forEach((R, i) => { const on = HR.Campaign.bossBeaten(i); add({ on, color: R.accent, html: HR.icon(HR.BOSSES[R.boss].icon), name: HR.t('boss_' + R.boss), desc: HR.t('reg_' + R.id) + ' · ' + HR.t('boss_' + R.boss + '_d'), descHidden: HR.t('reg_' + R.id), tag: on ? HR.t('alb_beaten') : HR.t('alb_unknown_tag') }); });
+    else if (tab === 'bosses') HR.REGIONS.forEach((R, i) => { const on = HR.Campaign.bossBeaten(i); add({ on, color: R.accent, html: HR.icon(HR.BOSSES[R.boss].icon), name: HR.t('boss_' + R.boss), desc: galName(R) + ' · ' + HR.t('boss_' + R.boss + '_d'), descHidden: galName(R), tag: on ? HR.t('alb_beaten') : HR.t('alb_unknown_tag') }); });
     else if (tab === 'skins' || tab === 'trails' || tab === 'themes') {
       const pre = { skins: 'skin_', trails: 'trail_', themes: 'theme_' }[tab], fl = { skins: 'flavor_skin_', trails: 'flavor_trail_', themes: 'flavor_theme_' }[tab];
       HR.Unlocks.catalog(tab).forEach(item => {
@@ -418,6 +531,17 @@
     camp_waves_n: '{n} ondas', camp_criteria: 'Como ganhar estrelas', camp_best_perfects: 'Melhor: {n} perfeitos', camp_first_clear: 'Prêmio da 1ª vitória', camp_replay_reward: 'Prêmio por repetir',
     dir_every: 'troca a cada {n} arcos', singularity_hint: 'Vença o chefe da região 10 para dominar a Singularidade.', loadout: 'Equipadas', loadout_d: 'Toque num slot para trocar. Use na partida com os botões dos cantos (Q/E no teclado).',
     slot_n: 'Slot {n}', tap_to_change: 'Toque para escolher', ach_all: 'Todas',
+    portal: 'Portal', portal_open: 'Portal aberto', portal_locked: 'Portal fechado', portal_d: 'Para entrar, complete em {name}:',
+    gate_boss: 'Vencer o chefe de {name}', gate_stars: '{n} estrelas em {name}', gate_rank: 'Patente {n} (nível do jogador)', gate_core: 'Núcleo nível {n}', gate_contracts: '{n} contratos de {name}',
+    contracts: 'Contratos', contracts_d: 'Objetivos desta região. O prêmio chega sozinho no fim da partida; {n} deles abrem o Portal seguinte.', contract_done: 'Contrato concluído: {name}',
+    c_perfects: 'Faça {n} perfeitos nesta região', c_clears: 'Conclua {n} fases desta região', c_coins: 'Colete {n} moedas nesta região', c_pickups: 'Pegue {n} itens nesta região', c_flawless: 'Conclua {n} fases sem dano aqui', c_events: 'Vença {n} eventos nesta região', c_nomiss: 'Passe {n} arcos seguidos sem errar aqui', c_bossflawless: 'Vença o chefe desta região sem dano',
+    core: 'Núcleo', core_d: 'A força da sua bola. Cada nível melhora tudo um pouco e abre regiões.', core_level: 'Núcleo {n}', core_max: 'Núcleo no máximo', core_b_coins: '+{n} % moedas', core_b_forgive: '+{n} % perdão na borda', core_b_perfect: '+{n} % zona de perfeito', core_b_xp: '+{n} % XP',
+    core_ms_shield: '+1 escudo máximo', core_ms_start: 'Começa com 1 escudo', core_ms_life: '1 vida extra por partida', core_ms_pickup: 'Sacos de moedas +50 %', core_next_ms: 'Marco no nível {n}', core_up_toast: 'Núcleo nível {n}!',
+    mods: 'Modificadores', mut_narrow: 'Estreito', mut_narrow_d: 'arcos 10 % menores', mut_dense: 'Denso', mut_dense_d: 'arcos mais juntos', mut_wind: 'Vento', mut_wind_d: 'mais arcos inclinados', mut_pairs: 'Pares', mut_pairs_d: 'mais arcos duplos', mut_bursts: 'Rajadas', mut_bursts_d: 'velocidade em surtos',
+    shattered: 'DESPEDAÇOU',
+    ev_at_ring: 'no arco {n}', ev_between_waves: 'entre ondas', ev_warn: 'À FRENTE', ev_done: 'EVENTO VENCIDO', ev_fail: 'EVENTO PERDIDO', ev_escaped: 'O GUARDIÃO ESCAPOU',
+    ev_asteroids: 'Asteroides', ev_asteroids_d: 'Desvie das rochas e pegue as moedas', ev_warp: 'Dobra', ev_warp_d: 'Velocidade máxima, arcos grandes, moedas ×2', ev_sentinel: 'Sentinela', ev_sentinel_d: 'Desvie dos tiros e continue passando', ev_bonanza: 'Bonança', ev_bonanza_d: 'Chuva de moedas: pegue tudo', ev_guardian: 'Guardião', ev_guardian_d: 'Passe pelos 3 arcos gigantes',
+    rt_guardian: 'Arco Guardião', rt_guardian_d: 'Gigante, oscila e encolhe a cada passagem. Aparece no evento Guardião.', rt_guardian_hint: 'Enfrente um Guardião.',
     music_r1: 'Berço de Luz', music_r2: 'Maré Alta', music_r3: 'Jardim de Vidro', music_r4: 'Ferro Quente', music_r5: 'Névoa Baixa', music_r6: 'Prisma', music_r7: 'Rajada', music_r8: 'Fundo do Abismo', music_r9: 'Espiral', music_r10: 'Horizonte de Eventos', music_menu: 'Tema ORBO', music_singularity: 'Singularidade'
   });
   Object.assign(HR.I18N.en, {
@@ -438,6 +562,17 @@
     camp_waves_n: '{n} waves', camp_criteria: 'How to earn stars', camp_best_perfects: 'Best: {n} perfects', camp_first_clear: '1st clear reward', camp_replay_reward: 'Replay reward',
     dir_every: 'changes every {n} rings', singularity_hint: 'Beat the region 10 boss to master the Singularity.', loadout: 'Equipped', loadout_d: 'Tap a slot to change. Use in the run with the corner buttons (Q/E on keyboard).',
     slot_n: 'Slot {n}', tap_to_change: 'Tap to choose', ach_all: 'All',
+    portal: 'Portal', portal_open: 'Portal open', portal_locked: 'Portal closed', portal_d: 'To enter, complete in {name}:',
+    gate_boss: 'Beat the {name} boss', gate_stars: '{n} stars in {name}', gate_rank: 'Rank {n} (player level)', gate_core: 'Core level {n}', gate_contracts: '{n} contracts of {name}',
+    contracts: 'Contracts', contracts_d: 'Goals for this region. Rewards arrive by themselves at the end of a run; {n} of them open the next Portal.', contract_done: 'Contract done: {name}',
+    c_perfects: 'Score {n} perfects in this region', c_clears: 'Clear {n} levels of this region', c_coins: 'Collect {n} coins in this region', c_pickups: 'Grab {n} items in this region', c_flawless: 'Clear {n} levels here without damage', c_events: 'Beat {n} events in this region', c_nomiss: 'Pass {n} rings in a row here without missing', c_bossflawless: 'Beat this region\'s boss without damage',
+    core: 'Core', core_d: 'The strength of your ball. Each level improves everything a little and opens regions.', core_level: 'Core {n}', core_max: 'Core maxed', core_b_coins: '+{n}% coins', core_b_forgive: '+{n}% rim forgiveness', core_b_perfect: '+{n}% perfect zone', core_b_xp: '+{n}% XP',
+    core_ms_shield: '+1 max shield', core_ms_start: 'Start with 1 shield', core_ms_life: '1 extra life per run', core_ms_pickup: 'Coin bags +50%', core_next_ms: 'Milestone at level {n}', core_up_toast: 'Core level {n}!',
+    mods: 'Modifiers', mut_narrow: 'Narrow', mut_narrow_d: 'rings 10% smaller', mut_dense: 'Dense', mut_dense_d: 'rings closer together', mut_wind: 'Wind', mut_wind_d: 'more tilted rings', mut_pairs: 'Pairs', mut_pairs_d: 'more double rings', mut_bursts: 'Bursts', mut_bursts_d: 'speed in bursts',
+    shattered: 'SHATTERED',
+    ev_at_ring: 'at ring {n}', ev_between_waves: 'between waves', ev_warn: 'AHEAD', ev_done: 'EVENT CLEARED', ev_fail: 'EVENT LOST', ev_escaped: 'THE GUARDIAN ESCAPED',
+    ev_asteroids: 'Asteroids', ev_asteroids_d: 'Dodge the rocks and grab the coins', ev_warp: 'Warp', ev_warp_d: 'Max speed, big rings, coins ×2', ev_sentinel: 'Sentinel', ev_sentinel_d: 'Dodge the shots and keep passing', ev_bonanza: 'Bonanza', ev_bonanza_d: 'Coin rain: grab everything', ev_guardian: 'Guardian', ev_guardian_d: 'Pass the 3 giant rings',
+    rt_guardian: 'Guardian Ring', rt_guardian_d: 'Giant, swings and shrinks each pass. Appears in the Guardian event.', rt_guardian_hint: 'Face a Guardian.',
     music_r1: 'Cradle of Light', music_r2: 'High Tide', music_r3: 'Glass Garden', music_r4: 'Hot Iron', music_r5: 'Low Mist', music_r6: 'Prism', music_r7: 'Gust', music_r8: 'Bottom of the Abyss', music_r9: 'Spiral', music_r10: 'Event Horizon', music_menu: 'ORBO Theme', music_singularity: 'Singularity'
   });
   Object.assign(HR.I18N.es, {
@@ -458,6 +593,17 @@
     camp_waves_n: '{n} oleadas', camp_criteria: 'Cómo ganar estrellas', camp_best_perfects: 'Mejor: {n} perfectos', camp_first_clear: 'Premio de la 1ª victoria', camp_replay_reward: 'Premio por repetir',
     dir_every: 'cambia cada {n} aros', singularity_hint: 'Vence al jefe de la región 10 para dominar la Singularidad.', loadout: 'Equipadas', loadout_d: 'Toca una ranura para cambiar. Úsalas en la partida con los botones de las esquinas (Q/E en teclado).',
     slot_n: 'Ranura {n}', tap_to_change: 'Toca para elegir', ach_all: 'Todos',
+    portal: 'Portal', portal_open: 'Portal abierto', portal_locked: 'Portal cerrado', portal_d: 'Para entrar, completa en {name}:',
+    gate_boss: 'Vencer al jefe de {name}', gate_stars: '{n} estrellas en {name}', gate_rank: 'Rango {n} (nivel del jugador)', gate_core: 'Núcleo nivel {n}', gate_contracts: '{n} contratos de {name}',
+    contracts: 'Contratos', contracts_d: 'Objetivos de esta región. El premio llega solo al final de la partida; {n} de ellos abren el siguiente Portal.', contract_done: 'Contrato completado: {name}',
+    c_perfects: 'Haz {n} perfectos en esta región', c_clears: 'Completa {n} niveles de esta región', c_coins: 'Recoge {n} monedas en esta región', c_pickups: 'Recoge {n} objetos en esta región', c_flawless: 'Completa {n} niveles aquí sin daño', c_events: 'Vence {n} eventos en esta región', c_nomiss: 'Pasa {n} aros seguidos aquí sin fallar', c_bossflawless: 'Vence al jefe de esta región sin daño',
+    core: 'Núcleo', core_d: 'La fuerza de tu bola. Cada nivel mejora todo un poco y abre regiones.', core_level: 'Núcleo {n}', core_max: 'Núcleo al máximo', core_b_coins: '+{n} % monedas', core_b_forgive: '+{n} % perdón en el borde', core_b_perfect: '+{n} % zona de perfecto', core_b_xp: '+{n} % XP',
+    core_ms_shield: '+1 escudo máximo', core_ms_start: 'Empieza con 1 escudo', core_ms_life: '1 vida extra por partida', core_ms_pickup: 'Bolsas de monedas +50 %', core_next_ms: 'Hito en el nivel {n}', core_up_toast: '¡Núcleo nivel {n}!',
+    mods: 'Modificadores', mut_narrow: 'Estrecho', mut_narrow_d: 'aros un 10 % más pequeños', mut_dense: 'Denso', mut_dense_d: 'aros más juntos', mut_wind: 'Viento', mut_wind_d: 'más aros inclinados', mut_pairs: 'Pares', mut_pairs_d: 'más aros dobles', mut_bursts: 'Ráfagas', mut_bursts_d: 'velocidad a ráfagas',
+    shattered: '¡DESTROZADO!',
+    ev_at_ring: 'en el aro {n}', ev_between_waves: 'entre oleadas', ev_warn: 'ADELANTE', ev_done: 'EVENTO SUPERADO', ev_fail: 'EVENTO PERDIDO', ev_escaped: 'EL GUARDIÁN ESCAPÓ',
+    ev_asteroids: 'Asteroides', ev_asteroids_d: 'Esquiva las rocas y recoge las monedas', ev_warp: 'Salto', ev_warp_d: 'Velocidad máxima, aros grandes, monedas ×2', ev_sentinel: 'Centinela', ev_sentinel_d: 'Esquiva los disparos y sigue pasando', ev_bonanza: 'Bonanza', ev_bonanza_d: 'Lluvia de monedas: recoge todo', ev_guardian: 'Guardián', ev_guardian_d: 'Pasa los 3 aros gigantes',
+    rt_guardian: 'Aro Guardián', rt_guardian_d: 'Gigante, oscila y encoge en cada pase. Aparece en el evento Guardián.', rt_guardian_hint: 'Enfréntate a un Guardián.',
     music_r1: 'Cuna de Luz', music_r2: 'Marea Alta', music_r3: 'Jardín de Cristal', music_r4: 'Hierro Caliente', music_r5: 'Niebla Baja', music_r6: 'Prisma', music_r7: 'Ráfaga', music_r8: 'Fondo del Abismo', music_r9: 'Espiral', music_r10: 'Horizonte de Sucesos', music_menu: 'Tema ORBO', music_singularity: 'Singularidad'
   });
 })();

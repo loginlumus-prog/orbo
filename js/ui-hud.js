@@ -24,6 +24,8 @@
       game.on('boss', info => this.fill('bossFill', info.fill));
       game.on('reflex', () => { const v = $('#fx-vignette'); v.classList.add('reflex'); setTimeout(() => v.classList.remove('reflex'), 600); });
       game.on('anomaly', info => { const v = $('#fx-vignette'); if (info.phase === 'warn') { this.banner(HR.t('anomaly_warn'), HR.t('anomaly_warn_d'), '#ff3d2e'); $('#hud-banner').classList.add('anomaly'); v.classList.add('anomaly'); setTimeout(() => { v.classList.remove('anomaly'); $('#hud-banner').classList.remove('anomaly'); }, 2600); } else { this.banner(HR.t('anomaly_beat'), '+' + HR.CONFIG.ANOMALY.bonusCoins + ' ' + HR.t('coins_earned').toLowerCase(), '#ff8a3d'); } });
+      game.on('event', info => this.onEvent(info));
+      game.on('flowbreak', () => { const v = $('#fx-vignette'); v.classList.add('flowbreak'); setTimeout(() => v.classList.remove('flowbreak'), 380); });
       game.on('combo', info => { const v = $('#fx-vignette'); v.classList.add('combo'); setTimeout(() => v.classList.remove('combo'), 260); this.banner(HR.t('combo', { n: info.n }), '', '#ffcf4a'); });
       game.on('autoperk', info => { const p = HR.Perks.def(info.id); if (p) this.toast(HR.icon(p.icon) + ' ' + HR.t('perk_auto_toast', { name: HR.Perks.name(info.id) }), 'good'); this.hudPerks(this.game.run); });
       game.on('discover', info => { const name = info.kind === 'ring' ? HR.t('rt_' + info.id) : HR.t('pk_' + info.id); this.toast(HR.icon('bag') + ' ' + HR.t('discover_new', { name }), 'good'); });
@@ -116,6 +118,33 @@
       btn.classList.remove('fire'); void btn.offsetWidth; btn.classList.add('fire');
       if (!HR.Store.data.hints.ability) { HR.Store.data.hints.ability = true; HR.Store.save(); }
     },
+    // chips dos poderes ativos (ícone + barra do tempo restante); ícone pisca no fim
+    POWERS: [['starT', 'star', '#ffe27a', 'pk_star'], ['ghostT', 'ghost', '#e8f0ff', 'ab_ghost'], ['autoT', 'bot', '#a29bfe', 'ab_autopilot'], ['magnetT', 'magnet', '#ffcf4a', 'ab_magnet'], ['slowmoT', 'hourglass', '#9be7ff', 'ab_slowmo'], ['freezeT', 'snow', '#dff8ff', 'ab_freeze'], ['lensT', 'target', '#7cff6b', 'ab_lens'], ['echoT', 'sparkle', '#ff5ecf', 'ab_echo']],
+    powerMax: {},
+    hudPowers(run) {
+      const host = $('#hud-powers'); if (!host) return;
+      const active = this.POWERS.filter(p => run[p[0]] > 0 && !(p[0] === 'autoT' && (run.anomalyActive || run.autoT < 0.2)));
+      const key = active.map(p => p[0]).join(',');
+      if (host.dataset.key !== key) {
+        host.dataset.key = key; host.innerHTML = '';
+        active.forEach(p => { const el = HR.U.el('span', 'hud-power'); el.dataset.k = p[0]; el.style.setProperty('--c', p[2]); el.innerHTML = '<span class="hp-ic">' + HR.icon(p[1]) + '</span><span class="hp-name">' + HR.t(p[3]) + '</span><i class="hp-bar"><span></span></i>'; host.appendChild(el); this.powerMax[p[0]] = run[p[0]]; });
+      }
+      active.forEach(p => { const el = host.querySelector('[data-k="' + p[0] + '"]'); if (!el) return; const mx = Math.max(this.powerMax[p[0]] || 0, run[p[0]]); this.powerMax[p[0]] = mx; el.querySelector('.hp-bar span').style.width = (run[p[0]] / mx * 100).toFixed(0) + '%'; el.classList.toggle('ending', run[p[0]] < 1.5); });
+    },
+    onEvent(info) {
+      const E = HR.CONFIG.EVENTS[info.id], v = $('#fx-vignette'), host = $('#hud-event');
+      const name = HR.t('ev_' + info.id);
+      if (info.phase === 'warn') { this.banner(name.toUpperCase(), HR.t('ev_warn'), E.color); v.classList.add('event'); setTimeout(() => v.classList.remove('event'), 1400); }
+      else if (info.phase === 'start') {
+        this.banner(name.toUpperCase(), HR.t('ev_' + info.id + '_d'), E.color);
+        host.style.setProperty('--c', E.color); $('[data-bind="evIcon"]').innerHTML = HR.icon(E.icon); this.bind('evName', name); this.fill('evFill', 1);
+        host.classList.add('show'); host.classList.toggle('timed', !!E.dur);
+      } else {
+        host.classList.remove('show');
+        const sub = info.ok ? ((info.coins ? '+' + info.coins + ' ' + HR.t('coins_earned').toLowerCase() : '') + (info.score ? ' +' + info.score : '')).trim() : '';
+        this.banner(HR.t(info.ok ? 'ev_done' : info.id === 'guardian' ? 'ev_escaped' : 'ev_fail'), sub, info.ok ? E.color : '#8d97b3');
+      }
+    },
     updateStick() {
       const hud = $('#screen-hud'), on = this.game.controlMode() === 'stick';
       hud.classList.toggle('stick-on', on);
@@ -144,6 +173,9 @@
           const cd = $('.ab-cd', btn); if (cd) cd.textContent = ab.cd > 0 ? Math.ceil(ab.cd) : '';
         });
         this.updateStick();
+        $('#screen-hud').style.setProperty('--flow', run.flowV.toFixed(2));
+        this.hudPowers(run);
+        const ev = this.game.event; if (ev && ev.dur) this.fill('evFill', 1 - ev.t / ev.dur); else if (ev && ev.id === 'guardian') this.fill('evFill', 1 - ev.passed / 3);
         const v = $('#fx-vignette');
         v.classList.toggle('slowmo', run.slowmoT > 0);
         v.classList.toggle('ghost', run.ghostT > 0);
@@ -151,6 +183,7 @@
         v.classList.toggle('magnet', run.magnetT > 0);
         v.classList.toggle('auto', run.autoT > 0 && !run.anomalyActive);
         v.classList.toggle('star', run.starT > 0);
+        v.classList.toggle('ending', (run.powerEnding || 0) > 0);
         this.hudRaf = requestAnimationFrame(tick);
       };
       this.hudRaf = requestAnimationFrame(tick);

@@ -180,3 +180,34 @@
   .stick-knob { width: 44px; height: 44px; margin: -22px 0 0 -22px; }
   .hud.stick-on .hud-ready { bottom: calc(176px + var(--sab)); }
 }
+
+/* ---------- v4: fluxo (ritmo) ---------- */
+#screen-hud { --flow: 0; }
+.hud-combo { text-shadow: 0 0 calc(var(--flow) * 14px) rgba(255,207,74,0.7); }
+.seg-bar i.on { box-shadow: 0 0 calc(10px + var(--flow) * 10px) rgba(255,255,255,0.7); }
+.fx-vignette.flowbreak { box-shadow: inset 0 0 90px rgba(141,151,179,0.35); opacity: 1; transition: none; }
+
+/* ---------- v4: eventos ---------- */
+.hud-event { position: absolute; left: 50%; top: calc(150px + var(--sat)); transform: translate(-50%, -6px); display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 999px; --c: #fff; background: rgba(4,6,14,0.62); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 60%, transparent), 0 4px 16px rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.3s; max-width: 70%; }
+.hud-event.show { opacity: 1; transform: translate(-50%, 0); }
+.hud-event .ev-ic { display: inline-flex; color: var(--c); } .hud-event .ev-ic .i { width: 16px; height: 16px; }
+.hud-event b { font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+.hud-event .ev-bar { display: block; width: 64px; height: 5px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.hud-event .ev-bar span { display: block; height: 100%; width: 100%; border-radius: 999px; background: var(--c); box-shadow: 0 0 8px var(--c); transition: width 0.2s linear; }
+.fx-vignette.event { box-shadow: inset 0 0 110px rgba(255,159,67,0.35); opacity: 1; }
+@media (max-height: 720px) { .hud-event { top: calc(136px + var(--sat)); } }
+
+/* ---------- v4: poderes ativos ---------- */
+.hud-powers { position: absolute; left: 50%; transform: translateX(-50%); top: calc(118px + var(--sat)); display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 90%; pointer-events: none; }
+.hud-power { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 7px; border-radius: 999px; --c: #fff; background: rgba(4,6,14,0.6); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px color-mix(in srgb, var(--c) 35%, transparent); }
+.hud-power .hp-ic { display: inline-flex; color: var(--c); } .hud-power .hp-ic .i { width: 15px; height: 15px; }
+.hud-power .hp-name { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+.hud-power .hp-bar { display: block; width: 44px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; }
+.hud-power .hp-bar span { display: block; height: 100%; border-radius: 999px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.hud-power.ending .hp-ic { animation: hp-blink 0.25s steps(2) infinite; }
+@keyframes hp-blink { to { opacity: 0.25; } }
+.fx-vignette.ending { opacity: 1; animation: vig-ending 0.5s steps(2) infinite; }
+@keyframes vig-ending { 0% { box-shadow: inset 0 0 70px rgba(255,255,255,0.18); } 100% { box-shadow: inset 0 0 70px rgba(255,255,255,0.02); } }
+.fx-vignette.star { box-shadow: inset 0 0 120px rgba(255,226,122,0.45); }
+.fx-vignette.ghost { box-shadow: inset 0 0 120px rgba(232,240,255,0.4); }
+@media (max-height: 720px) { .hud-powers { top: calc(106px + var(--sat)); } }

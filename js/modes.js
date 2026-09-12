@@ -12,19 +12,31 @@ HR.DIRS = ['right', 'top', 'left', 'bottom'];
 // mech = mecânica principal (parâmetros gerados em gen()) · boss = chave em HR.BOSSES
 // colors/shapes = fundo da região (substitui o tema equipado durante a fase)
 HR.REGIONS = [
-  { id: 'berco',      n: 1,  accent: '#4cf0ff', colors: ['#16305a', '#0d1a3a', '#070b1a'], shapes: 'orbs',    stars: true,  mech: 'basic',  boss: 'pulse',       music: 'r1',  reward: { skin: 'ice' } },
-  { id: 'mare',       n: 2,  accent: '#5aa9ff', colors: ['#0b3c5d', '#07253d', '#03111f'], shapes: 'waves',   stars: true,  mech: 'osc',    boss: 'tide',        music: 'r2',  reward: { theme: 'ocean' }, fx: 'water' },
-  { id: 'jardim',     n: 3,  accent: '#7cff6b', colors: ['#0f3d2e', '#0a2620', '#04120e'], shapes: 'bubbles', stars: false, mech: 'swarm',  boss: 'swarm',       music: 'r3',  reward: { trail: 'stars' } },
-  { id: 'forja',      n: 4,  accent: '#ff9f43', colors: ['#4a1d0c', '#2b1008', '#120604'], shapes: 'orbs',    stars: true,  mech: 'shrink', boss: 'shrink',      music: 'r4',  reward: { skin: 'lava' }, fx: 'ember' },
-  { id: 'nevoa',      n: 5,  accent: '#a29bfe', colors: ['#2a2450', '#181538', '#0a0818'], shapes: 'nebula',  stars: true,  mech: 'fog',    boss: 'blink',       music: 'r5',  reward: { skin: 'ghost' } },
-  { id: 'cristal',    n: 6,  accent: '#ff7ad9', colors: ['#4a1a48', '#2c1030', '#140818'], shapes: 'orbs',    stars: true,  mech: 'spin',   boss: 'spin',        music: 'r6',  reward: { theme: 'candy' } },
-  { id: 'tempestade', n: 7,  accent: '#ffd93d', colors: ['#3a3208', '#221d06', '#0f0d03'], shapes: 'grid',    stars: false, mech: 'storm',  boss: 'storm',       music: 'r7',  reward: { trail: 'fire' } },
-  { id: 'abismo',     n: 8,  accent: '#5b6cff', colors: ['#0a0f2a', '#05081a', '#000000'], shapes: 'nebula',  stars: true,  mech: 'dark',   boss: 'eclipse',     music: 'r8',  reward: { theme: 'space' } },
-  { id: 'vortice',    n: 9,  accent: '#ff5ecf', colors: ['#3d0d3a', '#240822', '#0f0410'], shapes: 'waves',   stars: true,  mech: 'vortex', boss: 'cyclone',     music: 'r9',  reward: { skin: 'galaxy' } },
-  { id: 'horizonte',  n: 10, accent: '#ffcf4a', colors: ['#3a2c10', '#1f1808', '#0a0803'], shapes: 'orbs',    stars: true,  mech: 'hyper',  boss: 'singularity', music: 'r10', reward: { skin: 'eye' } }
+  { id: 'berco', gal: 'magellan',      n: 1,  accent: '#4cf0ff', colors: ['#16305a', '#0d1a3a', '#070b1a'], shapes: 'orbs',    stars: true,  mech: 'basic',  boss: 'pulse',       music: 'r1',  reward: { skin: 'ice' }, fx: 'aurora' },
+  { id: 'mare', gal: 'whirlpool',       n: 2,  accent: '#5aa9ff', colors: ['#0b3c5d', '#07253d', '#03111f'], shapes: 'waves',   stars: true,  mech: 'osc',    boss: 'tide',        music: 'r2',  reward: { theme: 'ocean' }, fx: 'water' },
+  { id: 'jardim', gal: 'sunflower',     n: 3,  accent: '#7cff6b', colors: ['#0f3d2e', '#0a2620', '#04120e'], shapes: 'bubbles', stars: false, mech: 'swarm',  boss: 'swarm',       music: 'r3',  reward: { trail: 'stars' }, fx: 'garden' },
+  { id: 'forja', gal: 'cigar',      n: 4,  accent: '#ff9f43', colors: ['#4a1d0c', '#2b1008', '#120604'], shapes: 'orbs',    stars: true,  mech: 'shrink', boss: 'shrink',      music: 'r4',  reward: { skin: 'lava' }, fx: 'ember' },
+  { id: 'nevoa', gal: 'sombrero',      n: 5,  accent: '#a29bfe', colors: ['#2a2450', '#181538', '#0a0818'], shapes: 'nebula',  stars: true,  mech: 'fog',    boss: 'blink',       music: 'r5',  reward: { skin: 'ghost' }, fx: 'mist' },
+  { id: 'cristal', gal: 'pinwheel',    n: 6,  accent: '#ff7ad9', colors: ['#4a1a48', '#2c1030', '#140818'], shapes: 'orbs',    stars: true,  mech: 'spin',   boss: 'spin',        music: 'r6',  reward: { theme: 'candy' }, fx: 'crystal' },
+  { id: 'tempestade', gal: 'antennae', n: 7,  accent: '#ffd93d', colors: ['#3a3208', '#221d06', '#0f0d03'], shapes: 'grid',    stars: false, mech: 'storm',  boss: 'storm',       music: 'r7',  reward: { trail: 'fire' }, fx: 'storm' },
+  { id: 'abismo', gal: 'blackeye',     n: 8,  accent: '#5b6cff', colors: ['#0a0f2a', '#05081a', '#000000'], shapes: 'nebula',  stars: true,  mech: 'dark',   boss: 'eclipse',     music: 'r8',  reward: { theme: 'space' }, fx: 'abyss' },
+  { id: 'vortice', gal: 'cartwheel',    n: 9,  accent: '#ff5ecf', colors: ['#3d0d3a', '#240822', '#0f0410'], shapes: 'waves',   stars: true,  mech: 'vortex', boss: 'cyclone',     music: 'r9',  reward: { skin: 'galaxy' }, fx: 'vortex' },
+  { id: 'horizonte', gal: 'andromeda',  n: 10, accent: '#ffcf4a', colors: ['#3a2c10', '#1f1808', '#0a0803'], shapes: 'orbs',    stars: true,  mech: 'hyper',  boss: 'singularity', music: 'r10', reward: { skin: 'eye' }, fx: 'horizon' }
 ];
 
 // waves = ondas do chefe (a mecânica aperta a cada onda) · icon = js/icons.js
+// contratos por região (v4): stat = campo de campaign.rstats[ri] · alvo = base + per × região
+HR.CONTRACTS = [
+  { id: 'perfects',     stat: 'perfects',     base: 60,  per: 25,  coins: 200, gems: 10, icon: 'target' },
+  { id: 'clears',       stat: 'clears',       base: 12,  per: 3,   coins: 250, gems: 10, icon: 'flag' },
+  { id: 'coins',        stat: 'coins',        base: 400, per: 200, coins: 300, gems: 8,  icon: 'coins' },
+  { id: 'pickups',      stat: 'pickups',      base: 15,  per: 6,   coins: 200, gems: 10, icon: 'gift' },
+  { id: 'flawless',     stat: 'flawless',     base: 2,   per: 1,   coins: 300, gems: 15, icon: 'sparkle' },
+  { id: 'events',       stat: 'events',       base: 3,   per: 2,   coins: 250, gems: 12, icon: 'zap' },
+  { id: 'nomiss',       stat: 'noMiss',       base: 20,  per: 4,   coins: 250, gems: 12, icon: 'link' },
+  { id: 'bossflawless', stat: 'bossFlawless', base: 1,   per: 0,   coins: 400, gems: 25, icon: 'crown' }
+];
+
 HR.BOSSES = {
   pulse:       { icon: 'pulse',   waves: 3 }, // arcos expandem e contraem
   tide:        { icon: 'wave',    waves: 3 }, // ondas sincronizadas + rajadas
@@ -66,12 +78,12 @@ HR.BOSSES = {
     const g = (ri * 10 + li) / 99;                // progresso global 0..1
     const tier = Math.min(9, Math.floor(g * 9.99)); // 0..9 → curva de velocidade/tempo entre arcos
     let rings = isBoss ? (ri === 9 ? 60 : 32 + ri * 2) : Math.round(lerp(14 + ri * 2, 24 + ri * 2, li / 8));
-    let speed = 0.90 + g * 0.52 + (isBoss ? 0.03 : 0);
+    let speed = 0.90 + g * 0.62 + (isBoss ? 0.03 : 0);
     const P = {
-      accent: R.accent, radius: 1 - g * 0.30, tiltVar: 0, osc: 0, oscF: 0, rot: 0, rotF: 0,
-      yDelta: 180 + g * 240, tbMul: 1 - g * 0.18, coin: 0.45 + g * 0.10, dbl: 0,
+      accent: R.accent, radius: 1 - g * 0.36, tiltVar: 0, osc: 0, oscF: 0, rot: 0, rotF: 0,
+      yDelta: 180 + g * 280, tbMul: 1 - g * 0.22, coin: 0.45 + g * 0.10, dbl: 0,
       fog: 0, dark: 0, shrink: 0, sync: false, burst: 0,
-      mix: 0.35 + g * 0.5, obs: ri >= HR.CONFIG.OBSTACLE.fromRegion ? 0.15 + g * 0.35 : 0, pick: (ri === 0 && li === 0) ? 0 : HR.CONFIG.PICKUP.chance
+      mix: 0.35 + g * 0.55, obs: ri >= HR.CONFIG.OBSTACLE.fromRegion ? 0.15 + g * 0.45 : 0, pick: (ri === 0 && li === 0) ? 0 : HR.CONFIG.PICKUP.chance
     };
     // mecânicas antigas "vazam" de leve para as regiões seguintes (variedade)
     if (ri >= 2) { P.osc = 22; P.oscF = 1.2; }
@@ -95,9 +107,25 @@ HR.BOSSES = {
     if (R.mech === 'vortex') dirEvery = isBoss ? 3 : 6 - Math.floor(li / 4);
     if (R.mech === 'hyper') dirEvery = isBoss ? 0 : 5 - Math.floor(li / 5);
     if (isBoss) { P.osc = Math.max(P.osc, 30); P.oscF = Math.max(P.oscF, 1.3); }
+    // modificadores (v4): a partir da região 3, determinísticos por fase; dois a partir da região 7
+    const MUT = ['narrow', 'dense', 'wind', 'pairs', 'bursts'];
+    const mods = [];
+    if (ri >= 2 && !isBoss && (li % 3 === 2 || ri >= 5)) mods.push(MUT[(ri * 7 + li * 3) % 5]);
+    if (ri >= 6 && !isBoss && li >= 6) { const m2 = MUT[(ri * 7 + li * 3 + 2) % 5]; if (!mods.includes(m2)) mods.push(m2); }
+    mods.forEach(m => {
+      if (m === 'narrow') P.radius *= 0.9; else if (m === 'dense') P.tbMul *= 0.9; else if (m === 'wind') P.tiltVar = Math.max(P.tiltVar, 0.25) + 0.1;
+      else if (m === 'pairs') P.dbl += 0.15; else if (m === 'bursts') P.burst = Math.max(P.burst, 0.2);
+    });
+    // eventos (v4): fases 3/6/9 a partir da 2ª região; duas por fase da 4ª em diante; chefes: um entre as ondas
+    const EV = ['asteroids', 'warp', 'sentinel', 'bonanza', 'guardian'];
+    const events = [];
+    if (!isBoss && ri >= 1 && (li === 2 || li === 5 || li === 8)) events.push({ at: Math.round(rings * 0.45), id: EV[(ri * 2 + li) % 5] });
+    if (!isBoss && ri >= 3 && li >= 6) events.push({ at: Math.round(rings * 0.78), id: EV[(ri * 2 + li + 3) % 5] });
+    const BOSS_EV = { pulse: ['asteroids'], tide: ['warp'], swarm: ['asteroids'], shrink: ['guardian'], blink: ['sentinel'], spin: ['warp'], storm: ['asteroids'], eclipse: ['sentinel'], cyclone: ['guardian'], singularity: ['sentinel', 'asteroids', 'warp', 'guardian'] };
+    if (isBoss) { const list = BOSS_EV[R.boss], waves = HR.BOSSES[R.boss].waves, per = Math.ceil(rings / waves); list.forEach((id, k) => { const w = waves === 5 ? k + 1 : 1; events.push({ at: per * w, id, wave: true }); }); }
     const dirs = dirsFor(R, ri, li, isBoss);
     return {
-      id: (ri + 1) + '-' + (li + 1), region: R.id, ri, li, rings, speed: r2(speed), tier, params: P, dirs, dirEvery,
+      id: (ri + 1) + '-' + (li + 1), region: R.id, ri, li, rings, speed: r2(speed), tier, params: P, dirs, dirEvery, mods, events,
       boss: isBoss ? R.boss : null, waves: isBoss ? HR.BOSSES[R.boss].waves : 0
     };
   }
@@ -128,8 +156,51 @@ HR.BOSSES = {
     regionsCleared() { let n = 0; HR.REGIONS.forEach((R, i) => { if (this.bossBeaten(i)) n++; }); return n; },
     prev(id) { const a = all(); const i = a.findIndex(l => l.id === id); return i > 0 ? a[i - 1] : null; },
     next(id) { const a = all(); const i = a.findIndex(l => l.id === id); return i >= 0 && i < a.length - 1 ? a[i + 1] : null; },
-    // região abre ao vencer o chefe anterior OU com 60 % das estrelas da região anterior (18/30)
-    isRegionUnlocked(ri) { return ri === 0 || this.bossBeaten(ri - 1) || this.regionStars(ri - 1) >= 18; },
+    // v4: a região abre pelo Portal (5 portas) — ver gate()
+    isRegionUnlocked(ri) { return ri === 0 || this.gate(ri).ok; },
+    gate(ri) {
+      const P = HR.CONFIG.PROGRESSION, d = HR.Store.data;
+      if (ri <= 0) return { ok: true, items: [] };
+      const stars = this.regionStars(ri - 1), core = HR.Core.level(), cd = this.contractsDone(ri - 1), boss = this.bossBeaten(ri - 1);
+      const items = [
+        { id: 'boss', ok: boss, a: boss ? 1 : 0, b: 1 },
+        { id: 'stars', ok: stars >= P.regionStars[ri], a: stars, b: P.regionStars[ri] },
+        { id: 'rank', ok: d.level >= P.regionRank[ri], a: d.level, b: P.regionRank[ri] },
+        { id: 'core', ok: core >= P.regionCore[ri], a: core, b: P.regionCore[ri] },
+        { id: 'contracts', ok: cd >= P.contractsNeed, a: cd, b: P.contractsNeed }
+      ];
+      return { ok: items.every(i => i.ok), items, open: items.filter(i => i.ok).length };
+    },
+    // contratos: 5 por região, gerados dos modelos (HR.CONTRACTS); prêmio automático no fim da partida
+    contractsOf(ri) {
+      const out = [], T = HR.CONTRACTS;
+      for (let k = 0; k < 5; k++) { const t = T[(ri * 3 + k) % T.length]; out.push({ id: t.id + '_' + ri, tpl: t.id, stat: t.stat, target: t.base + t.per * ri, coins: t.coins + ri * 40, gems: t.gems, xp: 250, icon: t.icon, ri }); }
+      return out;
+    },
+    rstat(ri) { const c = HR.Store.data.campaign; c.rstats = c.rstats || {}; return c.rstats[ri] || (c.rstats[ri] = { perfects: 0, clears: 0, coins: 0, pickups: 0, flawless: 0, events: 0, noMiss: 0, bossFlawless: 0 }); },
+    contractProgress(c) { return Math.min(c.target, this.rstat(c.ri)[c.stat] || 0); },
+    contractDone(c) { const cc = HR.Store.data.campaign.contracts || {}; return !!cc[c.id]; },
+    contractsDone(ri) { return this.contractsOf(ri).filter(c => this.contractDone(c)).length; },
+    contractText(c) { return HR.t('c_' + c.tpl, { n: c.target }); },
+    // atualiza estatísticas da região e conclui contratos; retorna os contratos concluídos agora
+    onRunEnd(s) {
+      if (s.mode !== 'campaign' || !s.levelId) return [];
+      const L = this.level(s.levelId); if (!L) return [];
+      const st = this.rstat(L.ri), d = HR.Store.data;
+      st.perfects += s.perfects; st.coins += s.rawCoins; st.pickups += s.pickups; st.events += s.eventsDone || 0; st.noMiss = Math.max(st.noMiss, s.noMissRings);
+      if (s.success) { st.clears++; if (s.hits === 0) { st.flawless++; if (L.boss) st.bossFlawless++; } }
+      if (!d.stats.regionsVisited.includes(L.ri)) d.stats.regionsVisited.push(L.ri);
+      const done = [];
+      d.campaign.contracts = d.campaign.contracts || {};
+      this.contractsOf(L.ri).forEach(c => {
+        if (this.contractDone(c) || this.contractProgress(c) < c.target) return;
+        d.campaign.contracts[c.id] = Date.now(); d.stats.contractsDone = (d.stats.contractsDone || 0) + 1;
+        HR.Economy.addCoins(c.coins, 'contract'); HR.Economy.addGems(c.gems, 'contract');
+        HR.Analytics.log('contract_done', { id: c.id }); done.push(c);
+      });
+      HR.Store.save();
+      return done;
+    },
     isUnlocked(id) {
       const l = this.level(id); if (!l) return false;
       if (!this.isRegionUnlocked(l.ri)) return false;
@@ -138,7 +209,9 @@ HR.BOSSES = {
     },
     regionState(ri) { return !this.isRegionUnlocked(ri) ? 'locked' : this.regionCleared(ri) ? 'done' : 'open'; },
     currentRegion() { for (let i = HR.REGIONS.length - 1; i >= 0; i--) if (this.isRegionUnlocked(i) && !this.regionCleared(i)) return i; return this.regionsCleared() >= 10 ? 9 : 0; },
-    currentLevel() { const a = all(); return a.find(l => this.stars(l.id) === 0 && this.isUnlocked(l.id)) || a[a.length - 1]; },
+    currentLevel() { const a = all(); const open = a.find(l => this.stars(l.id) === 0 && this.isUnlocked(l.id)); if (open) return open; let last = a[0]; for (const l of a) if (this.isUnlocked(l.id)) last = l; return last; },
+    // próxima região fechada cuja anterior está aberta (o Portal que o jogador está abrindo agora)
+    nextPortal() { for (let i = 1; i < HR.REGIONS.length; i++) if (!this.isRegionUnlocked(i)) return this.isRegionUnlocked(i - 1) ? i : null; return null; },
     singularityMastered() { return this.bossBeaten(9); },
     passNeed(level) { return Math.ceil(level.rings * HR.CONFIG.RUN.passNeed); },
     computeStars(summary, level) {
@@ -203,8 +276,12 @@ Object.assign(HR.I18N.pt, {
   star_finish: 'Passar por 60 % dos arcos', star_perfects: '40 % de perfeitos', star_flawless: 'Sem dano, sem erros e todas as moedas', level_need: 'Passe por pelo menos {n} arcos ({p} de {t})', rewards: 'Recompensas', new_item: 'Novo item',
   direction_change: 'DIREÇÃO', dir_right: '←', dir_top: '↓', dir_left: '→', dir_bottom: '↑', practice_note: 'Treino: sem morte, metade das moedas, sem ranking.',
   life_lost: 'VIDA −1', second_chance_used: 'SEGUNDA CHANCE!', select_mode: 'Modo', play_mode: 'JOGAR', continue_campaign: 'Continuar: Fase {n}', world_progress: '{a}/{b} estrelas',
-  region_locked_hint: 'Vença o chefe de {name} ou junte 18 estrelas lá', region_reward: 'Prêmio do chefe', region_music: 'Tema musical', region_mech: 'Mecânica', region_boss: 'Chefe da região',
-  galaxy_sub: '{a}/{b} fases · {c} estrelas', tap_region: 'Toque numa região', enter_region: 'ENTRAR', play_endless: 'JOGAR INFINITO'
+  region_locked_hint: 'Portal fechado. Abra primeiro o de {name}.', region_reward: 'Prêmio do chefe', region_music: 'Tema musical', region_mech: 'Mecânica', region_boss: 'Chefe da região',
+  galaxy_sub: '{a}/{b} fases · {c} estrelas', tap_region: 'Toque numa região', enter_region: 'ENTRAR', play_endless: 'JOGAR INFINITO',
+  gal_magellan: 'Nuvem de Magalhães', gal_whirlpool: 'Rodamoinho', gal_sunflower: 'Girassol', gal_cigar: 'Charuto', gal_sombrero: 'Sombrero', gal_pinwheel: 'Cata-vento', gal_antennae: 'Antenas', gal_blackeye: 'Olho Negro', gal_cartwheel: 'Roda de Carro', gal_andromeda: 'Andrômeda',
+  gal_magellan_c: 'LMC', gal_whirlpool_c: 'M51', gal_sunflower_c: 'M63', gal_cigar_c: 'M82', gal_sombrero_c: 'M104', gal_pinwheel_c: 'M101', gal_antennae_c: 'NGC 4038', gal_blackeye_c: 'M64', gal_cartwheel_c: 'ESO 350-40', gal_andromeda_c: 'M31',
+  gal_magellan_d: 'Galáxia-satélite da Via Láctea, berçário de estrelas visível a olho nu no céu do sul.', gal_whirlpool_d: 'Espiral clássica de braços em redemoinho, a 23 milhões de anos-luz.', gal_sunflower_d: 'Braços fofos como pétalas, cheios de aglomerados jovens.', gal_cigar_d: 'Galáxia em explosão de formação estelar: nasce 10 vezes mais estrelas que na Via Láctea.', gal_sombrero_d: 'Bojo brilhante e faixa de poeira escura, como uma aba de chapéu.', gal_pinwheel_d: 'Espiral gigante, quase o dobro da Via Láctea.', gal_antennae_d: 'Duas galáxias colidindo, com caudas de maré como antenas.', gal_blackeye_d: 'Faixa escura de poeira em frente ao núcleo: o "olho negro".', gal_cartwheel_d: 'Anel formado por uma galáxia que atravessou outra, como uma onda num lago.', gal_andromeda_d: 'A grande vizinha: 1 trilhão de estrelas, em rota de colisão com a Via Láctea.',
+  bh_name: 'TON 618', bh_sub: 'Singularidade', bh_d: 'O maior buraco negro conhecido: cerca de 66 bilhões de vezes a massa do Sol, a 10 bilhões de anos-luz.', galaxy_n: 'Galáxia {n}'
 });
 Object.assign(HR.I18N.en, {
   mode_endless: 'Endless', mode_campaign: 'Galaxy', mode_practice: 'Practice',
@@ -228,8 +305,12 @@ Object.assign(HR.I18N.en, {
   star_finish: 'Pass 60% of the rings', star_perfects: '40% perfects', star_flawless: 'No damage, no misses and all coins', level_need: 'Pass at least {n} rings ({p} of {t})', rewards: 'Rewards', new_item: 'New item',
   direction_change: 'DIRECTION', dir_right: '←', dir_top: '↓', dir_left: '→', dir_bottom: '↑', practice_note: 'Practice: no death, half coins, no ranking.',
   life_lost: 'LIFE −1', second_chance_used: 'SECOND CHANCE!', select_mode: 'Mode', play_mode: 'PLAY', continue_campaign: 'Continue: Level {n}', world_progress: '{a}/{b} stars',
-  region_locked_hint: 'Beat the {name} boss or collect 18 stars there', region_reward: 'Boss reward', region_music: 'Music theme', region_mech: 'Mechanic', region_boss: 'Region boss',
-  galaxy_sub: '{a}/{b} levels · {c} stars', tap_region: 'Tap a region', enter_region: 'ENTER', play_endless: 'PLAY ENDLESS'
+  region_locked_hint: 'Portal closed. Open the one for {name} first.', region_reward: 'Boss reward', region_music: 'Music theme', region_mech: 'Mechanic', region_boss: 'Region boss',
+  galaxy_sub: '{a}/{b} levels · {c} stars', tap_region: 'Tap a region', enter_region: 'ENTER', play_endless: 'PLAY ENDLESS',
+  gal_magellan: 'Magellanic Cloud', gal_whirlpool: 'Whirlpool', gal_sunflower: 'Sunflower', gal_cigar: 'Cigar', gal_sombrero: 'Sombrero', gal_pinwheel: 'Pinwheel', gal_antennae: 'Antennae', gal_blackeye: 'Black Eye', gal_cartwheel: 'Cartwheel', gal_andromeda: 'Andromeda',
+  gal_magellan_c: 'LMC', gal_whirlpool_c: 'M51', gal_sunflower_c: 'M63', gal_cigar_c: 'M82', gal_sombrero_c: 'M104', gal_pinwheel_c: 'M101', gal_antennae_c: 'NGC 4038', gal_blackeye_c: 'M64', gal_cartwheel_c: 'ESO 350-40', gal_andromeda_c: 'M31',
+  gal_magellan_d: 'Satellite of the Milky Way, a star nursery visible to the naked eye in the southern sky.', gal_whirlpool_d: 'The classic spiral with whirlpool arms, 23 million light-years away.', gal_sunflower_d: 'Fluffy arms like petals, full of young clusters.', gal_cigar_d: 'A starburst galaxy: stars are born 10 times faster than in the Milky Way.', gal_sombrero_d: 'Bright bulge and a dark dust lane, like a hat brim.', gal_pinwheel_d: 'A giant spiral, almost twice the size of the Milky Way.', gal_antennae_d: 'Two galaxies colliding, with tidal tails like antennae.', gal_blackeye_d: 'A dark dust band in front of the core: the "black eye".', gal_cartwheel_d: 'A ring made when one galaxy passed through another, like a ripple in a pond.', gal_andromeda_d: 'The big neighbor: a trillion stars, on a collision course with the Milky Way.',
+  bh_name: 'TON 618', bh_sub: 'Singularity', bh_d: 'The most massive black hole known: about 66 billion Suns, 10 billion light-years away.', galaxy_n: 'Galaxy {n}'
 });
 Object.assign(HR.I18N.es, {
   mode_endless: 'Infinito', mode_campaign: 'Galaxia', mode_practice: 'Práctica',
@@ -253,6 +334,10 @@ Object.assign(HR.I18N.es, {
   star_finish: 'Pasar el 60 % de los aros', star_perfects: '40 % de perfectos', star_flawless: 'Sin daño, sin fallos y todas las monedas', level_need: 'Pasa al menos {n} aros ({p} de {t})', rewards: 'Recompensas', new_item: 'Nuevo objeto',
   direction_change: 'DIRECCIÓN', dir_right: '←', dir_top: '↓', dir_left: '→', dir_bottom: '↑', practice_note: 'Práctica: sin muerte, mitad de monedas, sin ranking.',
   life_lost: 'VIDA −1', second_chance_used: '¡SEGUNDA OPORTUNIDAD!', select_mode: 'Modo', play_mode: 'JUGAR', continue_campaign: 'Continuar: Nivel {n}', world_progress: '{a}/{b} estrellas',
-  region_locked_hint: 'Vence al jefe de {name} o reúne 18 estrellas allí', region_reward: 'Premio del jefe', region_music: 'Tema musical', region_mech: 'Mecánica', region_boss: 'Jefe de la región',
-  galaxy_sub: '{a}/{b} niveles · {c} estrellas', tap_region: 'Toca una región', enter_region: 'ENTRAR', play_endless: 'JUGAR INFINITO'
+  region_locked_hint: 'Portal cerrado. Abre primero el de {name}.', region_reward: 'Premio del jefe', region_music: 'Tema musical', region_mech: 'Mecánica', region_boss: 'Jefe de la región',
+  galaxy_sub: '{a}/{b} niveles · {c} estrellas', tap_region: 'Toca una región', enter_region: 'ENTRAR', play_endless: 'JUGAR INFINITO',
+  gal_magellan: 'Nube de Magallanes', gal_whirlpool: 'Remolino', gal_sunflower: 'Girasol', gal_cigar: 'Cigarro', gal_sombrero: 'Sombrero', gal_pinwheel: 'Molinete', gal_antennae: 'Antenas', gal_blackeye: 'Ojo Negro', gal_cartwheel: 'Rueda de Carro', gal_andromeda: 'Andrómeda',
+  gal_magellan_c: 'LMC', gal_whirlpool_c: 'M51', gal_sunflower_c: 'M63', gal_cigar_c: 'M82', gal_sombrero_c: 'M104', gal_pinwheel_c: 'M101', gal_antennae_c: 'NGC 4038', gal_blackeye_c: 'M64', gal_cartwheel_c: 'ESO 350-40', gal_andromeda_c: 'M31',
+  gal_magellan_d: 'Satélite de la Vía Láctea, un vivero de estrellas visible a simple vista en el cielo austral.', gal_whirlpool_d: 'La espiral clásica de brazos en remolino, a 23 millones de años luz.', gal_sunflower_d: 'Brazos esponjosos como pétalos, llenos de cúmulos jóvenes.', gal_cigar_d: 'Galaxia con brote estelar: nacen 10 veces más estrellas que en la Vía Láctea.', gal_sombrero_d: 'Bulbo brillante y franja de polvo oscuro, como el ala de un sombrero.', gal_pinwheel_d: 'Espiral gigante, casi el doble de la Vía Láctea.', gal_antennae_d: 'Dos galaxias chocando, con colas de marea como antenas.', gal_blackeye_d: 'Una franja oscura de polvo frente al núcleo: el "ojo negro".', gal_cartwheel_d: 'Un anillo formado cuando una galaxia atravesó otra, como una onda en un lago.', gal_andromeda_d: 'La gran vecina: un billón de estrellas, en rumbo de colisión con la Vía Láctea.',
+  bh_name: 'TON 618', bh_sub: 'Singularidad', bh_d: 'El agujero negro más masivo conocido: unas 66 mil millones de masas solares, a 10 mil millones de años luz.', galaxy_n: 'Galaxia {n}'
 });

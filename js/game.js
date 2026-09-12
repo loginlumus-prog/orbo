@@ -96,19 +96,22 @@ HR.Game = class {
     this.run = {
       mode: 'endless', level: null, score: 0, coins: 0, perfects: 0, combo: 0, maxCombo: 0, ringsSpawned: 0, ringsPassed: 0, ringsResolved: 0, misses: 0, revives: 0,
       shields: 0, lives: 0, hits: 0, coinsMissed: 0, secondUsed: false, invuln: 0, phaseNumber: 1, phaseIdx: 0, startTime: 0, dist: 0,
-      perks: {}, mods: HR.Perks.baseMods(), abilities: [], slowmoT: 0, magnetT: 0, autoT: 0, ghostT: 0, freezeT: 0, reflexT: 0, starT: 0,
+      perks: {}, mods: HR.Perks.baseMods(), abilities: [], slowmoT: 0, magnetT: 0, autoT: 0, ghostT: 0, freezeT: 0, reflexT: 0, starT: 0, lensT: 0, echoT: 0,
       bossWave: 0, levelDone: false, perksOffered: 0, rerollUsed: false, autoPerks: 0,
       dirChanges: 0, nearMisses: 0, shieldsAbsorbed: 0, livesUsed: 0, abilitiesUsed: 0, abUse: {}, cleanStreak: 0, cleanRings: 0, noMissStreak: 0, noMissRings: 0,
       goldRings: 0, doubleRings: 0, comboBonuses: 0, coinsTaken: 0, ringsTop: 0, ringsLeft: 0, rarePerks: 0,
-      pickups: 0, anomaliesBeaten: 0, anomalyActive: false, starsUsed: 0, obstaclesDestroyed: 0, gemsFound: 0, flowClock: 0, ghostClock: 0
+      pickups: 0, anomaliesBeaten: 0, anomalyActive: false, starsUsed: 0, obstaclesDestroyed: 0, gemsFound: 0, flowClock: 0, ghostClock: 0,
+      flow: 0, flowV: 0, flowMax: 0, flowTime: 0, centerPickups: 0, eventsDone: 0, core: HR.Core.mods(),
+      eventsFired: {}, guardians: 0, sentinels: 0, warps: 0, asteroidsDestroyed: 0, eventHits: 0
     };
     this.ball.y = this.ball.ty = (this.Lv || this.H) / 2; this.ball.vy = 0; this.ball.vx = 0; this.ball.tx = this.ball.x; this.ball.trail = []; this.ball.alpha = 1;
     this.nextX = (this.Lu || this.W || 500) + 240; this.lastY = this.ball.y; this.pendingDouble = false; this.lastRing = null; this.lastPickupRing = -99;
     this.anomalyT = 0; this.anomalyPending = false;
+    this.event = null; this.pendingEvent = null; this.lastEvent = null; this.eventNextRing = HR.CONFIG.EVENT.endlessFrom; this.sentinel = null;
     this.timeScale = 1; this.shake = 0; this.killer = null; this.dyingT = 0; this.pendingDir = null; this.trans = null; this.perkTimer = 0; this.levelEndTimer = 0; this.levelSuccess = false;
     this.bg.setTint(HR.CONFIG.PHASES[0].accent);
   }
-  startAttract() { this.demo = true; this.state = 'idle'; this.levelTheme = null; this.fx = null; this.applyCosmetics(); this.resetRun(); this.rings = []; }
+  startAttract() { this.demo = true; this.state = 'idle'; this.levelTheme = null; this.fx = null; this.applyCosmetics(); this.bg.setFx(null); this.bg.season = HR.Seasons ? HR.Seasons.current() : null; this.resetRun(); this.rings = []; }
 
   prepareRun(opts) {
     opts = opts || {};
@@ -116,9 +119,11 @@ HR.Game = class {
     const run = this.run;
     run.mode = opts.mode || 'endless'; run.level = opts.level || null;
     run.abilities = HR.Abilities.equipped().map(id => id ? { id, cd: 0, active: 0 } : null);
+    run.core = HR.Core.mods(); run.shields = Math.min(this.shieldCap(), run.shields + run.core.startShield); run.lives += run.core.life;
     if (run.level) { const R = HR.REGIONS[run.level.ri]; this.levelTheme = { colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx || null }; this.fx = R.fx || null; }
-    else { this.levelTheme = null; this.fx = null; }
+    else { this.levelTheme = null; this.fx = this.phaseFor(0).phase.fx || null; }
     this.applyCosmetics();
+    this.bg.setFx(this.fx); this.bg.season = null;
     this.setDir(this.dirForRing(0));
     this.ball.y = this.ball.ty = this.Lv / 2; this.ball.vx = this.ball.vy = 0; this.lastY = this.ball.y;
     const ph = this.phaseFor(0);
@@ -165,7 +170,8 @@ HR.Game = class {
       if ((L.boss === 'storm' || L.boss === 'tide' || L.boss === 'cyclone') && w >= 1) v *= 1 + 0.35 * Math.max(0, Math.sin(this.time * 0.9));
       if (L.boss === 'singularity' && w >= 4) v *= 1 + 0.3 * Math.max(0, Math.sin(this.time * 1.1));
     } else v = R.baseSpeed + n * R.speedPerRing;
-    return Math.min(v, R.maxSpeed) * (run.mods ? run.mods.speedMul : 1);
+    if (this.event && this.event.id === 'warp') v *= HR.CONFIG.EVENTS.warp.speed;
+    return Math.min(v, R.maxSpeed * 1.4) * (run.mods ? run.mods.speedMul : 1) * (1 + (run.flowV || 0) * R.flowSpeedMul);
   }
   tbAt(n, ph) {
     const R = HR.CONFIG.RUN, L = this.run.level;
@@ -184,10 +190,22 @@ HR.Game = class {
     if (ph.dir === 'swap') return HR.DIRS[Math.floor(index / 5) % 4];
     return ph.dir || 'right';
   }
-  shieldCap() { return HR.CONFIG.RUN.shieldCap + (this.run.mods ? this.run.mods.regen : 0); }
+  shieldCap() { return HR.CONFIG.RUN.shieldCap + (this.run.mods ? this.run.mods.regen : 0) + (this.run.core ? this.run.core.shieldCap : 0); }
+
+  // fluxo (ritmo): sobe por arco, zera ao quebrar; flowV é a versão suave usada pelo fundo/música/HUD
+  addFlow(perfect) { const F = HR.CONFIG.FLOW, run = this.run; run.flow = Math.min(1, run.flow + (perfect ? F.perPerfect : F.perPass)); run.flowMax = Math.max(run.flowMax, run.flow); }
+  breakFlow() { const run = this.run; if (run.flow > 0.02) { run.flow = run.mods.flowkeeper ? run.flow * 0.5 : 0; this.emit('flowbreak'); } }
+  updateFlow(dt) {
+    const F = HR.CONFIG.FLOW, run = this.run;
+    if (this.event && this.event.id === 'warp') run.flow = 1;
+    const target = this.state === 'playing' || this.state === 'transition' ? run.flow : 0;
+    run.flowV = HR.U.damp(run.flowV, target, target > run.flowV ? F.rise : F.fall, dt);
+    if (run.flowV > 0.95 && this.state === 'playing') run.flowTime += dt;
+  }
 
   fill() {
-    if (this.pendingDir) return;
+    if (this.pendingDir || this.pendingEvent) return;
+    if (this.event && this.event.id !== 'warp' && this.event.id !== 'sentinel') return;
     const L = this.run.level;
     let guard = 0;
     while (this.nextX < this.Lu + 700 && guard++ < 60) {
@@ -228,6 +246,8 @@ HR.Game = class {
     const wave = L && L.boss ? this.waveOfIndex(n) : 0;
     let r = Math.max(R.ringMinR, R.ringR * P.radius * Math.pow(R.loopRadiusMul, ph.loops)) * (1 + run.mods.ringRadius);
     if (L && L.boss === 'swarm') r *= [0.95, 0.9, 0.85][wave];
+    const warp = this.event && this.event.id === 'warp'; if (warp) r *= HR.CONFIG.EVENTS.warp.radius;
+    if (run.lensT > 0) r *= 1.4;
     const gold = run.mods.goldEvery > 0 && (n + 1) % run.mods.goldEvery === 0;
     const type = this.demo ? 'plain' : this.ringTypeFor(P, L, wave, gold);
     const sync = P.sync || (L && (L.boss === 'tide' || L.boss === 'cyclone'));
@@ -247,14 +267,14 @@ HR.Game = class {
       x: this.nextX, baseY: y, y, r, baseR: r, tilt0, tilt: tilt0,
       osc, oscF, oscP: sync ? 0 : U.rand(0, 6.28), rot, rotF, rotP: U.rand(0, 6.28), shrinkK, pulse,
       type, color: T[type].color, accent: T[type].color, fx: this.fx,
-      coin: (gold || type === 'anomaly') ? false : U.chance(P.coin), coinTaken: false, resolved: false, missed: false, index: n, flash: 0, hit: false, prevAcross: null, aligned: false,
-      phaseNumber: ph.number, gold, alpha: (P.fog || P.dark || type === 'ghost') ? 0 : 1, reflexUsed: false, dbl
+      coin: (gold || type === 'anomaly') ? false : U.chance(P.coin), coinTaken: false, centerItem: false, resolved: false, missed: false, index: n, flash: 0, hit: false, prevAcross: null, aligned: false,
+      phaseNumber: ph.number, gold, alpha: (P.fog || P.dark || type === 'ghost') ? 0 : 1, reflexUsed: false, dbl, lensed: run.lensT > 0
     };
     this.rings.push(ring);
     // obstáculos no vazio entre o arco anterior e este (sempre longe do centro dos dois)
-    if (!this.demo && P.obs && this.lastRing && !dbl && spacing >= 240 && U.chance(P.obs)) this.spawnObstacles(this.lastRing, ring, P);
-    // item fora da linha dos arcos
-    if (!this.demo && P.pick && !dbl && n - this.lastPickupRing >= HR.CONFIG.PICKUP.minGap && U.chance(P.pick)) this.spawnPickup(ring, spacing);
+    if (!this.demo && !warp && !this.event && P.obs && this.lastRing && !dbl && spacing >= 240 && U.chance(P.obs)) this.spawnObstacles(this.lastRing, ring, P);
+    // item: no centro do arco (sem moeda) ou fora da linha
+    if (!this.demo && !warp && P.pick && !dbl && n - this.lastPickupRing >= HR.CONFIG.PICKUP.minGap && U.chance(P.pick)) this.spawnPickup(ring, spacing, !ring.coin && type !== 'anomaly' && U.chance(HR.CONFIG.PICKUP.centerChance));
     this.lastRing = ring;
     this.nextX += spacing; this.lastY = y; run.ringsSpawned++;
     let dblChance = P.dbl || 0;
@@ -276,12 +296,14 @@ HR.Game = class {
     }
   }
 
-  spawnPickup(ring, spacing) {
+  spawnPickup(ring, spacing, center) {
     const U = HR.U, K = HR.CONFIG.PICKUP, list = HR.CONFIG.PICKUPS;
-    let total = 0; list.forEach(p => { total += p.w; });
+    const wOf = p => p.w * (p.id === 'gem' && this.run.mods.lucky ? 3 : 1);
+    let total = 0; list.forEach(p => { total += wOf(p); });
     let r = Math.random() * total, def = list[0];
-    for (const p of list) { r -= p.w; if (r <= 0) { def = p; break; } }
+    for (const p of list) { r -= wOf(p); if (r <= 0) { def = p; break; } }
     if (def.id === 'life' && this.run.lives >= 2) def = list[0];
+    if (center) { ring.centerItem = true; this.pickups.push({ x: ring.x, y: ring.y, baseY: ring.y, r: K.r, id: def.id, color: def.color, seed: U.rand(0, 6.28), taken: false, ring, center: true }); this.lastPickupRing = this.run.ringsSpawned; return; }
     const side = U.chance(0.5) ? -1 : 1;
     const y = U.clamp(ring.y + side * (ring.r + U.rand(K.offset[0], K.offset[1])), 34, this.Lv - 34);
     this.pickups.push({ x: ring.x + spacing * 0.5, y, baseY: y, r: K.r, id: def.id, color: def.color, seed: U.rand(0, 6.28), taken: false });
@@ -331,6 +353,15 @@ HR.Game = class {
       case 'autopilot': run.autoT = dur; break;
       case 'ghost': run.ghostT = dur; break;
       case 'freeze': run.freezeT = dur; break;
+      case 'lens': run.lensT = dur; this.rings.forEach(r => { if (!r.resolved && !r.lensed) { r.lensed = true; r.r *= 1.4; r.baseR *= 1.4; } }); ab.active = dur; break;
+      case 'echo': run.echoT = dur; break;
+      case 'pulse': {
+        ab.active = 0; const b = this.ball;
+        this.obstacles.forEach(o => { if (!o.dead && Math.hypot(o.x - b.x, o.y - b.y) < 280) { o.dead = true; run.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; this.particles.burst({ x: o.x, y: o.y, n: 10, speed: 280, color: ['#c9d2ea', '#ff9f43'], size: 5, life: 0.6, type: 'shard' }); } });
+        this.pickups.forEach(p => { if (!p.taken && Math.hypot(p.x - b.x, p.y - b.y) < 340) p.pulled = true; });
+        this.particles.burst({ x: b.x, y: b.y, n: 1, speed: 0, color: '#ff9f43', size: 30, life: 0.7, type: 'wave' });
+        this.shake = 6; break;
+      }
     }
     run.abilitiesUsed++; run.abUse[ab.id] = (run.abUse[ab.id] || 0) + 1;
     HR.Store.data.stats.abilitiesUsed++;
@@ -344,7 +375,14 @@ HR.Game = class {
   updateAbilities(dt) {
     const run = this.run;
     run.abilities.forEach(ab => { if (!ab) return; if (ab.cd > 0) ab.cd = Math.max(0, ab.cd - dt); if (ab.active > 0) ab.active = Math.max(0, ab.active - dt); });
-    ['slowmoT', 'magnetT', 'autoT', 'ghostT', 'freezeT', 'reflexT', 'starT'].forEach(k => { if (run[k] > 0) run[k] = Math.max(0, run[k] - dt); });
+    let ending = 0;
+    ['slowmoT', 'magnetT', 'autoT', 'ghostT', 'freezeT', 'reflexT', 'starT', 'lensT', 'echoT'].forEach(k => {
+      if (run[k] <= 0) return;
+      const before = run[k]; run[k] = Math.max(0, run[k] - dt);
+      if (k !== 'reflexT' && before > 0.9) { [3, 2, 1].forEach(s => { if (before > s && run[k] <= s) HR.Audio.sfx('tick'); }); }
+      if (k !== 'reflexT' && run[k] > 0 && run[k] < 1.5 && before >= 0.9) ending = Math.max(ending, 1.5 - run[k]);
+    });
+    run.powerEnding = ending;
     // ascensão: fluxo (piloto em pulsos → permanente) e intangível (fantasma por ciclos → permanente); suspensos na anomalia
     const M = run.mods;
     if (M.autoflow && !run.anomalyActive) { run.flowClock += dt; const on = M.autoflow >= 3 || (run.flowClock % [0, 15, 12][M.autoflow]) < [0, 3, 6][M.autoflow]; if (on) run.autoT = Math.max(run.autoT, 0.08); }
@@ -395,18 +433,108 @@ HR.Game = class {
   }
   rerollPerks() { if (this.state !== 'perk') return []; return HR.Perks.offer(this.run, 3); }
 
+  /* ---------------- eventos (v4) ---------------- */
+  queueEvent(id) {
+    if (this.demo || this.event || this.pendingEvent || !HR.CONFIG.EVENTS[id]) return false;
+    this.pendingEvent = id; this.lastEvent = id;
+    HR.Audio.sfx('alarm');
+    this.emit('event', { phase: 'warn', id });
+    return true;
+  }
+  startEvent(id) {
+    const E = HR.CONFIG.EVENTS[id], run = this.run, U = HR.U;
+    this.pendingEvent = null;
+    this.rings = []; this.obstacles = this.obstacles.filter(o => o.x < this.ball.x - 40);
+    this.event = { id, t: 0, dur: E.dur * (id === 'warp' && run.mods.warpcore ? 1.5 : 1), spawnT: 0, k: 0, passed: 0, hits0: run.hits, shields0: run.shieldsAbsorbed };
+    if (id === 'sentinel') { this.sentinel = { x: this.Lu * 0.86, y: this.ball.y, fireT: 1.0, leaving: false, leaveT: 0, blink: 0 }; }
+    if (id === 'warp') { run.warps++; this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: '#4cf0ff', size: 40, life: 0.8, type: 'wave' }); }
+    this.nextX = this.Lu + 220;
+    HR.Audio.sfx(id === 'bonanza' ? 'reward' : 'phase');
+    if (HR.Audio.setIntensity) HR.Audio.setIntensity(Math.min(1, (HR.Music && HR.Music.intensity || 0.5) + 0.2));
+    this.emit('event', { phase: 'start', id, dur: E.dur });
+    HR.Analytics.log('event_start', { id, rings: run.ringsPassed, mode: run.mode });
+    void U;
+  }
+  updateEvent(sdt, dt) {
+    const ev = this.event; if (!ev) return;
+    const E = HR.CONFIG.EVENTS[ev.id], U = HR.U, run = this.run, b = this.ball;
+    ev.t += sdt;
+    if (ev.id === 'asteroids') {
+      ev.spawnT -= sdt;
+      if (ev.spawnT <= 0 && ev.t < ev.dur - 1.2) {
+        ev.spawnT = E.every;
+        const y = U.rand(40, this.Lv - 40);
+        if (U.chance(0.28)) this.pickups.push({ x: this.Lu + 40, y, baseY: y, r: 16, id: 'coins', val: 3, color: '#ffcf4a', seed: U.rand(0, 6.28), taken: false });
+        else { const O = HR.CONFIG.OBSTACLE, rr = U.rand(O.rock[0], O.rock[1]); this.obstacles.push({ x: this.Lu + 40, y, r: rr, rot: U.rand(0, 6.28), vr: U.rand(-2, 2), seed: Math.random() * 100, dead: false, rock: true, vx: -U.rand(30, 150), vy: U.rand(-70, 70) }); }
+      }
+    } else if (ev.id === 'bonanza') {
+      ev.spawnT -= sdt;
+      if (ev.spawnT <= 0 && ev.t < ev.dur - 0.8) { ev.spawnT = E.every; const y = this.Lv / 2 + Math.sin(ev.t * 2.6) * this.Lv * 0.34; this.pickups.push({ x: this.Lu + 40, y, baseY: y, r: 15, id: 'coins', val: E.val, color: '#ffcf4a', seed: U.rand(0, 6.28), taken: false }); }
+    } else if (ev.id === 'sentinel') {
+      const S = this.sentinel;
+      if (S && !S.leaving) {
+        S.fireT -= sdt; S.blink = S.fireT < 0.4 && ev.t < ev.dur - 0.6 ? 1 : 0;
+        if (S.fireT <= 0 && ev.t < ev.dur - 0.6) {
+          S.fireT = E.fire;
+          const vy = U.clamp((b.y - S.y) * 0.5, -110, 110);
+          this.obstacles.push({ x: S.x - 26, y: S.y, r: 9, rot: 0, vr: 0, seed: 0, dead: false, shot: true, vx: -E.shot, vy });
+          HR.Audio.sfx('miss');
+        }
+      }
+    } else if (ev.id === 'guardian') {
+      if (ev.k < 3 && !this.rings.some(r => !r.resolved)) {
+        const R = HR.CONFIG.RUN, r = R.ringR * E.sizes[ev.k] * (1 + run.mods.ringRadius);
+        const minY = R.marginY + r * 0.6, maxY = this.Lv - R.marginY - r * 0.6;
+        const y = U.clamp(this.Lv / 2 + (ev.k % 2 ? -1 : 1) * this.Lv * 0.12, minY, maxY);
+        this.rings.push({ x: this.Lu + 260, baseY: y, y, r, baseR: r, tilt0: 0, tilt: 0, osc: 90 - ev.k * 20, oscF: 0.9 + ev.k * 0.2, oscP: U.rand(0, 6.28), rot: 0, rotF: 0, rotP: 0, shrinkK: 0, pulse: false, type: 'guardian', color: E.color, accent: E.color, fx: this.fx, coin: false, coinTaken: false, centerItem: false, resolved: false, missed: false, index: 900 + ev.k, flash: 0, hit: false, prevAcross: null, aligned: false, phaseNumber: run.phaseNumber, gold: false, alpha: 1, reflexUsed: false, dbl: false, event: true, k: ev.k });
+        ev.k++;
+      }
+      if (ev.k >= 3 && this.rings.every(r => r.resolved)) this.endEvent(ev.passed >= 3);
+      return;
+    }
+    if (ev.dur && ev.t >= ev.dur) this.endEvent(ev.id === 'bonanza' || ev.id === 'warp' ? true : run.hits === ev.hits0 && run.shieldsAbsorbed === ev.shields0);
+  }
+  onEventRing(r) {
+    const ev = this.event; if (!ev) return;
+    if (!r.missed && !r.hit) ev.passed++;
+    this.discoverRing('guardian');
+  }
+  endEvent(ok) {
+    const ev = this.event; if (!ev) return;
+    const E = HR.CONFIG.EVENTS[ev.id], run = this.run, P = this.particles;
+    let coins = 0;
+    if (ok) {
+      run.eventsDone++;
+      const wm = run.mods.warpcore ? 2 : 1;
+      if (E.coins) coins = this.addCoins(E.coins * wm);
+      if (E.score) run.score += E.score * wm;
+      if (ev.id === 'guardian') run.guardians++;
+      if (ev.id === 'sentinel') run.sentinels++;
+      P.burst({ x: this.ball.x, y: this.ball.y, n: 36, speed: 480, color: [E.color, '#ffffff'], size: 6, life: 0.9, type: 'spark' });
+      P.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: E.color, size: 36, life: 0.8, type: 'wave' });
+      HR.Audio.sfx('great'); HR.U.vibrate([20, 30, 40]);
+    } else HR.Audio.sfx('error');
+    if (this.sentinel) { this.sentinel.leaving = true; this.sentinel.leaveT = 0; setTimeout(() => { if (this.sentinel && this.sentinel.leaving) this.sentinel = null; }, 1500); }
+    this.event = null;
+    this.rings = this.rings.filter(r => !r.resolved || r.x > this.ball.x);
+    this.nextX = Math.max(this.nextX, this.Lu + 240);
+    this.emit('event', { phase: 'end', id: ev.id, ok, coins, score: ok ? (E.score || 0) : 0 });
+    this.emit('score', run, false);
+    HR.Analytics.log('event_end', { id: ev.id, ok });
+  }
+
   /* ---------------- atualização ---------------- */
   update(dt) {
     this.time += dt;
     const s = this.state, R = HR.CONFIG.RUN, run = this.run;
-    if (s === 'idle') { this.updateShowcase(dt); this.particles.update(dt); this.bg.update(dt, 10, { x: -1, y: 0 }); return; }
-    if (s === 'transition') { this.updateTransition(dt); if (this.state === 'transition') this.updateBall(dt, dt); this.particles.update(dt); this.bg.update(dt, 40, this.motionDir()); return; }
+    if (s === 'idle') { this.updateShowcase(dt); this.particles.update(dt); this.bg.update(dt, 10, { x: -1, y: 0 }, 0); return; }
+    if (s === 'transition') { this.updateTransition(dt); if (this.state === 'transition') this.updateBall(dt, dt); this.particles.update(dt); this.updateFlow(dt); this.bg.update(dt, 40, this.motionDir(), run.flowV); return; }
     this.timeScale = this.effectiveTimeScale();
     const sdt = dt * this.timeScale;
     if (s === 'playing') this.updateAbilities(dt);
     if (s === 'playing' || s === 'dying') this.moveRings(sdt);
     if (s === 'playing' || s === 'ready') this.updateBall(sdt, dt);
-    if (s === 'playing') { this.checkRings(); this.checkReflex(); this.checkField(dt); this.updateAnomaly(dt); }
+    if (s === 'playing') { this.checkRings(); this.checkReflex(); this.checkField(dt); this.updateAnomaly(dt); this.updateEvent(sdt, dt); }
     if (s === 'dying') {
       this.dyingT += dt;
       this.ball.alpha = Math.max(0, 1 - this.dyingT * 3);
@@ -417,17 +545,20 @@ HR.Game = class {
       }
     }
     if (run.invuln > 0) run.invuln -= sdt;
-    for (const r of this.rings) if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 3);
-    this.rings = this.rings.filter(r => r.x > -r.r * 2 - 60);
+    for (const r of this.rings) { if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 3); if (r.shatterT) r.shatterT += dt; }
+    this.rings = this.rings.filter(r => r.x > -r.r * 2 - 60 && !(r.shatterT > 0.55));
     this.obstacles = this.obstacles.filter(o => o.x > -80 && !o.dead);
     this.pickups = this.pickups.filter(p => p.x > -60 && !p.taken);
     if (s === 'playing' && this.pendingDir && !this.rings.length) { this.startTransition(this.pendingDir); return; }
+    if (s === 'playing' && this.pendingEvent && !this.pendingDir && this.rings.every(r => r.resolved)) { this.startEvent(this.pendingEvent); return; }
     if (s === 'playing' || s === 'ready') this.fill();
     if (this.perkTimer > 0 && s === 'playing') { this.perkTimer -= dt; if (this.perkTimer <= 0) this.openPerks(); }
     if (this.levelEndTimer > 0 && s === 'playing') { this.levelEndTimer -= dt; if (this.levelEndTimer <= 0) this.finishRun(this.levelSuccess); }
     this.particles.update(dt);
+    this.updateFlow(dt);
     const moving = s === 'playing' || s === 'dying';
-    this.bg.update(dt, moving ? this.speedAt(run.ringsPassed) * this.timeScale : 0, this.motionDir());
+    const F = HR.CONFIG.FLOW;
+    this.bg.update(dt, moving ? this.speedAt(run.ringsPassed) * this.timeScale * (F.bgBase + F.bgMul * run.flowV) : 0, this.motionDir(), run.flowV);
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 30);
   }
 
@@ -435,7 +566,7 @@ HR.Game = class {
   updateAnomaly(dt) {
     const run = this.run, A = HR.CONFIG.ANOMALY;
     run.anomalyActive = this.rings.some(r => r.type === 'anomaly' && !r.resolved);
-    if (run.mode !== 'endless' || run.ringsPassed < A.fromRing) return;
+    if (run.mode !== 'endless' || run.ringsPassed < A.fromRing || this.event || this.pendingEvent) return;
     if (this.anomalyT === 0) this.anomalyT = A.every * 0.5;
     if (run.anomalyActive || this.anomalyPending) return;
     this.anomalyT -= dt;
@@ -492,11 +623,14 @@ HR.Game = class {
       if (doEclipse) a = Math.min(a, r.x - b.x < 170 ? 1 : U.clamp(0.08 + light * (0.92 - wave * 0.12), 0.05, 1));
       r.alpha = a;
     }
-    for (const o of this.obstacles) { o.x -= v * dt; o.rot += o.vr * dt; }
-    const magnet = run.magnetT > 0 || run.mods.magnet, MR = HR.CONFIG.PICKUP.magnetRange;
+    for (const o of this.obstacles) { o.x -= (o.shot ? 0 : v) * dt; o.rot += o.vr * dt; if (o.vx) o.x += o.vx * dt; if (o.vy) o.y += o.vy * dt; }
+    if (this.sentinel) { const S = this.sentinel; S.x = this.Lu * 0.86; if (S.leaving) { S.x += S.leaveT * 900; S.leaveT += dt; } else S.y = U.damp(S.y, b.y, 1.6, dt); }
+    const bonanza = this.event && this.event.id === 'bonanza';
+    const magnet = run.magnetT > 0 || run.mods.magnet || bonanza, MR = HR.CONFIG.PICKUP.magnetRange * (bonanza ? 1.8 : 1);
     for (const p of this.pickups) {
+      if (p.center && p.ring) { p.x = p.ring.x; p.baseY = p.ring.y; p.y = p.ring.y; if (p.ring.resolved && p.ring.x < b.x - 40) p.center = false; continue; }
       p.x -= v * dt; p.y = p.baseY + Math.sin(t * 3 + p.seed) * 6;
-      if (magnet) { const dx = b.x - p.x, dy = b.y - p.y, d = Math.hypot(dx, dy); if (d < MR && d > 1) { const k = 640 * dt / d; p.x += dx * k; p.baseY += dy * k; } }
+      if (magnet || p.pulled) { const dx = b.x - p.x, dy = b.y - p.y, d = Math.hypot(dx, dy); if ((p.pulled || d < MR) && d > 1) { const k = (p.pulled ? 1400 : 640) * dt / d; p.x += dx * k; p.baseY += dy * k; } }
     }
   }
 
@@ -578,10 +712,10 @@ HR.Game = class {
     void dt;
     for (const o of this.obstacles) {
       if (o.dead) continue;
-      if (Math.hypot(b.x - o.x, b.y - o.y) >= b.r + o.r) continue;
-      if (run.starT > 0) { o.dead = true; run.obstaclesDestroyed++; HR.Store.data.stats.obstaclesDestroyed++; this.addCoins(2, o.x, o.y - 24); HR.Audio.sfx('coin'); P.burst({ x: o.x, y: o.y, n: 14, speed: 300, color: ['#c9d2ea', '#ffffff'], size: 5, life: 0.6, type: 'shard' }); continue; }
+      if (Math.hypot(b.x - o.x, b.y - o.y) >= b.r + o.r * (1 - 0.2 * run.mods.hull)) continue;
+      if (run.starT > 0) { o.dead = true; run.obstaclesDestroyed++; HR.Store.data.stats.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; this.addCoins(2, o.x, o.y - 24); HR.Audio.sfx('coin'); P.burst({ x: o.x, y: o.y, n: 14, speed: 300, color: ['#c9d2ea', '#ffffff'], size: 5, life: 0.6, type: 'shard' }); continue; }
       if (run.ghostT > 0 || run.invuln > 0) continue;
-      o.dead = true; o.hit = true; o.flash = 1;
+      o.dead = true; o.hit = true; o.flash = 1; if (this.event) run.eventHits++;
       P.burst({ x: o.x, y: o.y, n: 12, speed: 260, color: ['#c9d2ea', '#ff5e7e'], size: 5, life: 0.6, type: 'shard' });
       this.damage(o, false);
       if (this.state !== 'playing') return;
@@ -593,10 +727,11 @@ HR.Game = class {
   }
   collect(p) {
     const run = this.run, K = HR.CONFIG.PICKUP, P = this.particles, d = HR.Store.data;
-    p.taken = true; run.pickups++;
+    p.taken = true; run.pickups++; if (p.center) run.centerPickups++;
+    if (run.mods.scavenger) this.addCoins(5 * run.mods.scavenger, p.x, p.y - 44);
     let label = '';
     switch (p.id) {
-      case 'coins': { const v = this.addCoins(K.coins); label = '+' + v; break; }
+      case 'coins': { const v = this.addCoins(Math.round((p.val || K.coins) * run.core.pickupMul)); label = '+' + v; break; }
       case 'shield': run.shields = Math.min(this.shieldCap(), run.shields + 1); label = HR.t('pk_shield'); this.emit('status', run); break;
       case 'magnet': run.magnetT = Math.max(run.magnetT, K.magnetDur); label = HR.t('pk_magnet'); break;
       case 'slow': run.slowmoT = Math.max(run.slowmoT, K.slowDur); label = HR.t('pk_slow'); break;
@@ -631,17 +766,28 @@ HR.Game = class {
   // ao cruzar o plano do arco: dentro = passou · na borda = machucou · fora = errou (sem prêmio)
   resolve(r, along) {
     const run = this.run, b = this.ball, R = HR.CONFIG.RUN;
-    const limit = r.r - b.r * R.forgiveness, rim = r.r + b.r * 0.9, a = Math.abs(along);
+    const limit = r.r - b.r * (R.forgiveness + run.core.forgive), rim = r.r + b.r * 0.9, a = Math.abs(along);
     if (r.type === 'anomaly') { if (a <= limit) this.passAnomaly(r); else this.damage(r, true); return; }
-    if (a <= limit || (this.protectedNow() && a <= rim)) this.pass(r, along, limit);
+    if (a <= limit) this.pass(r, along, limit);
+    else if (this.protectedNow() && a <= rim) { this.shatter(r); this.pass(r, along, limit); }
     else if (a <= rim) this.damage(r, false);
     else this.miss(r);
     if (r.coin && !r.coinTaken) run.coinsMissed++;
   }
 
+  // poder ativo (estrela, fantasma, invulnerável): a borda não machuca — o arco se despedaça
+  shatter(r) {
+    const run = this.run, P = this.particles, U = HR.U;
+    r.shattered = true; r.shatterT = 0.001; r.flash = 1; run.shattered = (run.shattered || 0) + 1;
+    for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2, x = r.x + Math.cos(a) * r.r * HR.Render.RX, y = r.y + Math.sin(a) * r.r; P.burst({ x, y, n: 1, speed: 260, angle: a, spread: 0.4, color: [r.color, '#ffffff'], size: 7, life: 0.8, type: 'shard', gravity: 300, drag: 0.94 }); }
+    P.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: run.starT > 0 ? '#ffe27a' : '#e8f0ff', size: 28, life: 0.6, type: 'wave' });
+    P.text(r.x, r.y - r.r - 26, HR.t('shattered'), run.starT > 0 ? '#ffe27a' : '#e8f0ff', 24);
+    HR.Audio.sfx('shield'); HR.U.vibrate([10, 20, 30]);
+    void U;
+  }
   addCoins(n, x, y) {
     const run = this.run;
-    const mul = run.mods.coinMul * (run.magnetT > 0 ? 2 : 1);
+    const mul = run.mods.coinMul * run.core.coinMul * (run.magnetT > 0 ? 2 : 1) * (this.event && this.event.id === 'warp' ? 2 : 1) * (run.echoT > 0 ? 2 : 1);
     const val = Math.round(n * mul);
     run.coins += val;
     if (x != null) this.particles.text(x, y, '+' + val, '#ffcf4a', 20);
@@ -652,9 +798,11 @@ HR.Game = class {
     const d = HR.Store.data; if (this.demo || d.codex.rings.includes(type)) return;
     d.codex.rings.push(type); this.emit('discover', { kind: 'ring', id: type });
   }
-  ringResolved() {
+  ringResolved(r) {
     const run = this.run, L = run.level;
+    if (r && r.event) { this.onEventRing(r); return; }
     run.ringsResolved++;
+    if (L && L.events && !this.event && !this.pendingEvent) { for (let i = 0; i < L.events.length; i++) { const ev = L.events[i]; if (!run.eventsFired[i] && run.ringsResolved >= ev.at && run.ringsResolved < L.rings - 2) { if (this.queueEvent(ev.id)) run.eventsFired[i] = true; break; } } }
     if (L) {
       if (L.boss) this.emit('boss', { fill: 1 - run.ringsPassed / L.rings });
       if (run.ringsResolved >= L.rings && !run.levelDone) { run.levelDone = true; this.levelSuccess = run.ringsPassed >= HR.Campaign.passNeed(L); this.levelEndTimer = 0.6; HR.Audio.sfx(this.levelSuccess ? 'levelup' : 'error'); }
@@ -665,11 +813,11 @@ HR.Game = class {
     const run = this.run, P = this.particles;
     r.resolved = true; r.missed = true; r.flash = 0.5;
     if (this.demo) return;
-    run.combo = 0; run.misses++; run.cleanStreak = 0; run.noMissStreak = 0;
+    run.combo = 0; run.misses++; run.cleanStreak = 0; run.noMissStreak = 0; this.breakFlow();
     HR.Store.data.stats.misses++;
     P.text(r.x, r.y - r.r - 22, HR.t('miss'), '#8d97b3', 20);
     HR.Audio.sfx('miss');
-    this.ringResolved();
+    this.ringResolved(r);
     this.emit('score', run, false);
   }
 
@@ -677,14 +825,15 @@ HR.Game = class {
     const run = this.run, E = HR.CONFIG.ECONOMY, R = HR.CONFIG.RUN, P = this.particles;
     r.resolved = true; r.flash = 1;
     if (this.demo) { run.ringsPassed++; return; }
-    run.score += run.mods.scorePerRing + run.mods.momentum; run.ringsPassed++;
+    run.score += (run.mods.scorePerRing + run.mods.momentum) * (run.echoT > 0 ? 2 : 1); run.ringsPassed++;
     run.cleanStreak++; run.cleanRings = Math.max(run.cleanRings, run.cleanStreak);
     run.noMissStreak++; run.noMissRings = Math.max(run.noMissRings, run.noMissStreak);
     if (this.dir === 'top') run.ringsTop++; else if (this.dir === 'left') run.ringsLeft++;
     if (r.dbl) run.doubleRings++;
     this.discoverRing(r.type);
     if (limit && Math.abs(along) > limit * R.nearZone) { run.nearMisses++; P.text(this.ball.x, this.ball.y + 40, HR.t('near_miss'), '#ff9f43', 16); }
-    const perfect = Math.abs(along) <= r.r * R.perfectZone * run.mods.perfectZone;
+    const perfect = Math.abs(along) <= r.r * R.perfectZone * run.mods.perfectZone * run.core.perfect * (run.mods.tempo && run.flowV >= 0.6 ? 1.2 : 1);
+    this.addFlow(perfect);
     if (perfect) {
       run.combo++; run.perfects++; run.maxCombo = Math.max(run.maxCombo, run.combo);
       HR.Audio.sfx('perfect', { combo: run.combo });
@@ -709,32 +858,39 @@ HR.Game = class {
     const rg = run.mods.regen; if (rg && run.ringsPassed % [0, 12, 8, 5][rg] === 0 && run.shields < this.shieldCap()) { run.shields++; P.text(this.ball.x, this.ball.y - 90, HR.t('perk_regen') + ' +1', '#4cf0ff', 20); this.emit('status', run); }
     P.burst({ x: r.x, y: r.y, n: perfect ? 18 : 8, speed: perfect ? 380 : 220, color: [r.color, '#ffffff'], size: 5, life: 0.6, type: 'spark' });
     if (this.fx === 'water') P.burst({ x: r.x, y: r.y, n: 6, speed: 60, color: '#cfe9ff', size: 5, life: 1.3, type: 'bubble', vy: -80, drag: 0.98 });
-    if (run.level) {
+    if (run.level && !r.event) {
       const L = run.level;
       if (L.boss) {
         const wave = this.waveOfIndex(run.ringsResolved + 1);
         if (wave !== run.bossWave && run.ringsResolved + 1 < L.rings) { run.bossWave = wave; HR.Audio.sfx('phase'); this.emit('wave', wave + 1); P.burst({ x: this.ball.x, y: this.ball.y, n: 40, speed: 600, color: [r.color, '#ffffff'], size: 6, life: 1, type: 'spark', drag: 0.92 }); HR.Audio.setIntensity(0.4 + 0.6 * wave / (L.waves - 1)); }
       } else HR.Audio.setIntensity(0.2 + 0.8 * run.ringsResolved / L.rings);
-    } else {
+    } else if (!r.event) {
       const ph = this.phaseAt(run.ringsPassed);
       if (ph.number !== run.phaseNumber) {
         run.phaseNumber = ph.number; run.phaseIdx = ph.idx;
         this.bg.setTint(ph.phase.accent);
+        this.fx = ph.phase.fx || null; this.bg.setFx(this.fx);
         HR.Audio.sfx('phase');
         HR.Audio.setIntensity(Math.min(1, (ph.number - 1) / 8));
         P.burst({ x: this.ball.x, y: this.ball.y, n: 40, speed: 600, color: [ph.phase.accent, '#ffffff'], size: 6, life: 1, type: 'spark', drag: 0.92 });
         this.emit('phase', { number: ph.number, name: HR.t(ph.phase.key), accent: ph.phase.accent });
       }
     }
-    this.ringResolved();
+    this.ringResolved(r);
+    if (r.event) { this.emit('score', run, perfect); return; }
     this.emit('score', run, perfect);
+    // infinito: eventos a cada 22–30 arcos a partir do 18º (nunca junto com anomalia)
+    if (!run.level && !this.demo && run.ringsPassed >= this.eventNextRing && !this.event && !this.pendingEvent && !run.anomalyActive && !this.anomalyPending) {
+      const ids = Object.keys(HR.CONFIG.EVENTS).filter(k => k !== this.lastEvent); this.queueEvent(ids[Math.floor(Math.random() * ids.length)]);
+      const E = HR.CONFIG.EVENT.every; this.eventNextRing = run.ringsPassed + E[0] + Math.floor(Math.random() * (E[1] - E[0] + 1));
+    }
     this.maybeOfferPerk();
   }
 
   passAnomaly(r) {
     const run = this.run, A = HR.CONFIG.ANOMALY, P = this.particles;
     r.resolved = true; r.flash = 1;
-    run.score += run.mods.scorePerRing + run.mods.momentum + A.bonusScore; run.ringsPassed++; run.anomaliesBeaten++;
+    run.score += run.mods.scorePerRing + run.mods.momentum + A.bonusScore; run.ringsPassed++; run.anomaliesBeaten++; this.addFlow(true);
     HR.Store.data.stats.anomaliesBeaten++;
     this.addCoins(A.bonusCoins, r.x, r.y - 20);
     this.discoverRing('anomaly');
@@ -752,8 +908,10 @@ HR.Game = class {
   damage(src, bypass) {
     const run = this.run, R = HR.CONFIG.RUN, P = this.particles;
     if (src) { src.resolved = true; src.hit = true; src.flash = 1; }
-    run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0;
+    run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0; this.breakFlow();
+    if (this.event && src) run.eventHits++;
     if (src && src.type === 'anomaly') { P.text(this.ball.x, this.ball.y - 64, HR.t('anomaly_hit'), '#ff3d2e', 24); this.ringResolved(); }
+    if (src && src.event) this.ringResolved(src);
     if (run.mode === 'practice') {
       this.shake = 6; HR.Audio.sfx('error'); HR.U.vibrate(20);
       P.text(this.ball.x, this.ball.y - 60, '✕', '#ff5e7e', 34);
@@ -803,7 +961,7 @@ HR.Game = class {
     for (const r of this.rings) if (!r.resolved) minX = Math.min(minX, r.x);
     const shift = Math.max(0, this.ball.x + 340 - minX);
     for (const r of this.rings) if (!r.resolved) { r.x += shift; r.prevAcross = null; }
-    for (const o of this.obstacles) { o.x += shift; if (Math.abs(o.x - this.ball.x) < 160) o.dead = true; }
+    for (const o of this.obstacles) { o.x += shift; if (Math.abs(o.x - this.ball.x) < 160 || o.shot) o.dead = true; }
     for (const p of this.pickups) p.x += shift;
     this.nextX += shift;
     if (this.killer) this.killer.hit = false;
@@ -823,6 +981,7 @@ HR.Game = class {
     if (run.mode === 'endless' && HR.Campaign.singularityMastered()) coins = Math.round(coins * R.masteredCoinMul);
     let xp = run.mode === 'practice' ? 0 : run.score * E.xp.perRing + run.perfects * E.xp.perPerfect + (run.level ? 0 : (run.phaseNumber - 1) * E.xp.perPhase);
     if (run.level && success) xp += E.xp.perLevel;
+    xp = Math.min(HR.CONFIG.PROGRESSION.xpRunCap, Math.round(xp * run.core.xp));
     const duration = run.startTime ? Math.round((Date.now() - run.startTime) / 1000) : 0;
     const s = {
       mode: run.mode, levelId: run.level ? run.level.id : null, region: run.level ? run.level.region : null, success: !!success,
@@ -834,8 +993,10 @@ HR.Game = class {
       abilitiesUsed: run.abilitiesUsed, cleanRings: run.cleanRings, noMissRings: run.noMissRings, goldRings: run.goldRings, doubleRings: run.doubleRings, comboBonuses: run.comboBonuses, coinsTaken: run.coinsTaken,
       ringsTop: run.ringsTop, ringsLeft: run.ringsLeft, noAbilityScore: run.abilitiesUsed ? 0 : run.score, endlessScore: run.mode === 'endless' ? run.score : 0,
       endlessRun: run.mode === 'endless' ? 1 : 0, campaignRun: run.mode === 'campaign' ? 1 : 0, practiceRun: run.mode === 'practice' ? 1 : 0, one: 1,
-      pickups: run.pickups, anomaliesBeaten: run.anomaliesBeaten, starsUsed: run.starsUsed, obstaclesDestroyed: run.obstaclesDestroyed, gemsFound: run.gemsFound, autoPerks: run.autoPerks,
-      levelDone: 0, starsGot: 0, threeStar: 0, bossDone: 0, flawless: 0
+      pickups: run.pickups, anomaliesBeaten: run.anomaliesBeaten, starsUsed: run.starsUsed, shattered: run.shattered || 0, obstaclesDestroyed: run.obstaclesDestroyed, gemsFound: run.gemsFound, autoPerks: run.autoPerks,
+      levelDone: 0, starsGot: 0, threeStar: 0, bossDone: 0, flawless: 0, bossFlawlessRun: (run.level && run.level.boss && success && run.hits === 0) ? 1 : 0,
+      flowMax: Math.round(run.flowMax * 100), flowTime: Math.round(run.flowTime), centerPickups: run.centerPickups, eventsDone: run.eventsDone,
+      guardians: run.guardians, sentinels: run.sentinels, warps: run.warps, asteroidsDestroyed: run.asteroidsDestroyed
     };
     HR.ABILITIES.forEach(a => { s['ab_' + a.id] = run.abUse[a.id] || 0; });
     return s;
@@ -893,10 +1054,11 @@ HR.Game = class {
     for (const r of this.rings) {
       if (r.alpha < 0.05) continue;
       if (r.coin && !r.coinTaken) HR.Render.drawCoin(ctx, r.x, r.y, 12, t, r.index);
-      HR.Render.drawRingCenter(ctx, r, r.aligned && this.state === 'playing', t);
+      if (!r.centerItem) HR.Render.drawRingCenter(ctx, r, r.aligned && this.state === 'playing', t);
     }
     for (const o of this.obstacles) HR.Render.drawObstacle(ctx, o, t);
     for (const p of this.pickups) HR.Render.drawPickup(ctx, p, t);
+    if (this.sentinel) HR.Render.drawSentinel(ctx, this.sentinel, t, this.ball);
     if (b.alpha > 0) {
       const heat = Math.min(1, run.combo / 20);
       HR.Render.drawTrail(ctx, this.trail, b.trail, this.skin, t, heat);
@@ -904,8 +1066,19 @@ HR.Game = class {
       const ghost = run.ghostT > 0;
       const spd = Math.hypot(b.vx, b.vy), axisLocal = Math.abs(b.vx) > Math.abs(b.vy) ? 'x' : 'y';
       const sqAxisNow = axisLocal === 'y' ? sqAxis : (sqAxis === 'x' ? 'y' : 'x');
+      const orbs = [];
+      if (run.shields > 0) orbs.push({ n: run.shields, color: '#4cf0ff', rad: 1.6, speed: 2.2, size: 4.5 });
+      if (run.starT > 0) orbs.push({ n: 3, color: '#ffe27a', rad: 2.0, speed: 4.2, size: 5, T: run.starT });
+      if (run.magnetT > 0) orbs.push({ n: 4, color: '#ffcf4a', rad: 1.75, speed: -3, size: 3.5, T: run.magnetT });
+      if (run.ghostT > 0) orbs.push({ n: 2, color: '#e8f0ff', rad: 1.45, speed: 1.6, size: 4, T: run.ghostT, wisp: true });
+      if (run.slowmoT > 0) orbs.push({ n: 2, color: '#9be7ff', rad: 1.9, speed: 1.1, size: 4, T: run.slowmoT });
+      if (run.freezeT > 0) orbs.push({ n: 3, color: '#dff8ff', rad: 1.65, speed: 1.8, size: 3.5, T: run.freezeT });
+      if (run.autoT > 0 && !run.anomalyActive) orbs.push({ n: 2, color: '#a29bfe', rad: 1.85, speed: 2.6, size: 3.5, T: run.autoT });
+      if (run.lensT > 0) orbs.push({ n: 3, color: '#7cff6b', rad: 2.1, speed: 1.4, size: 3.5, T: run.lensT });
+      if (run.echoT > 0) orbs.push({ n: 3, color: '#ff5ecf', rad: 1.5, speed: -2.2, size: 4, T: run.echoT });
+      if (orbs.length) HR.Render.drawOrbs(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, orbs, t);
       ctx.save(); ctx.translate(b.x, b.y + Math.sin(t * 3) * 2); ctx.rotate(-rot);
-      HR.Render.drawBall(ctx, 0, 0, b.r, this.skin, t, { vy: spd, sqAxis: sqAxisNow, alpha: b.alpha * (blink ? 0.45 : 1) * (ghost ? 0.5 : 1), shield: run.shields > 0, shields: run.shields, heat: run.combo >= 5 ? heat : 0, star: run.starT > 0 ? run.starT : 0 });
+      HR.Render.drawBall(ctx, 0, 0, b.r, this.skin, t, { vy: spd, sqAxis: sqAxisNow, alpha: b.alpha * (blink ? 0.45 : 1) * (ghost ? 0.5 : 1), shield: run.shields > 0, shields: run.shields, heat: run.combo >= 5 ? heat : 0, star: run.starT > 0 ? run.starT : 0, ending: run.powerEnding || 0 });
       ctx.restore();
       if (run.autoT > 0 && !run.anomalyActive) { ctx.strokeStyle = 'rgba(162,155,254,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
     }

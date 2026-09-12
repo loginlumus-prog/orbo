@@ -11,7 +11,10 @@ HR.ABILITIES = [
   { id: 'shieldpulse', icon: 'shield',    color: '#35e29a', cd: 25, dur: 0,   unlock: { lvl: 2, cur: 'coins', price: 700 } },
   { id: 'autopilot',   icon: 'bot',       color: '#a29bfe', cd: 28, dur: 3.5, unlock: { lvl: 3, cur: 'coins', price: 900 } },
   { id: 'ghost',       icon: 'ghost',     color: '#cfe9ff', cd: 24, dur: 3,   unlock: { lvl: 5, cur: 'gems',  price: 60 } },
-  { id: 'freeze',      icon: 'snow',      color: '#9be7ff', cd: 22, dur: 4,   unlock: { lvl: 7, cur: 'gems',  price: 80 } }
+  { id: 'freeze',      icon: 'snow',      color: '#9be7ff', cd: 22, dur: 4,   unlock: { lvl: 7, cur: 'gems',  price: 80 } },
+  { id: 'pulse',       icon: 'pulse',     color: '#ff9f43', cd: 20, dur: 0,   unlock: { lvl: 9, cur: 'gems',  price: 90 } },
+  { id: 'lens',        icon: 'target',    color: '#7cff6b', cd: 26, dur: 5,   unlock: { lvl: 11, cur: 'gems', price: 100 } },
+  { id: 'echo',        icon: 'sparkle',   color: '#ff5ecf', cd: 30, dur: 6,   unlock: { lvl: 14, cur: 'gems', price: 120 } }
 ];
 HR.ABILITY_UPGRADE = { maxLevel: 3, costs: [400, 900], cdPerLevel: 0.10, durPerLevel: 0.15, secondSlotLevel: 6 };
 
@@ -41,6 +44,13 @@ HR.PERKS = [
   { id: 'risky',        rarity: 'epic',      max: 1, icon: 'dice',    mods: { ringRadius: -0.12, scorePerRing: 1 } },
   { id: 'goldring',     rarity: 'epic',      max: 1, icon: 'sparkle', mods: { goldEvery: 10 } },
   { id: 'secondchance', rarity: 'legendary', max: 1, icon: 'undo',    mods: { secondChance: 1 } },
+  // v4
+  { id: 'scavenger',    rarity: 'common',    max: 2, icon: 'bag',     mods: { scavenger: 1 } },
+  { id: 'hull',         rarity: 'common',    max: 2, icon: 'shield',  mods: { hull: 1 } },
+  { id: 'flowkeeper',   rarity: 'rare',      max: 1, icon: 'wind',    mods: { flowkeeper: true } },
+  { id: 'lucky',        rarity: 'rare',      max: 1, icon: 'dice',    mods: { lucky: true } },
+  { id: 'warpcore',     rarity: 'epic',      max: 1, icon: 'zap',     mods: { warpcore: true } },
+  { id: 'tempo',        rarity: 'epic',      max: 1, icon: 'clock',   mods: { tempo: true } },
   // ascensão (míticos): levam a build ao automático — ver docs/PLANO_V3.md v3.1
   { id: 'autoflow',     rarity: 'mythic',    max: 3, icon: 'bot',     mods: { autoflow: 1 } },
   { id: 'regen',        rarity: 'mythic',    max: 3, icon: 'shield',  mods: { regen: 1 } },
@@ -51,7 +61,7 @@ HR.PERKS = [
 
 HR.Perks = {
   baseMods() {
-    return { ringRadius: 0, perfectZone: 1, coinMul: 1, magnet: false, cdMul: 1, durMul: 1, comboEvery: 5, speedMul: 1, reflex: false, scorePerRing: 1, streakShield: false, goldEvery: 0, secondChance: 0, autoflow: 0, regen: 0, intangible: 0, overclock: 0, momentum: 0 };
+    return { ringRadius: 0, perfectZone: 1, coinMul: 1, magnet: false, cdMul: 1, durMul: 1, comboEvery: 5, speedMul: 1, reflex: false, scorePerRing: 1, streakShield: false, goldEvery: 0, secondChance: 0, autoflow: 0, regen: 0, intangible: 0, overclock: 0, momentum: 0, scavenger: 0, hull: 0, flowkeeper: false, lucky: false, warpcore: false, tempo: false };
   },
   def(id) { return HR.PERKS.find(p => p.id === id); },
   recompute(run) {
@@ -61,7 +71,7 @@ HR.Perks = {
       for (let n = 0; n < run.perks[id]; n++) {
         for (const k in p.mods) {
           const v = p.mods[k];
-          if (k === 'ringRadius' || k === 'scorePerRing' || k === 'secondChance' || k === 'autoflow' || k === 'regen' || k === 'intangible' || k === 'overclock' || k === 'momentum') m[k] += v;
+          if (k === 'ringRadius' || k === 'scorePerRing' || k === 'secondChance' || k === 'autoflow' || k === 'regen' || k === 'intangible' || k === 'overclock' || k === 'momentum' || k === 'scavenger' || k === 'hull') m[k] += v;
           else if (k === 'perfectZone' || k === 'cdMul' || k === 'durMul' || k === 'speedMul' || k === 'coinMul') m[k] *= v;
           else m[k] = v;
         }
@@ -155,6 +165,15 @@ Object.assign(HR.I18N.pt, {
   ab_autopilot: 'Piloto Automático', ab_autopilot_d: 'A bola segue sozinha o centro dos arcos.',
   ab_ghost: 'Fantasma', ab_ghost_d: 'Atravessa a borda dos arcos sem morrer.',
   ab_freeze: 'Congelar', ab_freeze_d: 'Os arcos param de oscilar e girar.',
+  ab_pulse: 'Pulso', ab_pulse_d: 'Onda de choque: destrói obstáculos e tiros por perto e puxa todos os itens.',
+  ab_lens: 'Lente', ab_lens_d: 'Os arcos ficam 40 % maiores por alguns segundos.',
+  ab_echo: 'Eco', ab_echo_d: 'Pontos e moedas em dobro enquanto dura.',
+  perk_scavenger: 'Catador', perk_scavenger_d: 'Cada item pego dá +5 moedas por nível.',
+  perk_hull: 'Casco', perk_hull_d: 'Obstáculos e tiros 20 % menores por nível.',
+  perk_flowkeeper: 'Guardião do Fluxo', perk_flowkeeper_d: 'Ao quebrar o ritmo, o fluxo cai pela metade em vez de zerar.',
+  perk_lucky: 'Sortudo', perk_lucky_d: 'Gemas aparecem 3 vezes mais entre os itens.',
+  perk_warpcore: 'Núcleo de Dobra', perk_warpcore_d: 'Prêmios de evento em dobro e a Dobra dura 50 % mais.',
+  perk_tempo: 'Tempo', perk_tempo_d: 'Zona de PERFEITO 20 % maior enquanto o fluxo está alto.',
   ability: 'Habilidade', abilities: 'Habilidades', ability_slot_empty: 'Escolher habilidade', slot_locked_lvl: 'Slot 2 no nível {n}', cooldown: 'Recarga', duration: 'Duração', instant: 'Instantâneo',
   upgrade: 'Melhorar', max_level: 'Nível máximo', ab_level: 'Nível {n}', unlock_at: 'Nível {n}', equipped_slot: 'Equipada', tap_to_use: 'Toque para usar', ready: 'PRONTO',
   perk_shield: 'Escudo', perk_shield_d: '+1 escudo. Absorve um erro.',
@@ -189,6 +208,15 @@ Object.assign(HR.I18N.en, {
   ab_autopilot: 'Autopilot', ab_autopilot_d: 'The ball follows the ring centers by itself.',
   ab_ghost: 'Ghost', ab_ghost_d: 'Pass through ring rims without dying.',
   ab_freeze: 'Freeze', ab_freeze_d: 'Rings stop oscillating and spinning.',
+  ab_pulse: 'Pulse', ab_pulse_d: 'Shockwave: destroys nearby obstacles and shots and pulls every item.',
+  ab_lens: 'Lens', ab_lens_d: 'Rings are 40% bigger for a few seconds.',
+  ab_echo: 'Echo', ab_echo_d: 'Double score and coins while it lasts.',
+  perk_scavenger: 'Scavenger', perk_scavenger_d: 'Each item grabbed gives +5 coins per level.',
+  perk_hull: 'Hull', perk_hull_d: 'Obstacles and shots 20% smaller per level.',
+  perk_flowkeeper: 'Flow Keeper', perk_flowkeeper_d: 'When the rhythm breaks, flow halves instead of resetting.',
+  perk_lucky: 'Lucky', perk_lucky_d: 'Gems show up 3 times more among items.',
+  perk_warpcore: 'Warp Core', perk_warpcore_d: 'Double event rewards and Warp lasts 50% longer.',
+  perk_tempo: 'Tempo', perk_tempo_d: 'PERFECT zone 20% bigger while flow is high.',
   ability: 'Ability', abilities: 'Abilities', ability_slot_empty: 'Choose ability', slot_locked_lvl: 'Slot 2 at level {n}', cooldown: 'Cooldown', duration: 'Duration', instant: 'Instant',
   upgrade: 'Upgrade', max_level: 'Max level', ab_level: 'Level {n}', unlock_at: 'Level {n}', equipped_slot: 'Equipped', tap_to_use: 'Tap to use', ready: 'READY',
   perk_shield: 'Shield', perk_shield_d: '+1 shield. Absorbs one mistake.',
@@ -223,6 +251,15 @@ Object.assign(HR.I18N.es, {
   ab_autopilot: 'Piloto Automático', ab_autopilot_d: 'La bola sigue sola el centro de los aros.',
   ab_ghost: 'Fantasma', ab_ghost_d: 'Atraviesa el borde de los aros sin morir.',
   ab_freeze: 'Congelar', ab_freeze_d: 'Los aros dejan de oscilar y girar.',
+  ab_pulse: 'Pulso', ab_pulse_d: 'Onda de choque: destruye obstáculos y disparos cercanos y atrae todos los objetos.',
+  ab_lens: 'Lente', ab_lens_d: 'Los aros son un 40 % más grandes por unos segundos.',
+  ab_echo: 'Eco', ab_echo_d: 'Puntos y monedas dobles mientras dura.',
+  perk_scavenger: 'Recolector', perk_scavenger_d: 'Cada objeto recogido da +5 monedas por nivel.',
+  perk_hull: 'Casco', perk_hull_d: 'Obstáculos y disparos un 20 % más pequeños por nivel.',
+  perk_flowkeeper: 'Guardián del Flujo', perk_flowkeeper_d: 'Al romper el ritmo, el flujo baja a la mitad en vez de a cero.',
+  perk_lucky: 'Suertudo', perk_lucky_d: 'Las gemas aparecen 3 veces más entre los objetos.',
+  perk_warpcore: 'Núcleo de Salto', perk_warpcore_d: 'Premios de evento dobles y el Salto dura un 50 % más.',
+  perk_tempo: 'Tempo', perk_tempo_d: 'Zona de PERFECTO un 20 % mayor mientras el flujo está alto.',
   ability: 'Habilidad', abilities: 'Habilidades', ability_slot_empty: 'Elegir habilidad', slot_locked_lvl: 'Ranura 2 en nivel {n}', cooldown: 'Recarga', duration: 'Duración', instant: 'Instantáneo',
   upgrade: 'Mejorar', max_level: 'Nivel máximo', ab_level: 'Nivel {n}', unlock_at: 'Nivel {n}', equipped_slot: 'Equipada', tap_to_use: 'Toca para usar', ready: 'LISTO',
   perk_shield: 'Escudo', perk_shield_d: '+1 escudo. Absorbe un error.',

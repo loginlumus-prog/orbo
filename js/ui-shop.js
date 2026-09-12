@@ -7,9 +7,9 @@
   const $ = (s, r) => HR.U.$(s, r);
 
   const RAR = {
-    skins: { classic: 'common', soccer: 'common', neon: 'rare', lava: 'rare', ice: 'rare', gold: 'epic', galaxy: 'epic', ghost: 'epic', eye: 'legendary', rainbow: 'legendary', plasma: 'legendary' },
-    trails: { none: 'common', dots: 'common', stars: 'rare', fire: 'rare', bubbles: 'epic', rainbow: 'legendary' },
-    themes: { aurora: 'common', sunset: 'rare', ocean: 'rare', cyber: 'epic', space: 'epic', candy: 'legendary' }
+    skins: { classic: 'common', soccer: 'common', neon: 'rare', lava: 'rare', ice: 'rare', gold: 'epic', galaxy: 'epic', ghost: 'epic', eye: 'legendary', rainbow: 'legendary', plasma: 'legendary', eight: 'common', moon: 'common', bee: 'rare', sun: 'rare', toxic: 'rare', saturn: 'epic', pearl: 'epic', void: 'legendary', comet: 'legendary', dragon: 'legendary', pumpkin: 'epic', candycane: 'epic', balloon: 'epic', confetti: 'epic', beach: 'epic' },
+    trails: { none: 'common', dots: 'common', stars: 'rare', fire: 'rare', bubbles: 'epic', rainbow: 'legendary', comet: 'rare', petals: 'epic', lightning: 'legendary', snow: 'epic', bats: 'epic' },
+    themes: { aurora: 'common', sunset: 'rare', ocean: 'rare', cyber: 'epic', space: 'epic', candy: 'legendary', forest: 'rare', inferno: 'epic', prism: 'legendary', halloween: 'epic', natal: 'epic' }
   };
   const PREFIX = { skins: 'skin_', trails: 'trail_', themes: 'theme_' };
   const FLAVOR = { skins: 'flavor_skin_', trails: 'flavor_trail_', themes: 'flavor_theme_' };
@@ -23,7 +23,7 @@
     const isNew = !owned && !locked && item.lvl === HR.Store.data.level && item.lvl > 1;
     return { owned, equipped, locked, isNew };
   }
-  function priceHtml(item) { return item.price === 0 ? HR.t('free') : '<i class="' + (item.cur === 'gems' ? 'ic-gem' : 'ic-coin') + '"></i>' + HR.U.fmt(item.price); }
+  function priceHtml(item) { if (item.cur === 'iap') { const p = HR.IAP.product(item.product); return p ? HR.IAP.price(p) : ''; } return item.price === 0 ? HR.t('free') : '<i class="' + (item.cur === 'gems' ? 'ic-gem' : 'ic-coin') + '"></i>' + HR.U.fmt(item.price); }
 
   /* ---------------- previews (um único rAF) ---------------- */
   function makeCanvas(size) {
@@ -62,6 +62,8 @@
     if (st.owned) { HR.Unlocks.equip(type, item.id); HR.Audio.sfx('click'); }
     else {
       if (st.locked) { HR.UI.toast(HR.icon('lock') + ' ' + HR.t('locked_lvl', { n: item.lvl })); return; }
+      if (item.cur === 'iap') { if (await HR.IAP.buy(item.product)) { HR.Unlocks.equip(type, item.id); HR.game.applyCosmetics(); HR.UI.refreshMenu(); HR.UI.closeItemDetail(); HR.UI.renderShop(); } return; }
+      if (item.season && !HR.Seasons.isActive(item.season)) { HR.UI.toast(HR.icon('calendar') + ' ' + HR.t('season_only', { name: HR.t('season_' + item.season) })); return; }
       if (item.cur === 'gems') { const ok = await HR.UI.confirm(HR.t('confirm_buy_title'), HR.t('confirm_buy_text', { item: HR.t(PREFIX[type] + item.id), price: '<i class="ic-gem"></i> ' + item.price })); if (!ok) return; }
       if (!HR.Unlocks.buy(type, item.id)) return;
       HR.UI.toast(HR.icon('check') + ' ' + HR.t('purchased'), 'good');
@@ -70,6 +72,7 @@
   }
 
   /* ---------------- cartões ---------------- */
+  function themeSwatchOld(item, big) { return themeSwatch(item, big); }
   function themeSwatch(item, big) {
     const sw = HR.U.el('div', 'shop-swatch' + (big ? ' big' : ''));
     sw.style.background = 'linear-gradient(180deg,' + item.colors.join(',') + ')';
@@ -87,6 +90,8 @@
     el.appendChild(previewFor(type, item, 120, false));
     const tags = HR.U.el('div', 'shop-tags');
     if (st.locked) tags.appendChild(HR.U.el('span', 'shop-tag lock', HR.icon('lock') + ' ' + HR.t('locked_lvl', { n: item.lvl })));
+    else if (item.season && !st.owned) tags.appendChild(HR.U.el('span', 'shop-tag season', HR.t('season_tag')));
+    else if (item.cur === 'iap' && !st.owned) tags.appendChild(HR.U.el('span', 'shop-tag best', HR.t('premium_tag')));
     else if (st.isNew) tags.appendChild(HR.U.el('span', 'shop-tag new', HR.t('shop_new')));
     if (st.equipped) tags.appendChild(HR.U.el('span', 'shop-tag on', HR.t('equipped')));
     el.appendChild(tags);
@@ -102,7 +107,7 @@
   }
   function featured(type, list) {
     const d = HR.Store.data;
-    const pool = list.filter(i => !HR.Unlocks.owned(type, i.id) && d.level >= i.lvl && i.cur !== 'pack');
+    const pool = list.filter(i => !HR.Unlocks.owned(type, i.id) && d.level >= i.lvl && i.cur !== 'pack' && i.cur !== 'iap');
     const seed = HR.U.dateKey().split('-').reduce((a, b) => a + parseInt(b, 10), 0) + type.length;
     const item = pool.length ? pool[seed % pool.length] : list.find(i => i.id === HR.Unlocks.equipped(type)) || list[0];
     const st = itemState(type, item), rar = rarity(type, item.id);
@@ -118,8 +123,10 @@
     return el;
   }
   function renderCosmetics(body, type) {
-    const list = HR.Unlocks.catalog(type).filter(i => i.cur !== 'pack' || HR.Unlocks.owned(type, i.id));
+    const list = HR.Unlocks.catalog(type).filter(i => (i.cur !== 'pack' || HR.Unlocks.owned(type, i.id)) && (!i.season || HR.Seasons.isActive(i.season) || HR.Unlocks.owned(type, i.id)));
     body.appendChild(featured(type, list));
+    const seasonal = list.filter(i => i.season && HR.Seasons.isActive(i.season));
+    if (seasonal.length) { const S = HR.Seasons.current(); body.appendChild(HR.U.el('div', 'shop-season', '<span class="shop-season-ic">' + HR.icon('calendar') + '</span><span class="shop-season-txt"><b>' + HR.t('season_' + S.id) + '</b><small>' + HR.t('season_shop_note', { d: HR.Seasons.endLabel() }) + '</small></span>')); }
     const grid = HR.U.el('div', 'shop-grid');
     list.forEach(item => grid.appendChild(card(type, item)));
     body.appendChild(grid);
@@ -217,9 +224,10 @@
     HR.CONFIG.PRODUCTS.forEach(p => {
       if (p.type === 'gems') return;
       if (p.id === 'starter_pack' && d.owned.skins.includes('plasma')) return;
+      if (p.skins && p.skins.every(id => d.owned.skins.includes(id))) return;
       if (p.id === 'no_ads' && d.noAds) { pack(HR.icon('x'), HR.UI.productName(p), HR.t('no_ads_active'), HR.UI.svg('check'), () => {}, 'done'); return; }
       if (p.id === 'vip' && d.vip) { pack(HR.icon('crown'), HR.UI.productName(p), HR.t('vip_active'), HR.t('manage_sub'), () => HR.IAP.manage(), 'done'); return; }
-      const art = HR.icon(p.id === 'starter_pack' ? 'gift' : p.id === 'vip' ? 'crown' : 'x');
+      const art = p.skins ? HR.icon('ring') : HR.icon(p.id === 'starter_pack' ? 'gift' : p.id === 'vip' ? 'crown' : 'x');
       pack(art, HR.UI.productName(p), HR.t('prod_' + p.id + '_d'), HR.UI.productPrice(p), async () => { if (await HR.IAP.buy(p.id)) { HR.game.applyCosmetics(); HR.UI.refreshMenu(); HR.UI.renderShop(); } }, p.id === 'starter_pack' ? 'hot' : '', p.tag);
     });
     section(HR.t('tab_gems'));
@@ -257,7 +265,10 @@
     flavor_trail_none: 'Sem rastro. Só você e os arcos.', flavor_trail_dots: 'Pontos de luz que somem devagar.', flavor_trail_stars: 'Estrelinhas girando atrás de cada movimento.',
     flavor_trail_fire: 'Chamas que acompanham a velocidade.', flavor_trail_bubbles: 'Bolhas que sobem como num aquário.', flavor_trail_rainbow: 'Uma fita de arco-íris que nunca acaba.',
     flavor_theme_aurora: 'Céu profundo com luzes do norte.', flavor_theme_sunset: 'Ondas quentes de um fim de tarde.', flavor_theme_ocean: 'Águas profundas e bolhas subindo.',
-    flavor_theme_cyber: 'Grade neon de uma cidade do futuro.', flavor_theme_space: 'Nebulosas e vazio infinito.', flavor_theme_candy: 'Doce, cor-de-rosa e brilhante.'
+    flavor_theme_cyber: 'Grade neon de uma cidade do futuro.', flavor_theme_space: 'Nebulosas e vazio infinito.', flavor_theme_candy: 'Doce, cor-de-rosa e brilhante.',
+    flavor_skin_eight: 'A bola da sinuca. Some no bolso, volta pro arco.', flavor_skin_moon: 'Crateras e poeira. Um lado sempre para você.', flavor_skin_bee: 'Zumbe entre os arcos. Não pica.', flavor_skin_sun: 'Coroa de fogo que nunca apaga.', flavor_skin_toxic: 'Borbulha. Não beba.', flavor_skin_saturn: 'Com anéis próprios para combinar.', flavor_skin_pearl: 'Muda de cor conforme a luz.', flavor_skin_void: 'Um buraco negro de bolso. Não olhe muito.', flavor_skin_comet: 'Núcleo de gelo, cauda de luz. Exclusiva.', flavor_skin_dragon: 'Escamas de fogo e olhos de ouro. Exclusiva.', flavor_skin_pumpkin: 'Halloween. Sorri no escuro.', flavor_skin_candycane: 'Natal. Doce de menta em órbita.', flavor_skin_balloon: 'Festa Junina. Sobe com o vento.', flavor_skin_confetti: 'Carnaval. Chuva de cor a cada arco.', flavor_skin_beach: 'Verão. Sol, mar e listras.',
+    flavor_trail_comet: 'Cauda de gelo brilhante.', flavor_trail_petals: 'Pétalas que dançam atrás de você.', flavor_trail_lightning: 'Raios que estalam a cada movimento.', flavor_trail_snow: 'Flocos de neve caindo devagar.', flavor_trail_bats: 'Morcegos que batem asas na noite.',
+    flavor_theme_forest: 'Verde profundo com pólen no ar.', flavor_theme_inferno: 'Brasas subindo de um chão de fogo.', flavor_theme_prism: 'Cristais flutuando em luz rosada.', flavor_theme_halloween: 'Névoa roxa e lua de abóbora.', flavor_theme_natal: 'Noite de dezembro, verde e vermelha.'
   });
   Object.assign(HR.I18N.en, {
     shop_featured: "Today's pick", shop_new: 'NEW', shop_ab_intro: 'Equip up to {n} ability(ies) and use them with one tap during the run. Upgrade for faster recharge and longer duration.',
@@ -268,7 +279,10 @@
     flavor_trail_none: 'No trail. Just you and the rings.', flavor_trail_dots: 'Dots of light fading slowly.', flavor_trail_stars: 'Little stars spinning behind every move.',
     flavor_trail_fire: 'Flames that follow your speed.', flavor_trail_bubbles: 'Bubbles rising like in an aquarium.', flavor_trail_rainbow: 'A rainbow ribbon that never ends.',
     flavor_theme_aurora: 'Deep sky with northern lights.', flavor_theme_sunset: 'Warm waves of a late afternoon.', flavor_theme_ocean: 'Deep waters and rising bubbles.',
-    flavor_theme_cyber: 'Neon grid of a future city.', flavor_theme_space: 'Nebulae and endless void.', flavor_theme_candy: 'Sweet, pink and shiny.'
+    flavor_theme_cyber: 'Neon grid of a future city.', flavor_theme_space: 'Nebulae and endless void.', flavor_theme_candy: 'Sweet, pink and shiny.',
+    flavor_skin_eight: 'The pool ball. Sinks in the pocket, comes back for the ring.', flavor_skin_moon: 'Craters and dust. One side always facing you.', flavor_skin_bee: 'Buzzes between rings. Does not sting.', flavor_skin_sun: 'A crown of fire that never goes out.', flavor_skin_toxic: 'It bubbles. Do not drink.', flavor_skin_saturn: 'Comes with its own rings.', flavor_skin_pearl: 'Shifts color with the light.', flavor_skin_void: 'A pocket black hole. Do not stare.', flavor_skin_comet: 'Ice core, tail of light. Exclusive.', flavor_skin_dragon: 'Fire scales and golden eyes. Exclusive.', flavor_skin_pumpkin: 'Halloween. Smiles in the dark.', flavor_skin_candycane: 'Christmas. Mint candy in orbit.', flavor_skin_balloon: 'June Festival. Rises with the wind.', flavor_skin_confetti: 'Carnival. A rain of color at every ring.', flavor_skin_beach: 'Summer. Sun, sea and stripes.',
+    flavor_trail_comet: 'A bright icy tail.', flavor_trail_petals: 'Petals dancing behind you.', flavor_trail_lightning: 'Bolts crackling at every move.', flavor_trail_snow: 'Snowflakes falling slowly.', flavor_trail_bats: 'Bats flapping in the night.',
+    flavor_theme_forest: 'Deep green with pollen in the air.', flavor_theme_inferno: 'Embers rising from a floor of fire.', flavor_theme_prism: 'Crystals floating in pink light.', flavor_theme_halloween: 'Purple mist and a pumpkin moon.', flavor_theme_natal: 'A December night, green and red.'
   });
   Object.assign(HR.I18N.es, {
     shop_featured: 'Destacado de hoy', shop_new: 'NUEVO', shop_ab_intro: 'Equipa hasta {n} habilidad(es) y úsalas con un toque durante la partida. Mejora para recargar más rápido y durar más.',
@@ -279,6 +293,9 @@
     flavor_trail_none: 'Sin estela. Solo tú y los aros.', flavor_trail_dots: 'Puntos de luz que se apagan despacio.', flavor_trail_stars: 'Estrellitas girando tras cada movimiento.',
     flavor_trail_fire: 'Llamas que siguen tu velocidad.', flavor_trail_bubbles: 'Burbujas que suben como en un acuario.', flavor_trail_rainbow: 'Una cinta de arcoíris que nunca termina.',
     flavor_theme_aurora: 'Cielo profundo con auroras.', flavor_theme_sunset: 'Olas cálidas de un atardecer.', flavor_theme_ocean: 'Aguas profundas y burbujas subiendo.',
-    flavor_theme_cyber: 'Rejilla neón de una ciudad futura.', flavor_theme_space: 'Nebulosas y vacío infinito.', flavor_theme_candy: 'Dulce, rosa y brillante.'
+    flavor_theme_cyber: 'Rejilla neón de una ciudad futura.', flavor_theme_space: 'Nebulosas y vacío infinito.', flavor_theme_candy: 'Dulce, rosa y brillante.',
+    flavor_skin_eight: 'La bola de billar. Cae en la tronera y vuelve al aro.', flavor_skin_moon: 'Cráteres y polvo. Un lado siempre hacia ti.', flavor_skin_bee: 'Zumba entre los aros. No pica.', flavor_skin_sun: 'Corona de fuego que nunca se apaga.', flavor_skin_toxic: 'Burbujea. No beber.', flavor_skin_saturn: 'Con anillos propios para combinar.', flavor_skin_pearl: 'Cambia de color con la luz.', flavor_skin_void: 'Un agujero negro de bolsillo. No mires mucho.', flavor_skin_comet: 'Núcleo de hielo, cola de luz. Exclusiva.', flavor_skin_dragon: 'Escamas de fuego y ojos de oro. Exclusiva.', flavor_skin_pumpkin: 'Halloween. Sonríe en la oscuridad.', flavor_skin_candycane: 'Navidad. Caramelo de menta en órbita.', flavor_skin_balloon: 'Fiesta de Junio. Sube con el viento.', flavor_skin_confetti: 'Carnaval. Lluvia de color en cada aro.', flavor_skin_beach: 'Verano. Sol, mar y rayas.',
+    flavor_trail_comet: 'Cola de hielo brillante.', flavor_trail_petals: 'Pétalos que bailan detrás de ti.', flavor_trail_lightning: 'Rayos que chasquean a cada movimiento.', flavor_trail_snow: 'Copos de nieve cayendo despacio.', flavor_trail_bats: 'Murciélagos batiendo alas en la noche.',
+    flavor_theme_forest: 'Verde profundo con polen en el aire.', flavor_theme_inferno: 'Brasas subiendo de un suelo de fuego.', flavor_theme_prism: 'Cristales flotando en luz rosada.', flavor_theme_halloween: 'Niebla morada y luna de calabaza.', flavor_theme_natal: 'Noche de diciembre, verde y roja.'
   });
 })();
