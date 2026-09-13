@@ -5,16 +5,25 @@
 window.HR = window.HR || {};
 
 // icon = nome em js/icons.js
+// v5: mecânica só com moedas (nada de gemas/dinheiro real em poder)
 HR.ABILITIES = [
-  { id: 'slowmo',      icon: 'hourglass', color: '#4cf0ff', cd: 18, dur: 4,   unlock: { lvl: 1, cur: 'coins', price: 0 } },
-  { id: 'magnet',      icon: 'magnet',    color: '#ffcf4a', cd: 20, dur: 8,   unlock: { lvl: 1, cur: 'coins', price: 500 } },
-  { id: 'shieldpulse', icon: 'shield',    color: '#35e29a', cd: 25, dur: 0,   unlock: { lvl: 2, cur: 'coins', price: 700 } },
-  { id: 'autopilot',   icon: 'bot',       color: '#a29bfe', cd: 28, dur: 3.5, unlock: { lvl: 3, cur: 'coins', price: 900 } },
-  { id: 'ghost',       icon: 'ghost',     color: '#cfe9ff', cd: 24, dur: 3,   unlock: { lvl: 5, cur: 'gems',  price: 60 } },
-  { id: 'freeze',      icon: 'snow',      color: '#9be7ff', cd: 22, dur: 4,   unlock: { lvl: 7, cur: 'gems',  price: 80 } },
-  { id: 'pulse',       icon: 'pulse',     color: '#ff9f43', cd: 20, dur: 0,   unlock: { lvl: 9, cur: 'gems',  price: 90 } },
-  { id: 'lens',        icon: 'target',    color: '#7cff6b', cd: 26, dur: 5,   unlock: { lvl: 11, cur: 'gems', price: 100 } },
-  { id: 'echo',        icon: 'sparkle',   color: '#ff5ecf', cd: 30, dur: 6,   unlock: { lvl: 14, cur: 'gems', price: 120 } }
+  { id: 'slowmo',      icon: 'hourglass',  color: '#4cf0ff', cd: 18, dur: 4,   unlock: { lvl: 1,  cur: 'coins', price: 0 } },
+  { id: 'magnet',      icon: 'magnet',     color: '#ffcf4a', cd: 20, dur: 8,   unlock: { lvl: 1,  cur: 'coins', price: 500 } },
+  { id: 'shieldpulse', icon: 'shieldPlus', color: '#35e29a', cd: 25, dur: 0,   unlock: { lvl: 2,  cur: 'coins', price: 700 } },
+  { id: 'autopilot',   icon: 'pilot',      color: '#a29bfe', cd: 28, dur: 3.5, unlock: { lvl: 3,  cur: 'coins', price: 900 } },
+  { id: 'ghost',       icon: 'ghost',      color: '#cfe9ff', cd: 24, dur: 3,   unlock: { lvl: 5,  cur: 'coins', price: 3000 } },
+  { id: 'freeze',      icon: 'snow',       color: '#9be7ff', cd: 22, dur: 4,   unlock: { lvl: 7,  cur: 'coins', price: 3500 } },
+  { id: 'pulse',       icon: 'shockwave',  color: '#ff9f43', cd: 20, dur: 0,   unlock: { lvl: 9,  cur: 'coins', price: 3800 } },
+  { id: 'blackhole',   icon: 'blackhole',  color: '#a88bff', cd: 26, dur: 5,   unlock: { lvl: 10, cur: 'coins', price: 4500 } },
+  { id: 'lens',        icon: 'lens',       color: '#7cff6b', cd: 26, dur: 5,   unlock: { lvl: 11, cur: 'coins', price: 4200 } },
+  { id: 'prism',       icon: 'prism',      color: '#ff7ad9', cd: 24, dur: 5,   unlock: { lvl: 12, cur: 'coins', price: 5500 } },
+  { id: 'echo',        icon: 'echo',       color: '#ff5ecf', cd: 30, dur: 6,   unlock: { lvl: 14, cur: 'coins', price: 5000 } },
+  { id: 'phoenix',     icon: 'phoenix',    color: '#ff8a3d', cd: 45, dur: 8,   unlock: { lvl: 16, cur: 'coins', price: 7000 } },
+  { id: 'goldrush',    icon: 'goldrush',   color: '#ffd24a', cd: 30, dur: 6,   unlock: { lvl: 18, cur: 'coins', price: 8000 } },
+  { id: 'micro',       icon: 'micro',      color: '#9dff8a', cd: 22, dur: 5,   unlock: { lvl: 20, cur: 'coins', price: 9000 } },
+  { id: 'comet',       icon: 'comet',      color: '#9be7ff', cd: 34, dur: 3,   unlock: { lvl: 23, cur: 'coins', price: 11000 } },
+  { id: 'supernova',   icon: 'supernova',  color: '#ffe27a', cd: 38, dur: 0,   unlock: { lvl: 26, cur: 'coins', price: 13000 } },
+  { id: 'chrono',      icon: 'chrono',     color: '#c3b8ff', cd: 32, dur: 1.6, unlock: { lvl: 30, cur: 'coins', price: 15000 } }
 ];
 HR.ABILITY_UPGRADE = { maxLevel: 3, costs: [400, 900], cdPerLevel: 0.10, durPerLevel: 0.15, secondSlotLevel: 6 };
 
@@ -28,40 +37,52 @@ HR.RARITY = {
 
 // mods aditivos: ringRadius, scorePerRing, secondChance | multiplicativos: perfectZone, cdMul, durMul, speedMul, coinMul | set: magnet, reflex, streakShield, comboEvery, goldEvery
 HR.PERKS = [
-  { id: 'shield',       rarity: 'common',    max: 3, icon: 'shield',  apply: run => { run.shields = Math.min(3, run.shields + 1); } },
-  { id: 'bigrings',     rarity: 'common',    max: 3, icon: 'ring',    mods: { ringRadius: 0.08 } },
-  { id: 'eagle',        rarity: 'common',    max: 2, icon: 'target',  mods: { perfectZone: 1.35 } },
-  { id: 'fastcd',       rarity: 'common',    max: 3, icon: 'bolt',    mods: { cdMul: 0.8 } },
-  { id: 'breath',       rarity: 'common',    max: 2, icon: 'wind',    mods: { durMul: 1.35 } },
-  { id: 'calm',         rarity: 'common',    max: 2, icon: 'wave',    mods: { speedMul: 0.93 } },
-  { id: 'magnet',       rarity: 'common',    max: 1, icon: 'magnet',  mods: { magnet: true } },
-  { id: 'life',         rarity: 'rare',      max: 2, icon: 'heart',   apply: run => { run.lives++; } },
-  { id: 'coinsx2',      rarity: 'rare',      max: 1, icon: 'coins',   mods: { coinMul: 2 } },
-  { id: 'combo3',       rarity: 'rare',      max: 1, icon: 'flame',   mods: { comboEvery: 3 } },
-  { id: 'reflex',       rarity: 'rare',      max: 1, icon: 'eye',     mods: { reflex: true } },
-  { id: 'streakshield', rarity: 'rare',      max: 1, icon: 'link',    mods: { streakShield: true } },
-  { id: 'greedy',       rarity: 'epic',      max: 1, icon: 'bag',     mods: { coinMul: 1.5, ringRadius: -0.10 } },
-  { id: 'risky',        rarity: 'epic',      max: 1, icon: 'dice',    mods: { ringRadius: -0.12, scorePerRing: 1 } },
-  { id: 'goldring',     rarity: 'epic',      max: 1, icon: 'sparkle', mods: { goldEvery: 10 } },
-  { id: 'secondchance', rarity: 'legendary', max: 1, icon: 'undo',    mods: { secondChance: 1 } },
+  { id: 'shield',       rarity: 'common',    max: 3, icon: 'shieldPlus', apply: run => { run.shields = Math.min(3, run.shields + 1); } },
+  { id: 'bigrings',     rarity: 'common',    max: 3, icon: 'ringBig',  mods: { ringRadius: 0.08 } },
+  { id: 'eagle',        rarity: 'common',    max: 2, icon: 'target',   mods: { perfectZone: 1.35 } },
+  { id: 'fastcd',       rarity: 'common',    max: 3, icon: 'cooldown', mods: { cdMul: 0.8 } },
+  { id: 'breath',       rarity: 'common',    max: 2, icon: 'wind',     mods: { durMul: 1.35 } },
+  { id: 'calm',         rarity: 'common',    max: 2, icon: 'wave',     mods: { speedMul: 0.93 } },
+  { id: 'magnet',       rarity: 'common',    max: 1, icon: 'magnet',   mods: { magnet: true } },
+  { id: 'life',         rarity: 'rare',      max: 2, icon: 'heart',    apply: run => { run.lives++; } },
+  { id: 'coinsx2',      rarity: 'rare',      max: 1, icon: 'coins',    mods: { coinMul: 2 } },
+  { id: 'combo3',       rarity: 'rare',      max: 1, icon: 'flame',    mods: { comboEvery: 3 } },
+  { id: 'reflex',       rarity: 'rare',      max: 1, icon: 'eye',      mods: { reflex: true } },
+  { id: 'streakshield', rarity: 'rare',      max: 1, icon: 'link',     mods: { streakShield: true } },
+  { id: 'greedy',       rarity: 'epic',      max: 1, icon: 'bag',      mods: { coinMul: 1.5, ringRadius: -0.10 } },
+  { id: 'risky',        rarity: 'epic',      max: 1, icon: 'dice',     mods: { ringRadius: -0.12, scorePerRing: 1 } },
+  { id: 'goldring',     rarity: 'epic',      max: 1, icon: 'goldRing', mods: { goldEvery: 10 } },
+  { id: 'secondchance', rarity: 'legendary', max: 1, icon: 'undo',     mods: { secondChance: 1 } },
   // v4
-  { id: 'scavenger',    rarity: 'common',    max: 2, icon: 'bag',     mods: { scavenger: 1 } },
-  { id: 'hull',         rarity: 'common',    max: 2, icon: 'shield',  mods: { hull: 1 } },
-  { id: 'flowkeeper',   rarity: 'rare',      max: 1, icon: 'wind',    mods: { flowkeeper: true } },
-  { id: 'lucky',        rarity: 'rare',      max: 1, icon: 'dice',    mods: { lucky: true } },
-  { id: 'warpcore',     rarity: 'epic',      max: 1, icon: 'zap',     mods: { warpcore: true } },
-  { id: 'tempo',        rarity: 'epic',      max: 1, icon: 'clock',   mods: { tempo: true } },
+  { id: 'scavenger',    rarity: 'common',    max: 2, icon: 'gift',     mods: { scavenger: 1 } },
+  { id: 'hull',         rarity: 'common',    max: 2, icon: 'shieldHalf', mods: { hull: 1 } },
+  { id: 'flowkeeper',   rarity: 'rare',      max: 1, icon: 'wind',     mods: { flowkeeper: true } },
+  { id: 'lucky',        rarity: 'rare',      max: 1, icon: 'clover',   mods: { lucky: true } },
+  { id: 'warpcore',     rarity: 'epic',      max: 1, icon: 'warp',     mods: { warpcore: true } },
+  { id: 'tempo',        rarity: 'epic',      max: 1, icon: 'clock',    mods: { tempo: true } },
+  // v5
+  { id: 'microball',    rarity: 'common',    max: 2, icon: 'micro',    mods: { ballScale: 0.92 } },
+  { id: 'magnetfield',  rarity: 'common',    max: 2, icon: 'magnet',   mods: { magnetRange: 1.4 } },
+  { id: 'stardust',     rarity: 'common',    max: 3, icon: 'sparkles', mods: { coinChance: 0.06 } },
+  { id: 'aegischarge',  rarity: 'rare',      max: 1, icon: 'aegis',    mods: { aegisCd: 0.6 } },
+  { id: 'coinstorm',    rarity: 'rare',      max: 1, icon: 'bonanza',  mods: { bagMul: 2 } },
+  { id: 'bulwark',      rarity: 'rare',      max: 1, icon: 'shield',   mods: { capBonus: 1 }, apply: run => { run.shields++; } },
+  { id: 'afterburner',  rarity: 'rare',      max: 1, icon: 'jet',      mods: { noFlowSpeed: true } },
+  { id: 'resonance',    rarity: 'epic',      max: 1, icon: 'shockwave', mods: { resonance: 0.5 } },
+  { id: 'prismatic',    rarity: 'epic',      max: 1, icon: 'prism',    mods: { prismEvery: 5 } },
+  { id: 'guardianangel', rarity: 'legendary', max: 1, icon: 'light',   mods: { angel: 30 } },
   // ascensão (míticos): levam a build ao automático — ver docs/PLANO_V3.md v3.1
-  { id: 'autoflow',     rarity: 'mythic',    max: 3, icon: 'bot',     mods: { autoflow: 1 } },
-  { id: 'regen',        rarity: 'mythic',    max: 3, icon: 'shield',  mods: { regen: 1 } },
-  { id: 'intangible',   rarity: 'mythic',    max: 3, icon: 'ghost',   mods: { intangible: 1 } },
-  { id: 'overclock',    rarity: 'mythic',    max: 3, icon: 'zap',     mods: { overclock: 1 } },
-  { id: 'momentum',     rarity: 'mythic',    max: 3, icon: 'flame',   mods: { momentum: 1 } }
+  { id: 'autoflow',     rarity: 'mythic',    max: 3, icon: 'pilot',    mods: { autoflow: 1 } },
+  { id: 'regen',        rarity: 'mythic',    max: 3, icon: 'regen',    mods: { regen: 1 } },
+  { id: 'intangible',   rarity: 'mythic',    max: 3, icon: 'ghost',    mods: { intangible: 1 } },
+  { id: 'overclock',    rarity: 'mythic',    max: 3, icon: 'chip',     mods: { overclock: 1 } },
+  { id: 'momentum',     rarity: 'mythic',    max: 3, icon: 'momentum', mods: { momentum: 1 } }
 ];
 
 HR.Perks = {
   baseMods() {
-    return { ringRadius: 0, perfectZone: 1, coinMul: 1, magnet: false, cdMul: 1, durMul: 1, comboEvery: 5, speedMul: 1, reflex: false, scorePerRing: 1, streakShield: false, goldEvery: 0, secondChance: 0, autoflow: 0, regen: 0, intangible: 0, overclock: 0, momentum: 0, scavenger: 0, hull: 0, flowkeeper: false, lucky: false, warpcore: false, tempo: false };
+    return { ringRadius: 0, perfectZone: 1, coinMul: 1, magnet: false, cdMul: 1, durMul: 1, comboEvery: 5, speedMul: 1, reflex: false, scorePerRing: 1, streakShield: false, goldEvery: 0, secondChance: 0, autoflow: 0, regen: 0, intangible: 0, overclock: 0, momentum: 0, scavenger: 0, hull: 0, flowkeeper: false, lucky: false, warpcore: false, tempo: false,
+      ballScale: 1, magnetRange: 1, coinChance: 0, aegisCd: 1, bagMul: 1, capBonus: 0, noFlowSpeed: false, resonance: 0, prismEvery: 0, angel: 0 };
   },
   def(id) { return HR.PERKS.find(p => p.id === id); },
   recompute(run) {
@@ -71,8 +92,8 @@ HR.Perks = {
       for (let n = 0; n < run.perks[id]; n++) {
         for (const k in p.mods) {
           const v = p.mods[k];
-          if (k === 'ringRadius' || k === 'scorePerRing' || k === 'secondChance' || k === 'autoflow' || k === 'regen' || k === 'intangible' || k === 'overclock' || k === 'momentum' || k === 'scavenger' || k === 'hull') m[k] += v;
-          else if (k === 'perfectZone' || k === 'cdMul' || k === 'durMul' || k === 'speedMul' || k === 'coinMul') m[k] *= v;
+          if (k === 'ringRadius' || k === 'scorePerRing' || k === 'secondChance' || k === 'autoflow' || k === 'regen' || k === 'intangible' || k === 'overclock' || k === 'momentum' || k === 'scavenger' || k === 'hull' || k === 'coinChance' || k === 'capBonus' || k === 'resonance') m[k] += v;
+          else if (k === 'perfectZone' || k === 'cdMul' || k === 'durMul' || k === 'speedMul' || k === 'coinMul' || k === 'ballScale' || k === 'magnetRange' || k === 'aegisCd' || k === 'bagMul') m[k] *= v;
           else m[k] = v;
         }
       }
@@ -197,6 +218,24 @@ Object.assign(HR.I18N.pt, {
   perk_intangible: 'Intangível', perk_intangible_d: 'Fantasma 40 % do tempo → 70 % → permanente.',
   perk_overclock: 'Overclock', perk_overclock_d: 'Habilidades recarregam 40 % / 65 % / 90 % mais rápido.',
   perk_momentum: 'Momento', perk_momentum_d: '+1 ponto por arco por nível.',
+  ab_blackhole: 'Buraco Negro', ab_blackhole_d: 'Um mini buraco negro engole os obstáculos por perto e puxa moedas e itens de longe.',
+  ab_prism: 'Prisma', ab_prism_d: 'A zona de PERFEITO fica 3 vezes maior por alguns segundos.',
+  ab_phoenix: 'Fênix', ab_phoenix_d: 'Se você morrer enquanto dura, renasce na hora e fica invencível por um instante.',
+  ab_goldrush: 'Febre do Ouro', ab_goldrush_d: 'Todos os arcos viram anéis dourados: +5 moedas cada.',
+  ab_micro: 'Micro', ab_micro_d: 'A bola fica 40 % menor e passa por arcos apertados.',
+  ab_comet: 'Cometa', ab_comet_d: 'Dispara invencível em alta velocidade, despedaçando as bordas.',
+  ab_supernova: 'Supernova', ab_supernova_d: 'Explosão: os 3 próximos arcos contam como PERFEITOS e os obstáculos somem.',
+  ab_chrono: 'Cronos', ab_chrono_d: 'O mundo quase para por um instante; só a bola se move.',
+  perk_microball: 'Compacta', perk_microball_d: 'Bola 8 % menor por nível.',
+  perk_magnetfield: 'Campo Magnético', perk_magnetfield_d: 'Alcance de atração de itens 40 % maior por nível.',
+  perk_stardust: 'Poeira Estelar', perk_stardust_d: '+6 % de chance de moeda em cada arco por nível.',
+  perk_aegischarge: 'Égide Rápida', perk_aegischarge_d: 'A Égide recarrega 40 % mais rápido.',
+  perk_coinstorm: 'Chuva de Moedas', perk_coinstorm_d: 'Sacos de moedas valem o dobro.',
+  perk_bulwark: 'Baluarte', perk_bulwark_d: '+1 escudo agora e +1 no limite de escudos.',
+  perk_afterburner: 'Pós-combustão', perk_afterburner_d: 'A sequência não acelera os arcos: o ritmo fica sempre calmo.',
+  perk_resonance: 'Ressonância', perk_resonance_d: 'Cada PERFEITO tira 0,5 s da recarga das habilidades.',
+  perk_prismatic: 'Prismático', perk_prismatic_d: 'A cada 5 arcos, um conta como PERFEITO se você passar por ele.',
+  perk_guardianangel: 'Anjo da Guarda', perk_guardianangel_d: 'A cada 30 arcos sem dano, +1 escudo.',
   perk_title: 'ESCOLHA UM PODER', perk_sub: 'Arco {n} · monte sua build', perk_reroll: 'Trocar opções', perk_skip: 'Pular (+15 moedas)', perk_taken: 'Nível {n}/{max}', build: 'Build',
   perk_auto: 'Escolha automática', perk_auto_d: 'Os próximos perks são escolhidos sozinhos, sem pausar.', perk_auto_on: 'Perk automático', perk_auto_toast: 'Perk automático: {name}',
   rarity_common: 'Comum', rarity_rare: 'Raro', rarity_epic: 'Épico', rarity_legendary: 'Lendário', rarity_mythic: 'Mítico'
@@ -240,6 +279,24 @@ Object.assign(HR.I18N.en, {
   perk_intangible: 'Intangible', perk_intangible_d: 'Ghost 40% of the time → 70% → permanent.',
   perk_overclock: 'Overclock', perk_overclock_d: 'Abilities recharge 40% / 65% / 90% faster.',
   perk_momentum: 'Momentum', perk_momentum_d: '+1 point per ring per level.',
+  ab_blackhole: 'Black Hole', ab_blackhole_d: 'A mini black hole swallows nearby obstacles and pulls coins and items from far away.',
+  ab_prism: 'Prism', ab_prism_d: 'The PERFECT zone gets 3 times bigger for a few seconds.',
+  ab_phoenix: 'Phoenix', ab_phoenix_d: 'If you die while it lasts, you are reborn on the spot and briefly invincible.',
+  ab_goldrush: 'Gold Rush', ab_goldrush_d: 'Every ring turns into a golden ring: +5 coins each.',
+  ab_micro: 'Micro', ab_micro_d: 'The ball shrinks by 40% and slips through tight rings.',
+  ab_comet: 'Comet', ab_comet_d: 'Blast forward invincible at high speed, shattering rims.',
+  ab_supernova: 'Supernova', ab_supernova_d: 'Explosion: the next 3 rings count as PERFECT and obstacles vanish.',
+  ab_chrono: 'Chronos', ab_chrono_d: 'The world almost stops for a moment; only the ball moves.',
+  perk_microball: 'Compact', perk_microball_d: 'Ball 8% smaller per level.',
+  perk_magnetfield: 'Magnetic Field', perk_magnetfield_d: 'Item pull range 40% bigger per level.',
+  perk_stardust: 'Stardust', perk_stardust_d: '+6% coin chance on every ring per level.',
+  perk_aegischarge: 'Quick Aegis', perk_aegischarge_d: 'The Aegis recharges 40% faster.',
+  perk_coinstorm: 'Coin Shower', perk_coinstorm_d: 'Coin bags are worth double.',
+  perk_bulwark: 'Bulwark', perk_bulwark_d: '+1 shield now and +1 shield cap.',
+  perk_afterburner: 'Afterburner', perk_afterburner_d: 'Streaks no longer speed up rings: the rhythm stays calm.',
+  perk_resonance: 'Resonance', perk_resonance_d: 'Each PERFECT takes 0.5 s off ability cooldowns.',
+  perk_prismatic: 'Prismatic', perk_prismatic_d: 'Every 5th ring counts as PERFECT if you pass it.',
+  perk_guardianangel: 'Guardian Angel', perk_guardianangel_d: 'Every 30 rings without damage, +1 shield.',
   perk_title: 'PICK A POWER', perk_sub: 'Ring {n} · build your run', perk_reroll: 'Reroll', perk_skip: 'Skip (+15 coins)', perk_taken: 'Level {n}/{max}', build: 'Build',
   perk_auto: 'Auto pick', perk_auto_d: 'Next perks are chosen automatically, without pausing.', perk_auto_on: 'Auto perk', perk_auto_toast: 'Auto perk: {name}',
   rarity_common: 'Common', rarity_rare: 'Rare', rarity_epic: 'Epic', rarity_legendary: 'Legendary', rarity_mythic: 'Mythic'
@@ -283,6 +340,24 @@ Object.assign(HR.I18N.es, {
   perk_intangible: 'Intangible', perk_intangible_d: 'Fantasma el 40 % del tiempo → 70 % → permanente.',
   perk_overclock: 'Overclock', perk_overclock_d: 'Las habilidades recargan un 40 % / 65 % / 90 % más rápido.',
   perk_momentum: 'Impulso', perk_momentum_d: '+1 punto por aro por nivel.',
+  ab_blackhole: 'Agujero Negro', ab_blackhole_d: 'Un mini agujero negro se traga los obstáculos cercanos y atrae monedas y objetos desde lejos.',
+  ab_prism: 'Prisma', ab_prism_d: 'La zona de PERFECTO se hace 3 veces más grande por unos segundos.',
+  ab_phoenix: 'Fénix', ab_phoenix_d: 'Si mueres mientras dura, renaces al instante y eres invencible un momento.',
+  ab_goldrush: 'Fiebre del Oro', ab_goldrush_d: 'Todos los aros se vuelven dorados: +5 monedas cada uno.',
+  ab_micro: 'Micro', ab_micro_d: 'La bola se hace un 40 % más pequeña y pasa por aros estrechos.',
+  ab_comet: 'Cometa', ab_comet_d: 'Sales disparado, invencible y a gran velocidad, rompiendo los bordes.',
+  ab_supernova: 'Supernova', ab_supernova_d: 'Explosión: los 3 próximos aros cuentan como PERFECTOS y los obstáculos desaparecen.',
+  ab_chrono: 'Cronos', ab_chrono_d: 'El mundo casi se detiene un instante; solo la bola se mueve.',
+  perk_microball: 'Compacta', perk_microball_d: 'Bola un 8 % más pequeña por nivel.',
+  perk_magnetfield: 'Campo Magnético', perk_magnetfield_d: 'Alcance de atracción de objetos un 40 % mayor por nivel.',
+  perk_stardust: 'Polvo Estelar', perk_stardust_d: '+6 % de probabilidad de moneda en cada aro por nivel.',
+  perk_aegischarge: 'Égida Rápida', perk_aegischarge_d: 'La Égida recarga un 40 % más rápido.',
+  perk_coinstorm: 'Lluvia de Monedas', perk_coinstorm_d: 'Las bolsas de monedas valen el doble.',
+  perk_bulwark: 'Baluarte', perk_bulwark_d: '+1 escudo ahora y +1 al límite de escudos.',
+  perk_afterburner: 'Postcombustión', perk_afterburner_d: 'Las rachas ya no aceleran los aros: el ritmo queda tranquilo.',
+  perk_resonance: 'Resonancia', perk_resonance_d: 'Cada PERFECTO quita 0,5 s a la recarga de las habilidades.',
+  perk_prismatic: 'Prismático', perk_prismatic_d: 'Cada 5 aros, uno cuenta como PERFECTO si lo pasas.',
+  perk_guardianangel: 'Ángel Guardián', perk_guardianangel_d: 'Cada 30 aros sin daño, +1 escudo.',
   perk_title: 'ELIGE UN PODER', perk_sub: 'Aro {n} · arma tu build', perk_reroll: 'Cambiar opciones', perk_skip: 'Saltar (+15 monedas)', perk_taken: 'Nivel {n}/{max}', build: 'Build',
   perk_auto: 'Elección automática', perk_auto_d: 'Los próximos perks se eligen solos, sin pausar.', perk_auto_on: 'Perk automático', perk_auto_toast: 'Perk automático: {name}',
   rarity_common: 'Común', rarity_rare: 'Raro', rarity_epic: 'Épico', rarity_legendary: 'Legendario', rarity_mythic: 'Mítico'

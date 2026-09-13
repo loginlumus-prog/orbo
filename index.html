@@ -15,10 +15,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260912j">
-<link rel="stylesheet" href="css/hud.css?v=20260912j">
-<link rel="stylesheet" href="css/shop.css?v=20260912j">
-<link rel="stylesheet" href="css/galaxy.css?v=20260912j">
+<link rel="stylesheet" href="css/style.css?v=20260913l">
+<link rel="stylesheet" href="css/hud.css?v=20260913l">
+<link rel="stylesheet" href="css/shop.css?v=20260913l">
+<link rel="stylesheet" href="css/galaxy.css?v=20260913l">
+<link rel="stylesheet" href="css/v5.css?v=20260913l">
 </head>
 <body>
 <div id="app" class="app">
@@ -57,11 +58,11 @@
       <button class="showcase-tap" id="showcase-tap" aria-label="Jogar"></button>
       <div class="showcase" id="showcase"></div>
       <button class="orbit-btn" style="--a:214deg" data-open="shop"><span class="ob-circle"><span class="ic" data-icon="shop"></span></span><span class="ob-label" data-i18n="shop">Loja</span></button>
-      <button class="orbit-btn" style="--a:180deg" data-open="missions"><span class="ob-circle"><span class="ic" data-icon="flag"></span><span class="badge" data-badge="missions"></span></span><span class="ob-label" data-i18n="missions">Missões</span></button>
+      <button class="orbit-btn" style="--a:180deg" data-open="missions"><span class="ob-circle"><span class="ic" data-icon="mission"></span><span class="badge" data-badge="missions"></span></span><span class="ob-label" data-i18n="missions">Missões</span></button>
       <button class="orbit-btn" style="--a:146deg" data-open="daily" id="orbit-daily"><span class="ob-circle"><span class="ic" data-icon="gift"></span><span class="badge" data-badge="daily"></span></span><span class="ob-label" data-i18n="daily">Diário</span></button>
       <button class="orbit-btn" style="--a:-34deg" data-open="leaderboard"><span class="ob-circle"><span class="ic" data-icon="trophy"></span></span><span class="ob-label" data-i18n="ranking">Ranking</span></button>
       <button class="orbit-btn" style="--a:0deg" data-open="galaxy" id="orbit-galaxy"><span class="ob-circle"><span class="ic" data-icon="galaxy"></span><span class="badge" data-badge="galaxy"></span></span><span class="ob-label" data-i18n="galaxy">Galáxia</span></button>
-      <button class="orbit-btn" style="--a:34deg" data-open="abilities"><span class="ob-circle"><span class="ic" data-icon="zap"></span></span><span class="ob-label" data-i18n="abilities_short">Poderes</span></button>
+      <button class="orbit-btn" style="--a:34deg" data-open="abilities"><span class="ob-circle"><span class="ic" data-icon="powers"></span></span><span class="ob-label" data-i18n="abilities_short">Poderes</span></button>
     </div>
     <div class="skin-caption">
       <button class="hero-arrow" id="skin-prev" aria-label="Anterior"><span class="ic" data-icon="chevronLeft"></span></button>
@@ -73,7 +74,7 @@
 
     <div class="bottom-dock">
       <div class="mode-seg" id="mode-seg">
-        <button class="mode-btn active" data-mode="endless"><span class="ic" data-icon="orbit"></span><span data-i18n="mode_endless">Singularidade</span></button>
+        <button class="mode-btn active" data-mode="endless"><span class="ic" data-icon="infinity"></span><span data-i18n="mode_endless">Singularidade</span></button>
         <button class="mode-btn" data-mode="campaign"><span class="ic" data-icon="galaxy"></span><span data-i18n="mode_campaign">Galáxia</span></button>
         <button class="mode-btn" data-mode="practice"><span class="ic" data-icon="school"></span><span data-i18n="mode_practice">Treino</span></button>
       </div>
@@ -124,6 +125,8 @@
     <div class="hud-ready" data-bind="ready" data-i18n="tap_to_start">Toque para começar</div>
     <div class="hud-stick" id="hud-stick" aria-hidden="true"><div class="stick-base"><i class="stick-tick up"></i><i class="stick-tick down"></i><i class="stick-tick left"></i><i class="stick-tick right"></i><div class="stick-knob" id="stick-knob"></div></div></div>
     <div class="hud-abilities" id="hud-abilities"></div>
+    <div class="hud-gear" id="hud-gear"></div>
+    <div class="hud-jets" id="hud-jets"></div>
     <div class="fx-vignette" id="fx-vignette"></div>
   </section>
 
@@ -151,7 +154,7 @@
       <h2 data-i18n="revive_title">CONTINUAR?</h2>
       <p class="muted" data-i18n="revive_text">Mantenha sua pontuação e siga em frente.</p>
       <button class="btn btn-reward" id="btn-revive-ad"><span class="ic" data-icon="video"></span><span class="btn-label" data-i18n="watch_ad">ASSISTIR ANÚNCIO</span></button>
-      <button class="btn btn-gem" id="btn-revive-gem"><i class="ic-gem"></i><span class="btn-label" data-bind="reviveGemCost">20</span></button>
+      <button class="btn btn-coin" id="btn-revive-gem"><i class="ic-coin"></i><span class="btn-label" data-bind="reviveGemCost">20</span></button>
       <button class="btn btn-ghost" id="btn-revive-no"><span class="btn-label" data-i18n="no_thanks">Não, obrigado</span></button>
     </div>
   </section>
@@ -227,6 +230,7 @@
       <button class="tab active" data-tab="skins" data-i18n="tab_balls">Bolas</button>
       <button class="tab" data-tab="trails" data-i18n="tab_trails">Rastros</button>
       <button class="tab" data-tab="themes" data-i18n="tab_themes">Temas</button>
+      <button class="tab" data-tab="gear" data-i18n="tab_gear">Itens</button>
       <button class="tab" data-tab="abilities" data-i18n="abilities_short">Poderes</button>
       <button class="tab" data-tab="gems" data-i18n="tab_gems">Gemas</button>
     </div>
@@ -255,6 +259,26 @@
       <span class="currency"><span class="ic i-star" data-icon="star"></span><b data-bind="regionStars">0</b></span>
     </header>
     <div class="panel-body" id="region-body"></div>
+  </section>
+
+  <!-- ===== SISTEMA (10 fases + chefe) ===== -->
+  <section id="screen-system" class="screen panel region-screen system-screen">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-bind="systemTitle">Sistema</span></h2>
+      <span class="currency"><span class="ic i-star" data-icon="star"></span><b data-bind="systemStars">0</b></span>
+    </header>
+    <div class="panel-body" id="system-body"></div>
+  </section>
+
+  <!-- ===== SINGULARIDADE (11 camadas) ===== -->
+  <section id="screen-singularity" class="screen panel singularity-screen">
+    <header class="panel-head">
+      <button class="btn-icon" data-back aria-label="Voltar"><span class="ic" data-icon="back"></span></button>
+      <h2 class="ribbon"><span data-i18n="singularity">Singularidade</span></h2>
+      <span class="currency"><span class="ic" data-icon="light"></span><b data-bind="archonsPassed">0/11</b></span>
+    </header>
+    <div class="panel-body" id="singularity-body"></div>
   </section>
 
   <!-- ===== HABILIDADES (poderes) ===== -->
@@ -313,7 +337,8 @@
       <span></span>
     </header>
     <div class="tabs" id="lb-tabs">
-      <button class="tab active" data-tab="global" data-i18n="tab_global">Global</button>
+      <button class="tab active" data-tab="journey" data-i18n="tab_journey">Jornada %</button>
+      <button class="tab" data-tab="endless" data-i18n="tab_endless_rank">Infinito</button>
       <button class="tab" data-tab="local" data-i18n="tab_mine">Meus recordes</button>
     </div>
     <div class="panel-body" id="lb-body"></div>
@@ -400,27 +425,37 @@
   <div id="rotate-hint" class="rotate-hint"><div><span class="ic" data-icon="rotate"></span><p data-i18n="rotate">Gire o aparelho para o modo retrato</p></div></div>
 </div>
 
-<script src="js/config.js?v=20260912j"></script>
-<script src="js/utils.js?v=20260912j"></script>
-<script src="js/icons.js?v=20260912j"></script>
-<script src="js/i18n.js?v=20260912j"></script>
-<script src="js/brand.js?v=20260912j"></script>
-<script src="js/storage.js?v=20260912j"></script>
-<script src="js/audio.js?v=20260912j"></script>
-<script src="js/music.js?v=20260912j"></script>
-<script src="js/input.js?v=20260912j"></script>
-<script src="js/services.js?v=20260912j"></script>
-<script src="js/content.js?v=20260912j"></script>
-<script src="js/seasons.js?v=20260912j"></script>
-<script src="js/systems.js?v=20260912j"></script>
-<script src="js/perks.js?v=20260912j"></script>
-<script src="js/modes.js?v=20260912j"></script>
-<script src="js/render.js?v=20260912j"></script>
-<script src="js/game.js?v=20260912j"></script>
-<script src="js/ui.js?v=20260912j"></script>
-<script src="js/ui-hud.js?v=20260912j"></script>
-<script src="js/ui-shop.js?v=20260912j"></script>
-<script src="js/ui-galaxy.js?v=20260912j"></script>
-<script src="js/main.js?v=20260912j"></script>
+<script src="js/config.js?v=20260913l"></script>
+<script src="js/utils.js?v=20260913l"></script>
+<script src="js/icons.js?v=20260913l"></script>
+<script src="js/tips.js?v=20260913l"></script>
+<script src="js/i18n.js?v=20260913l"></script>
+<script src="js/brand.js?v=20260913l"></script>
+<script src="js/storage.js?v=20260913l"></script>
+<script src="js/audio.js?v=20260913l"></script>
+<script src="js/music.js?v=20260913l"></script>
+<script src="js/input.js?v=20260913l"></script>
+<script src="js/services.js?v=20260913l"></script>
+<script src="js/content.js?v=20260913l"></script>
+<script src="js/seasons.js?v=20260913l"></script>
+<script src="js/systems.js?v=20260913l"></script>
+<script src="js/perks.js?v=20260913l"></script>
+<script src="js/gear.js?v=20260913l"></script>
+<script src="js/modes.js?v=20260913l"></script>
+<script src="js/campaign.js?v=20260913l"></script>
+<script src="js/skins.js?v=20260913l"></script>
+<script src="js/singularity.js?v=20260913l"></script>
+<script src="js/online.js?v=20260913l"></script>
+<script src="js/content-v5.js?v=20260913l"></script>
+<script src="js/render.js?v=20260913l"></script>
+<script src="js/render-gear.js?v=20260913l"></script>
+<script src="js/render-skins.js?v=20260913l"></script>
+<script src="js/game.js?v=20260913l"></script>
+<script src="js/ui.js?v=20260913l"></script>
+<script src="js/ui-hud.js?v=20260913l"></script>
+<script src="js/ui-shop.js?v=20260913l"></script>
+<script src="js/ui-galaxy.js?v=20260913l"></script>
+<script src="js/ui-singularity.js?v=20260913l"></script>
+<script src="js/main.js?v=20260913l"></script>
 </body>
 </html>

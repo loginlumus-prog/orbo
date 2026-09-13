@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '3.0.0',
+  VERSION: '5.0.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -42,7 +42,7 @@ HR.CONFIG = {
     forgiveness: 0.55,   // fração do raio da bola que "perdoa" na borda
     nearZone: 0.78,      // acima desta fração do limite conta como "raspou a borda"
     ringsPerPhase: 10,
-    reviveMax: 2, reviveGems: [20, 50], reviveSeconds: 5,
+    reviveMax: 2, reviveGems: [20, 50], reviveCoins: [600, 1500], reviveSeconds: 5,   // v5: continuar só com moedas ou anúncio
     reviveInvuln: 2.2, shieldInvuln: 1.4,
     deathSlowmo: 0.25, deathTime: 0.85,
     loopFrom: 3,                 // após a última fase, volta para esta (índice)
@@ -84,13 +84,18 @@ HR.CONFIG = {
   ANOMALY: { fromRing: 60, every: 75, jitter: 15, warn: 2.6, radiusMul: 1.25, bonusCoins: 25, bonusScore: 5 },
   ASCENSION: { fromRing: 100, chance: 0.35 },
   // Progressão longa (v4): cada região tem um Portal com 5 portas — ver docs/PLANO_V4.md §4
+  // v5: Galáxia → 10 sistemas → 10 fases. Índice 10 = Singularidade (as 11 camadas). Ver docs/PLANO_V5.md §2
   PROGRESSION: {
-    regionRank:  [1, 3, 6, 10, 14, 18, 22, 26, 30, 34],   // nível do jogador (XP) para entrar na região
-    regionStars: [0, 14, 16, 18, 20, 20, 22, 22, 24, 24], // estrelas na região anterior
-    regionCore:  [0, 2, 4, 6, 9, 12, 15, 18, 22, 26],     // nível do Núcleo
-    contractsNeed: 3,                                     // contratos da região anterior (de 5)
-    xpRunCap: 900                                         // XP máximo por partida
+    regionRank:  [1, 27, 35, 41, 45, 49, 52, 55, 58, 61, 63],                 // patente para entrar na galáxia
+    regionStars: [0, 170, 180, 190, 200, 210, 215, 220, 225, 230, 240],        // estrelas na galáxia anterior (de 300)
+    regionCore:  [0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30],                    // nível do Núcleo
+    systemStars: [14, 15, 16, 17, 18, 19, 20, 21, 22, 23],                    // estrelas no sistema anterior (de 30), por galáxia
+    contractsNeed: 5,                                                         // contratos da galáxia anterior (de 8)
+    xpRunCap: 900,                                                            // XP máximo por partida
+    dailyBonusRuns: 10, dailyBonusMul: 2                                      // as primeiras partidas do dia dão XP em dobro
   },
+  // v5: velocidade sentida (Galáxia). g = progresso global 0..1 nas 1.000 fases
+  SPEED: { base: 245, span: 575, pow: 1.15, rampBase: 0.06, rampSpan: 0.22, flowBase: 0.05, flowSpan: 0.15, bossMul: 1.03, galaxyBossMul: 1.06, tbStart: 1.40, tbSpan: 0.62, tbMin: 0.72, endlessFlowBase: 0.05, endlessFlowSpan: 0.15 },
   // Núcleo da bola: 30 níveis comprados com moedas; bônus por nível e marcos
   CORE: { maxLevel: 30, cost(n) { return 120 + 16 * n * n + 50 * n; }, coinMul: 0.02, forgive: 0.008, perfect: 0.005, xp: 0.01, shieldAt: [5, 15, 25], startShieldAt: 10, lifeAt: 20, pickupAt: 30 },
   AUTOPERK: { afterOffers: 3 },
@@ -147,7 +152,7 @@ HR.CONFIG = {
     mockDuration: 5
   },
 
-  LEVEL_TITLES: [[1, 'title_1'], [3, 'title_3'], [5, 'title_5'], [8, 'title_8'], [12, 'title_12'], [16, 'title_16'], [20, 'title_20'], [30, 'title_30'], [40, 'title_40']],
+  LEVEL_TITLES: [[1, 'title_1'], [3, 'title_3'], [5, 'title_5'], [8, 'title_8'], [12, 'title_12'], [16, 'title_16'], [20, 'title_20'], [30, 'title_30'], [40, 'title_40'], [50, 'title_50'], [60, 'title_60'], [70, 'title_70']],
 
   xpToNext(level) { return Math.round(100 + (level - 1) * (level - 1) * 18 + (level - 1) * 40); },
   levelRewards(level) {
@@ -213,14 +218,27 @@ HR.CONFIG = {
     { id: 'inferno',   price: 1300, cur: 'coins', lvl: 9,  colors: ['#4a1d0c', '#2b1008', '#120604'], shapes: 'orbs',    stars: true,  fx: 'ember' },
     { id: 'prism',     price: 90,   cur: 'gems',  lvl: 11, colors: ['#4a1a48', '#2c1030', '#140818'], shapes: 'orbs',    stars: true,  fx: 'crystal' },
     { id: 'halloween', price: 700,  cur: 'coins', lvl: 1,  colors: ['#3a1a4a', '#1f0d2a', '#0a0510'], shapes: 'nebula',  stars: true,  fx: 'mist', season: 'halloween' },
-    { id: 'natal',     price: 700,  cur: 'coins', lvl: 1,  colors: ['#0d3b2e', '#08261f', '#04120e'], shapes: 'orbs',    stars: true,  season: 'natal' }
+    { id: 'natal',     price: 700,  cur: 'coins', lvl: 1,  colors: ['#0d3b2e', '#08261f', '#04120e'], shapes: 'orbs',    stars: true,  season: 'natal' },
+    // v5: temas que mudam o fundo e o estilo do arco no Infinito
+    { id: 'twilight',    price: 800,   cur: 'coins', lvl: 2,  rar: 'common',    colors: ['#4a2a5a', '#2a1838', '#0e0814'], shapes: 'waves',   stars: true,  fx: 'mist' },
+    { id: 'borealis',    price: 3000,  cur: 'coins', lvl: 4,  rar: 'rare',      colors: ['#0a2a3a', '#061822', '#02090e'], shapes: 'orbs',    stars: true,  fx: 'aurora' },
+    { id: 'mars',        price: 3000,  cur: 'coins', lvl: 5,  rar: 'rare',      colors: ['#5a1e0e', '#2e0f08', '#110503'], shapes: 'orbs',    stars: false, fx: 'dust' },
+    { id: 'blizzard',    price: 3000,  cur: 'coins', lvl: 6,  rar: 'rare',      colors: ['#1a3350', '#0e1f33', '#050b14'], shapes: 'nebula',  stars: false, fx: 'snow' },
+    { id: 'deepsea',     price: 3000,  cur: 'coins', lvl: 7,  rar: 'rare',      colors: ['#06304a', '#031a2c', '#010a12'], shapes: 'bubbles', stars: false, fx: 'water' },
+    { id: 'synthwave',   price: 15000, cur: 'coins', lvl: 8,  rar: 'epic',      colors: ['#2a0a4a', '#140628', '#05020e'], shapes: 'grid',    stars: true,  fx: 'synth' },
+    { id: 'sakura',      price: 15000, cur: 'coins', lvl: 10, rar: 'epic',      colors: ['#4a1a3a', '#2a0f24', '#10060e'], shapes: 'orbs',    stars: true,  fx: 'sakura' },
+    { id: 'matrix',      price: 15000, cur: 'coins', lvl: 12, rar: 'epic',      colors: ['#021a0c', '#010f07', '#000502'], shapes: 'grid',    stars: false, fx: 'matrix' },
+    { id: 'crystalcave', price: 15000, cur: 'coins', lvl: 14, rar: 'epic',      colors: ['#1a1a48', '#0e0e2c', '#050514'], shapes: 'orbs',    stars: false, fx: 'crystal' },
+    { id: 'voidtheme',   price: 15000, cur: 'coins', lvl: 16, rar: 'epic',      colors: ['#08061a', '#04030e', '#000000'], shapes: 'nebula',  stars: true,  fx: 'abyss' },
+    { id: 'cosmos',      price: 80000, cur: 'coins', lvl: 20, rar: 'legendary', colors: ['#0c0a2a', '#060418', '#010008'], shapes: 'nebula',  stars: true,  fx: 'cosmos' },
+    { id: 'solarstorm',  price: 80000, cur: 'coins', lvl: 24, rar: 'legendary', colors: ['#4a1a08', '#2a0c04', '#0e0402'], shapes: 'orbs',    stars: false, fx: 'flare' }
   ],
 
   // ----- Compras (IAP). Preços de exibição; a loja real envia o preço localizado -----
   PRODUCTS: [
     { id: 'starter_pack', type: 'pack', gems: 300, noAds: true, skin: 'plasma', price: { pt: 'R$ 19,90', en: '$4.99', es: '$4.99' }, tag: 'popular' },
     { id: 'no_ads',       type: 'noads', price: { pt: 'R$ 12,90', en: '$2.99', es: '$2.99' } },
-    { id: 'vip',          type: 'sub', gemsDaily: 15, coinsDaily: 150, price: { pt: 'R$ 14,90/mês', en: '$3.99/mo', es: '$3.99/mes' } },
+    { id: 'vip',          type: 'sub', gemsDaily: 20, coinsDaily: 0, price: { pt: 'R$ 14,90/mês', en: '$3.99/mo', es: '$3.99/mes' } },
     { id: 'gems_100',     type: 'gems', gems: 100,  price: { pt: 'R$ 4,90',  en: '$0.99',  es: '$0.99' } },
     { id: 'gems_550',     type: 'gems', gems: 550,  price: { pt: 'R$ 19,90', en: '$4.99',  es: '$4.99' }, tag: 'best' },
     { id: 'gems_1200',    type: 'gems', gems: 1200, price: { pt: 'R$ 39,90', en: '$9.99',  es: '$9.99' } },

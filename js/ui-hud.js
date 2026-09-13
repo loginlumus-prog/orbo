@@ -36,8 +36,11 @@
       on('perk-auto', () => { const s = HR.Store.data.settings; s.autoPerk = !s.autoPerk; HR.Store.save(); HR.Audio.sfx('click'); this.refreshAutoPerk(); });
       on('btn-le-next', () => this.levelEndNext());
       on('btn-le-retry', () => this.levelEndRetry());
-      on('btn-le-menu', () => this.afterOver(() => { this.goMenu(); this.open('galaxy'); const L = this.lastSummary && HR.Campaign.level(this.lastSummary.levelId); if (L) this.open('region', L.ri); }));
+      on('btn-le-menu', () => this.afterOver(() => { this.goMenu(); this.open('galaxy'); const id = this.lastSummary && this.lastSummary.levelId; if (id && HR.Singularity && HR.Singularity.isLevel(id)) { this.open('singularity'); return; } const L = id && HR.Campaign.level(id); if (L) { this.open('region', L.ri); if (L.si != null) this.open('system', L.ri + '-' + L.si); } }));
       HR.Input.onAbility = slot => { if (this.current === 'hud') this.game.useAbility(slot); };
+      HR.Input.onAegis = () => { if (this.current === 'hud') this.game.useAegis(); };
+      HR.Input.onJet = () => { if (this.current === 'hud') this.game.useJet(HR.Consumables.count('jet') > 0 ? 'jet' : 'megajet'); };
+      game.on('gear', () => this.renderGear(this.game.run));
     },
 
     /* ---------- estado do HUD ---------- */
@@ -47,6 +50,7 @@
       this.setReadyHint(true);
       this.hudStatus(run); this.hudPerks(run); this.hudProgress(run); this.hudPhaseLabel();
       this.renderAbilityButtons(run);
+      this.renderGear(run);
       const isBoss = run.level && run.level.boss;
       $('#boss-bar').classList.toggle('show', !!isBoss);
       $('#hud-progress').classList.toggle('boss', !!isBoss);
@@ -71,7 +75,8 @@
     },
     hudPhaseLabel() {
       const run = this.game.run, lbl = $('[data-bind="phase"]');
-      if (run.level) { lbl.textContent = HR.t('level_n', { n: run.level.id }) + (run.level.boss ? ' · ' + HR.t('boss') : ''); lbl.style.color = HR.REGIONS[run.level.ri].accent; }
+      if (run.level && run.level.sg) { lbl.textContent = HR.t('sg_title_' + run.level.archon) + ' · ' + (run.level.trial ? HR.t('sg_trial') : HR.t('sg_passage_n', { n: run.level.passage + 1 })); lbl.style.color = HR.ARCHONS[run.level.archon].color; }
+      else if (run.level) { lbl.textContent = HR.t('level_n', { n: run.level.id }) + (run.level.boss ? ' · ' + HR.Campaign.bossName(run.level) : ''); lbl.style.color = HR.REGIONS[run.level.ri].accent; }
       else { const ph = this.game.phaseAt(run.ringsPassed); lbl.textContent = HR.t('phase_label', { n: ph.number, name: HR.t(ph.phase.key) }); lbl.style.color = ph.phase.accent; }
     },
     hudStatus(run) {
@@ -83,7 +88,7 @@
     },
     hudPerks(run) {
       const host = $('[data-bind="hudPerks"]'); host.innerHTML = '';
-      Object.keys(run.perks).forEach(id => { const p = HR.Perks.def(id); if (!p) return; const el = HR.U.el('span', 'hud-perk rar-' + p.rarity, HR.icon(p.icon) + (run.perks[id] > 1 ? '<b>' + run.perks[id] + '</b>' : '')); el.title = HR.Perks.name(id); host.appendChild(el); });
+      Object.keys(run.perks).forEach(id => { const p = HR.Perks.def(id); if (!p) return; const el = HR.U.el('span', 'hud-perk rar-' + p.rarity, HR.icon(p.icon) + (run.perks[id] > 1 ? '<b>' + run.perks[id] + '</b>' : '')); el.setAttribute('data-tip', HR.Perks.name(id)); el.setAttribute('data-tip-d', HR.Perks.desc(id)); host.appendChild(el); });
     },
 
     /* ---------- avisos ---------- */
@@ -113,13 +118,26 @@
       });
       host.classList.toggle('two', run.abilities.length > 1);
     },
+    // Égide (botão com contador e recarga) e Jatos (só antes do 1º arco)
+    renderGear(run) {
+      const host = $('#hud-gear'), jets = $('#hud-jets'); if (!host || !jets || !run) return;
+      const practice = run.mode === 'practice', desktop = !HR.U.isTouch(), esc = HR.UI.esc;
+      const sk = HR.Gear.current('aegis'), n = HR.Consumables.count('aegis');
+      host.innerHTML = practice ? '' : '<button type="button" class="gear-btn" id="gear-aegis" style="--ac:' + sk.color + '"' + HR.tip(HR.t('aegis'), HR.t('aegis_d')) + '><span class="gb-ring"></span><span class="gb-ic">' + HR.icon('aegis') + '</span><span class="gb-cd"></span><span class="gb-count">' + n + '</span>' + (desktop ? '<span class="ab-key">F</span>' : '') + '</button>';
+      const b = $('#gear-aegis'); if (b) b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.game.useAegis(); });
+      const L = run.level, allowJet = !practice && !(L && (L.boss || L.sg));
+      let jh = '';
+      if (allowJet && !run.jetUsed) ['jet', 'megajet'].forEach(k => { const c = HR.Consumables.count(k); if (!c) return; const G = HR.GEAR.consumables[k]; jh += '<button type="button" class="jet-btn" data-jet="' + k + '" style="--ac:' + G.color + '"' + HR.tip(HR.t(k), HR.t(k + '_d')) + '>' + HR.plate(G.icon, G.color, 'sm round') + '<span class="jet-txt"><b>' + esc(HR.t(k)) + (desktop && k === 'jet' ? ' <kbd>J</kbd>' : '') + '</b><small>×' + c + ' · ' + esc(HR.t('rings_n', { n: G.rings })) + '</small></span></button>'; });
+      jets.innerHTML = jh;
+      $$('.jet-btn', jets).forEach(btn => btn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.game.useJet(btn.dataset.jet); }));
+    },
     hudAbilityFx(info) {
       const btn = $$('#hud-abilities .ab-btn')[info.slot]; if (!btn) return;
       btn.classList.remove('fire'); void btn.offsetWidth; btn.classList.add('fire');
       if (!HR.Store.data.hints.ability) { HR.Store.data.hints.ability = true; HR.Store.save(); }
     },
     // chips dos poderes ativos (ícone + barra do tempo restante); ícone pisca no fim
-    POWERS: [['starT', 'star', '#ffe27a', 'pk_star'], ['ghostT', 'ghost', '#e8f0ff', 'ab_ghost'], ['autoT', 'bot', '#a29bfe', 'ab_autopilot'], ['magnetT', 'magnet', '#ffcf4a', 'ab_magnet'], ['slowmoT', 'hourglass', '#9be7ff', 'ab_slowmo'], ['freezeT', 'snow', '#dff8ff', 'ab_freeze'], ['lensT', 'target', '#7cff6b', 'ab_lens'], ['echoT', 'sparkle', '#ff5ecf', 'ab_echo']],
+    POWERS: [['jetLeft', 'jet', '#ffb347', 'jet'], ['aegisT', 'aegis', '#4cf0ff', 'aegis'], ['starT', 'star', '#ffe27a', 'pk_star'], ['ghostT', 'ghost', '#e8f0ff', 'ab_ghost'], ['cometT', 'comet', '#9be7ff', 'ab_comet'], ['phoenixT', 'phoenix', '#ff8a3d', 'ab_phoenix'], ['autoT', 'pilot', '#a29bfe', 'ab_autopilot'], ['magnetT', 'magnet', '#ffcf4a', 'ab_magnet'], ['bholeT', 'blackhole', '#a88bff', 'ab_blackhole'], ['slowmoT', 'hourglass', '#9be7ff', 'ab_slowmo'], ['chronoT', 'chrono', '#c3b8ff', 'ab_chrono'], ['freezeT', 'snow', '#dff8ff', 'ab_freeze'], ['lensT', 'lens', '#7cff6b', 'ab_lens'], ['prismT', 'prism', '#ff7ad9', 'ab_prism'], ['microT', 'micro', '#9dff8a', 'ab_micro'], ['goldT', 'goldrush', '#ffd24a', 'ab_goldrush'], ['echoT', 'echo', '#ff5ecf', 'ab_echo']],
     powerMax: {},
     hudPowers(run) {
       const host = $('#hud-powers'); if (!host) return;
@@ -172,6 +190,16 @@
           btn.classList.toggle('active', ab.active > 0);
           const cd = $('.ab-cd', btn); if (cd) cd.textContent = ab.cd > 0 ? Math.ceil(ab.cd) : '';
         });
+        const gb = $('#gear-aegis');
+        if (gb) {
+          const G = HR.GEAR.consumables.aegis, n = HR.Consumables.count('aegis'), active = run.aegisT > 0, cd = run.aegisCd > 0;
+          gb.classList.toggle('active', active); gb.classList.toggle('ending', active && run.aegisT < 3); gb.classList.toggle('cd', cd);
+          gb.classList.toggle('empty', !active && !cd && n <= 0); gb.classList.toggle('ready', !active && !cd && n > 0 && this.game.state === 'playing');
+          gb.style.setProperty('--p', active ? (run.aegisT / G.dur).toFixed(3) : cd ? (1 - run.aegisCd / G.cd).toFixed(3) : '1');
+          const cdEl = gb.querySelector('.gb-cd'), txt = cd ? String(Math.ceil(run.aegisCd)) : active ? String(Math.ceil(run.aegisT)) : ''; if (cdEl.textContent !== txt) cdEl.textContent = txt;
+          const ce = gb.querySelector('.gb-count'); if (ce.textContent !== String(n)) ce.textContent = n;
+        }
+        const jetsEl = $('#hud-jets'); if (jetsEl) jetsEl.classList.toggle('show', !!jetsEl.childElementCount && !run.jetUsed && run.ringsResolved === 0 && (this.game.state === 'ready' || this.game.state === 'playing'));
         this.updateStick();
         $('#screen-hud').style.setProperty('--flow', run.flowV.toFixed(2));
         this.hudPowers(run);
@@ -181,7 +209,8 @@
         v.classList.toggle('ghost', run.ghostT > 0);
         v.classList.toggle('freeze', run.freezeT > 0);
         v.classList.toggle('magnet', run.magnetT > 0);
-        v.classList.toggle('auto', run.autoT > 0 && !run.anomalyActive);
+        v.classList.toggle('auto', run.autoT > 0 && !run.anomalyActive && !run.jetLeft);
+        v.classList.toggle('jet', run.jetLeft > 0);
         v.classList.toggle('star', run.starT > 0);
         v.classList.toggle('ending', (run.powerEnding || 0) > 0);
         this.hudRaf = requestAnimationFrame(tick);
@@ -238,14 +267,19 @@
     /* ---------- fim de fase (campanha) ---------- */
     onLevelEnd(s) {
       if (this.abandon) { this.abandon = false; this.stopHud(); HR.Audio.setIntensity(0); this.goMenu(); return; } // saiu pela pausa / reiniciou
-      const level = HR.Campaign.level(s.levelId);
+      const level = HR.Campaign.level(s.levelId) || (HR.Singularity && HR.Singularity.level(s.levelId));
       let out = null;
-      if (s.success) { out = HR.Campaign.complete(level, s); s.levelDone = 1; s.starsGot = out.newStars; s.threeStar = (out.stars === 3 && out.newStars > 0) ? 1 : 0; s.bossDone = level.boss ? 1 : 0; s.flawless = s.hits === 0 ? 1 : 0; }
+      if (level && level.sg) { out = HR.Singularity.complete(level, s); if (s.success) { s.levelDone = 1; s.bossDone = level.trial ? 1 : 0; s.flawless = s.hits === 0 ? 1 : 0; } s.sgEcoNew = this.game.run.ecoNew ? 1 : 0; }
+      else if (s.success) { out = HR.Campaign.complete(level, s); s.levelDone = 1; s.starsGot = out.newStars; s.threeStar = (out.stars === 3 && out.newStars > 0) ? 1 : 0; s.bossDone = level.boss ? 1 : 0; s.flawless = s.hits === 0 ? 1 : 0; }
+      if (level && level.sg) { s.ecoFound = s.sgEcoNew || 0; s.sgPassage = s.success && !level.trial ? 1 : 0; s.sgTrial = s.success && level.trial ? 1 : 0; }
+      else if (out) { s.systemDone = out.systemCleared ? 1 : 0; s.galaxyDone = out.regionCleared ? 1 : 0; }
       const res = this.processRunEnd(s);
       this.lastSummary = s; this.lastLevelResult = out;
       this.stopHud();
       const stars = out ? out.stars : 0;
-      this.bind('levelendKicker', out && out.worldCleared ? HR.t('world_cleared') : (HR.t('reg_' + level.region) + ' · ' + (level.boss ? HR.t('boss') : HR.t('level_n', { n: level.id }))));
+      const sysName = level.sg ? HR.t('sg_title_' + level.archon) : level.si != null ? HR.t('system_n', { name: HR.Campaign.systemName(level.si) }) : HR.t('reg_' + level.region);
+      if (level.sg) this.bind('levelendKicker', sysName + ' · ' + (level.trial ? HR.t('sg_trial') : HR.t('sg_passage_n', { n: level.passage + 1 })));
+      else this.bind('levelendKicker', out && out.regionCleared ? HR.t('galaxy_cleared') : out && out.systemCleared ? HR.t('system_cleared') : (sysName + ' · ' + (level.boss ? HR.Campaign.bossName(level) : HR.t('level_n', { n: level.id }))));
       this.bind('levelendTitle', s.success ? HR.t('level_complete') : HR.t('level_failed'));
       if (!s.success && s.hits === 0 && s.passNeed) this.bind('levelendKicker', HR.t('level_need', { n: s.passNeed, p: s.ringsPassed, t: s.ringsTotal }));
       this.bind('lePassed', s.ringsPassed + ' / ' + s.ringsTotal); this.bind('leMisses', s.misses);
@@ -260,10 +294,16 @@
         if (r.skin) rw.appendChild(HR.U.el('span', 'reward-pill', HR.icon('unlock') + ' ' + HR.t('skin_' + r.skin)));
         if (r.trail) rw.appendChild(HR.U.el('span', 'reward-pill', HR.icon('unlock') + ' ' + HR.t('trail_' + r.trail)));
         if (r.theme) rw.appendChild(HR.U.el('span', 'reward-pill', HR.icon('unlock') + ' ' + HR.t('theme_' + r.theme)));
+        if (r.aegis) rw.appendChild(HR.U.el('span', 'reward-pill', HR.icon('aegis') + ' +' + r.aegis + ' ' + HR.t('aegis')));
+        if (r.word) rw.appendChild(HR.U.el('span', 'reward-pill', HR.icon('word') + ' ' + HR.t('sg_word_' + r.word)));
+        if (r.title) rw.appendChild(HR.U.el('span', 'reward-pill', HR.icon('crown') + ' ' + HR.t(r.title)));
       });
       if (!rw.childElementCount) rw.textContent = '—';
-      const next = HR.Campaign.next(level.id);
-      $('#btn-le-next').style.display = (s.success && next) ? '' : 'none';
+      sh.style.display = level.sg ? 'none' : '';
+      const next = level.sg ? HR.Singularity.nextLevel(level) : HR.Campaign.next(level.id);
+      $('#btn-le-next').style.display = (s.success && next && (level.sg ? HR.Singularity.canPlay(next.id) : HR.Campaign.isUnlocked(next.id))) ? '' : 'none';
+      if (level.sg && s.sgEcoNew && HR.UI.showEco) setTimeout(() => HR.UI.showEco(level.archon, level.passage), 900);
+      if (level.sg && out && out.passed && HR.UI.showArchonAfter) setTimeout(() => HR.UI.showArchonAfter(level.archon, out), 1200);
       this.setBase('levelend');
       if (s.success) { HR.Audio.sfx('win'); HR.U.vibrate([30, 40, 30, 40, 60]); if (stars === 3) setTimeout(() => HR.Audio.sfx('levelup'), 700); }
       else HR.Audio.sfx('error');
@@ -271,7 +311,11 @@
       if (res.ups.length) { this.pendingUps = res.ups; setTimeout(() => this.nextLevelUp(true), 1200); }
       HR.Audio.setIntensity(0.1);
     },
-    levelEndNext() { const next = HR.Campaign.next(this.lastSummary.levelId); if (next) this.afterOver(() => this.startLevel(next.id)); },
+    levelEndNext() {
+      const id = this.lastSummary.levelId, sg = HR.Singularity && HR.Singularity.isLevel(id);
+      const next = sg ? HR.Singularity.nextLevel(HR.Singularity.level(id)) : HR.Campaign.next(id);
+      if (next && (sg ? HR.Singularity.canPlay(next.id) : HR.Campaign.isUnlocked(next.id))) this.afterOver(() => this.startLevel(next.id));
+    },
     levelEndRetry() { this.afterOver(() => this.startLevel(this.lastSummary.levelId)); },
     stopHud() { if (this.hudRaf) { cancelAnimationFrame(this.hudRaf); this.hudRaf = null; } $('#fx-vignette').className = 'fx-vignette'; }
   });

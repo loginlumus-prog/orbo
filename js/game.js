@@ -44,8 +44,12 @@ HR.Game = class {
     const e = HR.Store.data.equipped, C = HR.CONFIG;
     this.skin = C.SKINS.find(s => s.id === e.skin) || C.SKINS[0];
     this.trail = e.trail || 'none';
-    this.bg.setTheme(this.levelTheme || C.THEMES.find(t => t.id === e.theme) || C.THEMES[0]);
+    const th = C.THEMES.find(x => x.id === e.theme) || C.THEMES[0];
+    this.bg.setTheme(this.levelTheme || th);
+    // v5: o tema equipado com bioma muda o fundo do menu e do Infinito
+    if (this.state === 'idle' && !this.levelTheme) this.bg.setFx(th.fx || null);
   }
+  themeFxNow() { const th = HR.CONFIG.THEMES.find(x => x.id === HR.Store.data.equipped.theme); return th && th.fx ? th.fx : null; }
 
   /* ---------------- frame de direção ---------------- */
   dirSpec(dir) {
@@ -102,7 +106,9 @@ HR.Game = class {
       goldRings: 0, doubleRings: 0, comboBonuses: 0, coinsTaken: 0, ringsTop: 0, ringsLeft: 0, rarePerks: 0,
       pickups: 0, anomaliesBeaten: 0, anomalyActive: false, starsUsed: 0, obstaclesDestroyed: 0, gemsFound: 0, flowClock: 0, ghostClock: 0,
       flow: 0, flowV: 0, flowMax: 0, flowTime: 0, centerPickups: 0, eventsDone: 0, core: HR.Core.mods(),
-      eventsFired: {}, guardians: 0, sentinels: 0, warps: 0, asteroidsDestroyed: 0, eventHits: 0
+      eventsFired: {}, guardians: 0, sentinels: 0, warps: 0, asteroidsDestroyed: 0, eventHits: 0,
+      aegisT: 0, aegisCd: 0, aegisUses: 0, aegisSaves: 0, jetLeft: 0, jetTotal: 0, jetKind: null, jetUsed: false, jetsUsed: 0,
+      bholeT: 0, prismT: 0, phoenixT: 0, goldT: 0, microT: 0, cometT: 0, chronoT: 0, novaLeft: 0, angelStreak: 0, maxSpeed: 0
     };
     this.ball.y = this.ball.ty = (this.Lv || this.H) / 2; this.ball.vy = 0; this.ball.vx = 0; this.ball.tx = this.ball.x; this.ball.trail = []; this.ball.alpha = 1;
     this.nextX = (this.Lu || this.W || 500) + 240; this.lastY = this.ball.y; this.pendingDouble = false; this.lastRing = null; this.lastPickupRing = -99;
@@ -111,24 +117,26 @@ HR.Game = class {
     this.timeScale = 1; this.shake = 0; this.killer = null; this.dyingT = 0; this.pendingDir = null; this.trans = null; this.perkTimer = 0; this.levelEndTimer = 0; this.levelSuccess = false;
     this.bg.setTint(HR.CONFIG.PHASES[0].accent);
   }
-  startAttract() { this.demo = true; this.state = 'idle'; this.levelTheme = null; this.fx = null; this.applyCosmetics(); this.bg.setFx(null); this.bg.season = HR.Seasons ? HR.Seasons.current() : null; this.resetRun(); this.rings = []; }
+  startAttract() { this.demo = true; this.state = 'idle'; this.levelTheme = null; this.fx = null; this.applyCosmetics(); this.bg.setFx(this.themeFxNow()); this.bg.season = HR.Seasons ? HR.Seasons.current() : null; this.resetRun(); this.rings = []; }
 
   prepareRun(opts) {
     opts = opts || {};
     this.demo = false; this.resetRun();
     const run = this.run;
     run.mode = opts.mode || 'endless'; run.level = opts.level || null;
-    run.abilities = HR.Abilities.equipped().map(id => id ? { id, cd: 0, active: 0 } : null);
+    run.abilities = HR.Abilities.equipped().map(id => id && HR.Abilities.def(id) ? { id, cd: 0, active: 0 } : null);
     run.core = HR.Core.mods(); run.shields = Math.min(this.shieldCap(), run.shields + run.core.startShield); run.lives += run.core.life;
-    if (run.level) { const R = HR.REGIONS[run.level.ri]; this.levelTheme = { colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx || null }; this.fx = R.fx || null; }
-    else { this.levelTheme = null; this.fx = this.phaseFor(0).phase.fx || null; }
+    if (run.level && run.level.sg) { this.levelTheme = { colors: ['#1c1408', '#0b0804', '#000000'], shapes: 'nebula', stars: true, fx: 'horizon' }; this.fx = 'horizon'; }
+    else if (run.level) { const R = HR.REGIONS[run.level.ri]; this.levelTheme = { colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx || null }; this.fx = R.fx || null; }
+    else { this.levelTheme = null; this.themeFx = run.mode === 'endless' ? this.themeFxNow() : null; this.fx = this.themeFx || this.phaseFor(0).phase.fx || null; }
+    if (run.level) this.themeFx = null;
     this.applyCosmetics();
     this.bg.setFx(this.fx); this.bg.season = null;
     this.setDir(this.dirForRing(0));
     this.ball.y = this.ball.ty = this.Lv / 2; this.ball.vx = this.ball.vy = 0; this.lastY = this.ball.y;
     const ph = this.phaseFor(0);
     run.phaseNumber = ph.number; run.phaseIdx = ph.idx; this.bg.setTint(ph.phase.accent);
-    if (HR.Music) { HR.Music.play(run.level ? HR.REGIONS[run.level.ri].music : 'singularity'); }
+    if (HR.Music) { HR.Music.play(run.level && !run.level.sg ? HR.REGIONS[run.level.ri].music : 'singularity'); }
     HR.Audio.setIntensity(run.level ? 0.2 : Math.min(1, (ph.number - 1) / 8));
     this.nextX = this.Lu + 200;
     this.fill();
@@ -141,6 +149,9 @@ HR.Game = class {
     this.state = 'playing';
     if (!this.run.startTime) this.run.startTime = Date.now();
     this.emit('begin', this.run);
+    const L = this.run.level;
+    if (L && L.sg && !this.demo && !this.run.announced) { this.run.announced = true; this.emit('banner', { title: HR.t('sg_title_' + L.archon).toUpperCase(), sub: L.trial ? HR.t('sg_trial') : HR.t('sg_passage_n', { n: L.passage + 1 }), color: HR.ARCHONS[L.archon].color }); }
+    if (L && !L.sg && L.li === 0 && L.si != null && !this.demo && !this.run.announced) { this.run.announced = true; this.emit('banner', { title: HR.t('system_n', { name: HR.Campaign.systemName(L.si) }).toUpperCase(), sub: HR.t('speed_up') + ' · ×' + L.speed.toFixed(2), color: HR.REGIONS[L.ri].accent }); }
   }
   pause() { if (['playing', 'ready', 'transition'].includes(this.state)) { this.prePause = this.state; this.state = 'paused'; } }
   resume() { if (this.state === 'paused') { this.state = this.prePause === 'transition' ? 'transition' : 'ready'; HR.Input.reset(); } }
@@ -159,22 +170,33 @@ HR.Game = class {
     return this.phaseAt(n);
   }
   waveOfIndex(i) { const L = this.run.level; if (!L || !L.boss) return 0; return Math.min(L.waves - 1, Math.floor(i / Math.ceil(L.rings / L.waves))); }
-  speedAt(n) {
+  // base = sem Jato/Cometa/Crono (usado no espaçamento dos arcos)
+  speedAt(n, base) {
     const R = HR.CONFIG.RUN, run = this.run;
     if (this.demo) return 230;
     let v;
     if (run.level) {
+      // v5: base da fase (cresce pela galáxia) × rampa dentro da fase (sente acelerar a cada arco)
       const L = run.level, w = run.bossWave;
-      v = (R.baseSpeed + (L.tier * R.ringsPerPhase + n * 0.4) * R.speedPerRing) * L.speed;
+      v = L.v0 ? L.v0 * (1 + (L.ramp || 0) * HR.U.clamp(n / Math.max(1, L.rings), 0, 1)) : (R.baseSpeed + (L.tier * R.ringsPerPhase + n * 0.4) * R.speedPerRing) * L.speed;
       if (L.params.burst) v *= 1 + L.params.burst * Math.max(0, Math.sin(this.time * 0.8));
       if ((L.boss === 'storm' || L.boss === 'tide' || L.boss === 'cyclone') && w >= 1) v *= 1 + 0.35 * Math.max(0, Math.sin(this.time * 0.9));
       if (L.boss === 'singularity' && w >= 4) v *= 1 + 0.3 * Math.max(0, Math.sin(this.time * 1.1));
     } else v = R.baseSpeed + n * R.speedPerRing;
     if (this.event && this.event.id === 'warp') v *= HR.CONFIG.EVENTS.warp.speed;
-    return Math.min(v, R.maxSpeed * 1.4) * (run.mods ? run.mods.speedMul : 1) * (1 + (run.flowV || 0) * R.flowSpeedMul);
+    if (!base && run.jetLeft > 0) v *= HR.GEAR.consumables[run.jetKind].speed;
+    if (!base && run.cometT > 0) v *= 1.5;
+    if (!base && run.chronoT > 0) v *= 0.1;
+    // sequência (fluxo): pouco no começo, mais no fim do jogo (Galáxia pela fase; infinito pela fase da corrida)
+    const S = HR.CONFIG.SPEED, flowMul = run.level ? (run.level.flowMul != null ? run.level.flowMul : R.flowSpeedMul) : S.endlessFlowBase + S.endlessFlowSpan * Math.min(1, ((run.phaseNumber || 1) - 1) / 9);
+    const out = v * (run.mods ? run.mods.speedMul : 1) * (1 + (run.flowV || 0) * flowMul * (run.mods && run.mods.noFlowSpeed ? 0 : 1));
+    // teto: Jato/Cometa/Dobra podem passar; o resto fica no limite jogável
+    const boosted = (!base && (run.jetLeft > 0 || run.cometT > 0)) || (this.event && this.event.id === 'warp');
+    return Math.min(out, R.maxSpeed * (boosted ? 1.9 : 1.3));
   }
   tbAt(n, ph) {
     const R = HR.CONFIG.RUN, L = this.run.level;
+    if (L && L.tb0) return Math.max(0.6, L.tb0 - n * 0.4 * R.tbPerRing) * ph.phase.tbMul;
     const nn = L ? L.tier * R.ringsPerPhase + n * 0.4 : n;
     return Math.max(R.tbEnd, R.tbStart - nn * R.tbPerRing) * ph.phase.tbMul * Math.pow(R.loopTbMul, ph.loops);
   }
@@ -190,7 +212,7 @@ HR.Game = class {
     if (ph.dir === 'swap') return HR.DIRS[Math.floor(index / 5) % 4];
     return ph.dir || 'right';
   }
-  shieldCap() { return HR.CONFIG.RUN.shieldCap + (this.run.mods ? this.run.mods.regen : 0) + (this.run.core ? this.run.core.shieldCap : 0); }
+  shieldCap() { return HR.CONFIG.RUN.shieldCap + (this.run.mods ? this.run.mods.regen + (this.run.mods.capBonus || 0) : 0) + (this.run.core ? this.run.core.shieldCap : 0); }
 
   // fluxo (ritmo): sobe por arco, zera ao quebrar; flowV é a versão suave usada pelo fundo/música/HUD
   addFlow(perfect) { const F = HR.CONFIG.FLOW, run = this.run; run.flow = Math.min(1, run.flow + (perfect ? F.perPerfect : F.perPass)); run.flowMax = Math.max(run.flowMax, run.flow); }
@@ -219,7 +241,7 @@ HR.Game = class {
   // tipo do arco (linguagem de cores): um comportamento por arco, sorteado entre os liberados pela fase
   ringTypeFor(P, L, wave, gold) {
     const U = HR.U, boss = L ? L.boss : null;
-    const sw = boss === 'singularity' ? ['pulse', 'blink', 'shrink', 'cyclone', 'all'][wave] : null;
+    const sw = boss === 'singularity' ? ['pulse', 'blink', 'shrink', 'cyclone', 'all'][Math.min(4, wave)] : null;
     if (this.anomalyPending && !L) { this.anomalyPending = false; return 'anomaly'; }
     if (boss === 'blink' || boss === 'eclipse' || sw === 'blink') return 'ghost';
     if (boss === 'pulse' || boss === 'shrink' || sw === 'pulse' || sw === 'shrink' || sw === 'all') return 'pulse';
@@ -239,7 +261,7 @@ HR.Game = class {
     const U = HR.U, R = HR.CONFIG.RUN, n = this.run.ringsSpawned, run = this.run, L = run.level, T = HR.CONFIG.RING_TYPES;
     const ph = this.phaseFor(n);
     const P = ph.phase;
-    const v = this.speedAt(n), tb = this.tbAt(n, ph);
+    const v = this.speedAt(n, true), tb = this.tbAt(n, ph);
     let spacing = v * tb;
     const dbl = this.pendingDouble;
     if (dbl) spacing *= 0.5;
@@ -248,7 +270,7 @@ HR.Game = class {
     if (L && L.boss === 'swarm') r *= [0.95, 0.9, 0.85][wave];
     const warp = this.event && this.event.id === 'warp'; if (warp) r *= HR.CONFIG.EVENTS.warp.radius;
     if (run.lensT > 0) r *= 1.4;
-    const gold = run.mods.goldEvery > 0 && (n + 1) % run.mods.goldEvery === 0;
+    const gold = (run.mods.goldEvery > 0 && (n + 1) % run.mods.goldEvery === 0) || run.goldT > 0;
     const type = this.demo ? 'plain' : this.ringTypeFor(P, L, wave, gold);
     const sync = P.sync || (L && (L.boss === 'tide' || L.boss === 'cyclone'));
     // comportamento pelo tipo
@@ -267,14 +289,18 @@ HR.Game = class {
       x: this.nextX, baseY: y, y, r, baseR: r, tilt0, tilt: tilt0,
       osc, oscF, oscP: sync ? 0 : U.rand(0, 6.28), rot, rotF, rotP: U.rand(0, 6.28), shrinkK, pulse,
       type, color: T[type].color, accent: T[type].color, fx: this.fx,
-      coin: (gold || type === 'anomaly') ? false : U.chance(P.coin), coinTaken: false, centerItem: false, resolved: false, missed: false, index: n, flash: 0, hit: false, prevAcross: null, aligned: false,
+      coin: (gold || type === 'anomaly') ? false : U.chance(P.coin + (run.mods.coinChance || 0)), coinTaken: false, centerItem: false, resolved: false, missed: false, index: n, flash: 0, hit: false, prevAcross: null, aligned: false,
       phaseNumber: ph.number, gold, alpha: (P.fog || P.dark || type === 'ghost') ? 0 : 1, reflexUsed: false, dbl, lensed: run.lensT > 0
     };
     this.rings.push(ring);
+    if (run.novaLeft > 0 && type !== 'anomaly' && !this.demo) { ring.nova = true; run.novaLeft--; }
+    if (run.mods.prismEvery && (n + 1) % run.mods.prismEvery === 0) ring.prism = true;
     // obstáculos no vazio entre o arco anterior e este (sempre longe do centro dos dois)
     if (!this.demo && !warp && !this.event && P.obs && this.lastRing && !dbl && spacing >= 240 && U.chance(P.obs)) this.spawnObstacles(this.lastRing, ring, P);
+    // Singularidade: um Eco por fase da passagem, no centro de um arco
+    if (L && L.eco && !run.ecoSpawned && n >= L.ecoAt && !dbl && type !== 'anomaly' && !this.demo) { run.ecoSpawned = true; ring.coin = false; this.spawnPickup(ring, spacing, true, 'eco'); }
     // item: no centro do arco (sem moeda) ou fora da linha
-    if (!this.demo && !warp && P.pick && !dbl && n - this.lastPickupRing >= HR.CONFIG.PICKUP.minGap && U.chance(P.pick)) this.spawnPickup(ring, spacing, !ring.coin && type !== 'anomaly' && U.chance(HR.CONFIG.PICKUP.centerChance));
+    if (!this.demo && !warp && P.pick && !dbl && !ring.centerItem && n - this.lastPickupRing >= HR.CONFIG.PICKUP.minGap && U.chance(P.pick)) this.spawnPickup(ring, spacing, !ring.coin && type !== 'anomaly' && U.chance(HR.CONFIG.PICKUP.centerChance));
     this.lastRing = ring;
     this.nextX += spacing; this.lastY = y; run.ringsSpawned++;
     let dblChance = P.dbl || 0;
@@ -296,13 +322,14 @@ HR.Game = class {
     }
   }
 
-  spawnPickup(ring, spacing, center) {
+  spawnPickup(ring, spacing, center, forceId) {
     const U = HR.U, K = HR.CONFIG.PICKUP, list = HR.CONFIG.PICKUPS;
     const wOf = p => p.w * (p.id === 'gem' && this.run.mods.lucky ? 3 : 1);
     let total = 0; list.forEach(p => { total += wOf(p); });
     let r = Math.random() * total, def = list[0];
     for (const p of list) { r -= wOf(p); if (r <= 0) { def = p; break; } }
     if (def.id === 'life' && this.run.lives >= 2) def = list[0];
+    if (forceId === 'eco') def = { id: 'eco', color: '#fff3c2' };
     if (center) { ring.centerItem = true; this.pickups.push({ x: ring.x, y: ring.y, baseY: ring.y, r: K.r, id: def.id, color: def.color, seed: U.rand(0, 6.28), taken: false, ring, center: true }); this.lastPickupRing = this.run.ringsSpawned; return; }
     const side = U.chance(0.5) ? -1 : 1;
     const y = U.clamp(ring.y + side * (ring.r + U.rand(K.offset[0], K.offset[1])), 34, this.Lv - 34);
@@ -355,6 +382,22 @@ HR.Game = class {
       case 'freeze': run.freezeT = dur; break;
       case 'lens': run.lensT = dur; this.rings.forEach(r => { if (!r.resolved && !r.lensed) { r.lensed = true; r.r *= 1.4; r.baseR *= 1.4; } }); ab.active = dur; break;
       case 'echo': run.echoT = dur; break;
+      case 'blackhole': run.bholeT = dur; break;
+      case 'prism': run.prismT = dur; break;
+      case 'phoenix': run.phoenixT = dur; break;
+      case 'goldrush': run.goldT = dur; this.rings.forEach(r => { if (!r.resolved && r.type !== 'anomaly' && !r.gold) { r.gold = true; r.coin = false; r.flash = 1; } }); break;
+      case 'micro': run.microT = dur; break;
+      case 'comet': run.cometT = dur; break;
+      case 'chrono': run.chronoT = dur; break;
+      case 'supernova': {
+        ab.active = 0; let k = 3; const b = this.ball;
+        this.rings.filter(r => !r.resolved && r.x > b.x && r.type !== 'anomaly').sort((p, q) => p.x - q.x).forEach(r => { if (k > 0) { r.nova = true; r.flash = 1; k--; } });
+        run.novaLeft = k;
+        this.obstacles.forEach(o => { if (!o.dead) { o.dead = true; run.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; } });
+        this.particles.burst({ x: b.x, y: b.y, n: 1, speed: 0, color: '#ffe27a', size: 70, life: 0.9, type: 'wave' });
+        this.particles.burst({ x: b.x, y: b.y, n: 50, speed: 700, color: ['#ffe27a', '#ffffff', '#ff9f43'], size: 7, life: 1, type: 'spark', drag: 0.93 });
+        this.shake = 12; break;
+      }
       case 'pulse': {
         ab.active = 0; const b = this.ball;
         this.obstacles.forEach(o => { if (!o.dead && Math.hypot(o.x - b.x, o.y - b.y) < 280) { o.dead = true; run.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; this.particles.burst({ x: o.x, y: o.y, n: 10, speed: 280, color: ['#c9d2ea', '#ff9f43'], size: 5, life: 0.6, type: 'shard' }); } });
@@ -372,11 +415,63 @@ HR.Game = class {
     HR.Analytics.log('ability_use', { id: ab.id, rings: run.ringsPassed });
     return true;
   }
+  /* ---------------- Égide e Jato (v5) ---------------- */
+  useAegis() {
+    const run = this.run, G = HR.GEAR.consumables.aegis;
+    if (this.demo || this.state !== 'playing' || run.aegisT > 0 || run.aegisCd > 0 || run.mode === 'practice') return false;
+    if (run.level && run.level.noAegis) { this.emit('banner', { title: HR.t('aegis_blocked'), color: '#ff5e7e' }); return false; }
+    if (!HR.Consumables.use('aegis')) { this.emit('banner', { title: HR.t('aegis_none'), color: '#8d97b3' }); HR.Audio.sfx('error'); return false; }
+    const sk = HR.Gear.current('aegis');
+    run.aegisT = G.dur; run.aegisUses++; HR.Store.data.stats5.aegisUsed++; HR.Store.save();
+    this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: sk.color, size: 40, life: 0.6, type: 'wave' });
+    this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 24, speed: 340, color: [sk.color, sk.color2], size: 5, life: 0.7, type: 'spark' });
+    HR.Audio.sfx('shield'); HR.U.vibrate([15, 20, 25]);
+    this.emit('banner', { title: HR.t('aegis_on'), sub: '30 s', color: sk.color });
+    this.emit('gear', { kind: 'aegis' });
+    return true;
+  }
+  useJet(kind) {
+    const run = this.run, G = HR.GEAR.consumables[kind], L = run.level;
+    if (!G || this.demo || run.jetUsed || run.ringsResolved > 0 || !['ready', 'playing'].includes(this.state) || run.mode === 'practice') return false;
+    if (L && (L.boss || L.sg)) { this.emit('banner', { title: HR.t('jet_boss'), color: '#ff5e7e' }); return false; }
+    if (!HR.Consumables.use(kind)) return false;
+    run.jetUsed = true; run.jetKind = kind; run.jetLeft = L ? Math.min(G.rings, Math.floor(L.rings * 0.5)) : G.rings; run.jetTotal = run.jetLeft; run.jetsUsed++;
+    HR.Store.data.stats5[kind === 'megajet' ? 'megajetsUsed' : 'jetsUsed']++; HR.Store.save();
+    if (this.state === 'ready') this.begin();
+    const sk = HR.Gear.current('jet'), col = sk.color === 'rainbow' ? '#ff5ecf' : sk.color;
+    run.invuln = Math.max(run.invuln, 0.6); this.shake = 9;
+    this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: col, size: 50, life: 0.7, type: 'wave' });
+    this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 30, speed: 520, color: [col, sk.color2, '#ffffff'], size: 6, life: 0.8, type: 'spark' });
+    HR.Audio.sfx('levelup'); HR.U.vibrate([20, 30, 60]);
+    this.emit('banner', { title: HR.t(kind === 'megajet' ? 'megajet_go' : 'jet_go'), sub: HR.t('rings_n', { n: run.jetLeft }), color: col });
+    this.emit('gear', { kind: 'jet' });
+    return true;
+  }
+  endJet() {
+    const run = this.run; run.jetLeft = 0; run.invuln = Math.max(run.invuln, 1.2); run.autoT = Math.min(run.autoT, 0.05);
+    this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: '#ffffff', size: 36, life: 0.6, type: 'wave' });
+    this.emit('banner', { title: HR.t('jet_end'), color: '#ffffff' }); this.emit('gear', { kind: 'jet' });
+  }
   updateAbilities(dt) {
     const run = this.run;
+    if (run.aegisT > 0) {
+      const b0 = run.aegisT; run.aegisT = Math.max(0, run.aegisT - dt);
+      [3, 2, 1].forEach(s => { if (b0 > s && run.aegisT <= s) HR.Audio.sfx('tick'); });
+      if (run.aegisT <= 0) { run.aegisCd = HR.GEAR.consumables.aegis.cd * (run.mods.aegisCd || 1); this.emit('banner', { title: HR.t('aegis_end'), color: '#8d97b3' }); this.emit('gear', { kind: 'aegis' }); }
+    } else if (run.aegisCd > 0) run.aegisCd = Math.max(0, run.aegisCd - dt);
+    if (run.jetLeft > 0) {
+      run.autoT = Math.max(run.autoT, 0.1); run.invuln = Math.max(run.invuln, 0.25);
+      if (Math.random() < dt * 50) { const sk = HR.Gear.current('jet'), col = sk.color === 'rainbow' ? HR.U.hsl((this.time * 300) % 360, 95, 65, 1) : sk.color; this.particles.burst({ x: this.ball.x - this.ball.r * 1.5, y: this.ball.y + HR.U.rand(-6, 6), n: 1, speed: 160, angle: Math.PI, spread: 0.5, color: [col, sk.color2], size: 4, life: 0.35, type: 'spark' }); }
+    }
     run.abilities.forEach(ab => { if (!ab) return; if (ab.cd > 0) ab.cd = Math.max(0, ab.cd - dt); if (ab.active > 0) ab.active = Math.max(0, ab.active - dt); });
     let ending = 0;
-    ['slowmoT', 'magnetT', 'autoT', 'ghostT', 'freezeT', 'reflexT', 'starT', 'lensT', 'echoT'].forEach(k => {
+    if (run.cometT > 0) run.autoT = Math.max(run.autoT, 0.1);
+    if (run.bholeT > 0) {
+      const b = this.ball;
+      this.obstacles.forEach(o => { if (!o.dead && Math.hypot(o.x - b.x, o.y - b.y) < 300) { o.dead = true; run.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; this.particles.burst({ x: o.x, y: o.y, n: 8, speed: 180, angle: Math.atan2(b.y - o.y, b.x - o.x), spread: 0.4, color: ['#a88bff', '#ffffff'], size: 4, life: 0.5, type: 'spark' }); } });
+      this.pickups.forEach(p => { if (!p.taken && Math.hypot(p.x - b.x, p.y - b.y) < 460) p.pulled = true; });
+    }
+    ['slowmoT', 'magnetT', 'autoT', 'ghostT', 'freezeT', 'reflexT', 'starT', 'lensT', 'echoT', 'bholeT', 'prismT', 'phoenixT', 'goldT', 'microT', 'cometT', 'chronoT'].forEach(k => {
       if (run[k] <= 0) return;
       const before = run[k]; run[k] = Math.max(0, run[k] - dt);
       if (k !== 'reflexT' && before > 0.9) { [3, 2, 1].forEach(s => { if (before > s && run[k] <= s) HR.Audio.sfx('tick'); }); }
@@ -396,10 +491,13 @@ HR.Game = class {
     else if (run.reflexT > 0) ts *= 0.5;
     return ts;
   }
-  protectedNow() { const run = this.run; return this.demo || run.invuln > 0 || run.ghostT > 0 || run.starT > 0; }
+  protectedNow() { const run = this.run; return this.demo || run.invuln > 0 || run.ghostT > 0 || run.starT > 0 || run.jetLeft > 0 || run.cometT > 0; }
+  // raio efetivo da bola (perk Compacta, habilidade Micro)
+  ballR() { const m = this.run.mods; return this.ball.r * (m && m.ballScale ? m.ballScale : 1) * (this.run.microT > 0 ? 0.6 : 1); }
 
   /* ---------------- perks ---------------- */
   maybeOfferPerk() {
+    if (this.run.jetLeft > 0) return;
     const run = this.run, every = 10;
     if (run.ringsPassed > 0 && run.ringsPassed % every === 0 && run.perksOffered < Math.floor(run.ringsPassed / every)) {
       if (run.level && run.ringsResolved >= run.level.rings) return;
@@ -586,7 +684,7 @@ HR.Game = class {
     const frozen = run.freezeT > 0;
     const L = run.level, wave = run.bossWave, P = L ? L.params : null, boss = L ? L.boss : null;
     const t = this.time;
-    const sw = boss === 'singularity' ? ['pulse', 'blink', 'shrink', 'cyclone', 'all'][wave] : null;
+    const sw = boss === 'singularity' ? ['pulse', 'blink', 'shrink', 'cyclone', 'all'][Math.min(4, wave)] : null;
     const doPulse = boss === 'pulse' || sw === 'pulse' || sw === 'all';
     const doBlink = boss === 'blink' || sw === 'blink';
     const bossShrink = boss === 'shrink' || sw === 'shrink' || sw === 'all';
@@ -626,7 +724,8 @@ HR.Game = class {
     for (const o of this.obstacles) { o.x -= (o.shot ? 0 : v) * dt; o.rot += o.vr * dt; if (o.vx) o.x += o.vx * dt; if (o.vy) o.y += o.vy * dt; }
     if (this.sentinel) { const S = this.sentinel; S.x = this.Lu * 0.86; if (S.leaving) { S.x += S.leaveT * 900; S.leaveT += dt; } else S.y = U.damp(S.y, b.y, 1.6, dt); }
     const bonanza = this.event && this.event.id === 'bonanza';
-    const magnet = run.magnetT > 0 || run.mods.magnet || bonanza, MR = HR.CONFIG.PICKUP.magnetRange * (bonanza ? 1.8 : 1);
+    const magnet = run.magnetT > 0 || run.mods.magnet || bonanza || run.bholeT > 0, MR = HR.CONFIG.PICKUP.magnetRange * (bonanza ? 1.8 : 1) * (run.mods.magnetRange || 1) * (run.bholeT > 0 ? 2.2 : 1);
+    if (!run.jetLeft && !run.cometT && !(this.event && this.event.id === 'warp') && !this.demo) run.maxSpeed = Math.max(run.maxSpeed || 0, v);
     for (const p of this.pickups) {
       if (p.center && p.ring) { p.x = p.ring.x; p.baseY = p.ring.y; p.y = p.ring.y; if (p.ring.resolved && p.ring.x < b.x - 40) p.center = false; continue; }
       p.x -= v * dt; p.y = p.baseY + Math.sin(t * 3 + p.seed) * 6;
@@ -708,12 +807,12 @@ HR.Game = class {
 
   // obstáculos e itens
   checkField(dt) {
-    const b = this.ball, run = this.run, P = this.particles;
+    const b = this.ball, run = this.run, P = this.particles, br = this.ballR();
     void dt;
     for (const o of this.obstacles) {
       if (o.dead) continue;
-      if (Math.hypot(b.x - o.x, b.y - o.y) >= b.r + o.r * (1 - 0.2 * run.mods.hull)) continue;
-      if (run.starT > 0) { o.dead = true; run.obstaclesDestroyed++; HR.Store.data.stats.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; this.addCoins(2, o.x, o.y - 24); HR.Audio.sfx('coin'); P.burst({ x: o.x, y: o.y, n: 14, speed: 300, color: ['#c9d2ea', '#ffffff'], size: 5, life: 0.6, type: 'shard' }); continue; }
+      if (Math.hypot(b.x - o.x, b.y - o.y) >= br + o.r * (1 - 0.2 * run.mods.hull)) continue;
+      if (run.starT > 0 || run.jetLeft > 0 || run.cometT > 0) { o.dead = true; run.obstaclesDestroyed++; HR.Store.data.stats.obstaclesDestroyed++; if (o.rock) run.asteroidsDestroyed++; this.addCoins(2, o.x, o.y - 24); HR.Audio.sfx('coin'); P.burst({ x: o.x, y: o.y, n: 14, speed: 300, color: ['#c9d2ea', '#ffffff'], size: 5, life: 0.6, type: 'shard' }); continue; }
       if (run.ghostT > 0 || run.invuln > 0) continue;
       o.dead = true; o.hit = true; o.flash = 1; if (this.event) run.eventHits++;
       P.burst({ x: o.x, y: o.y, n: 12, speed: 260, color: ['#c9d2ea', '#ff5e7e'], size: 5, life: 0.6, type: 'shard' });
@@ -731,15 +830,16 @@ HR.Game = class {
     if (run.mods.scavenger) this.addCoins(5 * run.mods.scavenger, p.x, p.y - 44);
     let label = '';
     switch (p.id) {
-      case 'coins': { const v = this.addCoins(Math.round((p.val || K.coins) * run.core.pickupMul)); label = '+' + v; break; }
+      case 'coins': { const v = this.addCoins(Math.round((p.val || K.coins) * run.core.pickupMul * (run.mods.bagMul || 1))); label = '+' + v; break; }
       case 'shield': run.shields = Math.min(this.shieldCap(), run.shields + 1); label = HR.t('pk_shield'); this.emit('status', run); break;
       case 'magnet': run.magnetT = Math.max(run.magnetT, K.magnetDur); label = HR.t('pk_magnet'); break;
       case 'slow': run.slowmoT = Math.max(run.slowmoT, K.slowDur); label = HR.t('pk_slow'); break;
       case 'star': run.starT = K.starDur; run.starsUsed++; d.stats.starsUsed++; label = HR.t('pk_star'); break;
       case 'life': run.lives++; label = HR.t('pk_life'); this.emit('status', run); break;
       case 'gem': run.gemsFound++; HR.Economy.addGems(1, 'pickup'); label = HR.t('pk_gem'); break;
+      case 'eco': run.ecoFound = true; label = HR.t('sg_eco_found'); if (HR.Singularity && run.level && run.level.sg) run.ecoNew = HR.Singularity.foundEco(run.level.archon, run.level.passage); this.emit('banner', { title: HR.t('sg_eco_title').toUpperCase(), color: '#fff3c2' }); break;
     }
-    if (!d.codex.items.includes(p.id)) { d.codex.items.push(p.id); this.emit('discover', { kind: 'item', id: p.id }); }
+    if (p.id !== 'eco' && !d.codex.items.includes(p.id)) { d.codex.items.push(p.id); this.emit('discover', { kind: 'item', id: p.id }); }
     d.stats.pickups++;
     P.text(p.x, p.y - 30, label, p.color, 22);
     P.burst({ x: p.x, y: p.y, n: 18, speed: 320, color: [p.color, '#ffffff'], size: 5, life: 0.7, type: 'spark' });
@@ -766,8 +866,10 @@ HR.Game = class {
   // ao cruzar o plano do arco: dentro = passou · na borda = machucou · fora = errou (sem prêmio)
   resolve(r, along) {
     const run = this.run, b = this.ball, R = HR.CONFIG.RUN;
-    const limit = r.r - b.r * (R.forgiveness + run.core.forgive), rim = r.r + b.r * 0.9, a = Math.abs(along);
+    const br = this.ballR(), limit = r.r - br * (R.forgiveness + run.core.forgive), rim = r.r + br * 0.9, a = Math.abs(along);
+    void b;
     if (r.type === 'anomaly') { if (a <= limit) this.passAnomaly(r); else this.damage(r, true); return; }
+    if (r.nova) { this.shatter(r); this.pass(r, 0, limit); return; }
     if (a <= limit) this.pass(r, along, limit);
     else if (this.protectedNow() && a <= rim) { this.shatter(r); this.pass(r, along, limit); }
     else if (a <= rim) this.damage(r, false);
@@ -832,10 +934,13 @@ HR.Game = class {
     if (r.dbl) run.doubleRings++;
     this.discoverRing(r.type);
     if (limit && Math.abs(along) > limit * R.nearZone) { run.nearMisses++; P.text(this.ball.x, this.ball.y + 40, HR.t('near_miss'), '#ff9f43', 16); }
-    const perfect = Math.abs(along) <= r.r * R.perfectZone * run.mods.perfectZone * run.core.perfect * (run.mods.tempo && run.flowV >= 0.6 ? 1.2 : 1);
+    const jetting = run.jetLeft > 0;
+    if (jetting) { run.jetLeft--; if (run.jetLeft <= 0) this.endJet(); }
+    const perfect = !jetting && (r.prism || r.nova || Math.abs(along) <= r.r * R.perfectZone * run.mods.perfectZone * run.core.perfect * (run.mods.tempo && run.flowV >= 0.6 ? 1.2 : 1) * (run.prismT > 0 ? 3 : 1));
     this.addFlow(perfect);
     if (perfect) {
       run.combo++; run.perfects++; run.maxCombo = Math.max(run.maxCombo, run.combo);
+      if (run.mods.resonance) run.abilities.forEach(ab => { if (ab && ab.cd > 0) ab.cd = Math.max(0, ab.cd - run.mods.resonance); });
       HR.Audio.sfx('perfect', { combo: run.combo });
       P.text(r.x, r.y - r.r - 26, HR.t('perfect'), '#ffcf4a', 26);
       if (run.combo % run.mods.comboEvery === 0) {
@@ -849,7 +954,8 @@ HR.Game = class {
       if (run.mods.streakShield && run.combo % 8 === 0 && run.shields < this.shieldCap()) { run.shields++; P.text(this.ball.x, this.ball.y - 90, HR.t('perk_shield') + ' +1', '#4cf0ff', 22); this.emit('status', run); }
       HR.U.vibrate(12);
     } else { run.combo = 0; HR.Audio.sfx('pass', { combo: 0 }); }
-    if (r.coin && !r.coinTaken && (run.mods.magnet || run.magnetT > 0 || Math.abs(along) <= r.r * R.coinZone)) {
+    if (run.mods.angel) { run.angelStreak++; if (run.angelStreak % run.mods.angel === 0 && run.shields < this.shieldCap()) { run.shields++; P.text(this.ball.x, this.ball.y - 90, HR.t('perk_guardianangel') + ' +1', '#fff3c2', 20); this.emit('status', run); } }
+    if (r.coin && !r.coinTaken && (run.mods.magnet || run.magnetT > 0 || run.bholeT > 0 || Math.abs(along) <= r.r * R.coinZone)) {
       r.coinTaken = true; run.coinsTaken++; this.addCoins(E.coinPickup, r.x, r.y - 20); HR.Audio.sfx('coin');
       P.burst({ x: r.x, y: r.y, n: 8, speed: 260, color: '#ffcf4a', size: 5, life: 0.5 });
     }
@@ -862,6 +968,7 @@ HR.Game = class {
       const L = run.level;
       if (L.boss) {
         const wave = this.waveOfIndex(run.ringsResolved + 1);
+        if (wave !== run.bossWave && run.ringsResolved + 1 < L.rings && L.grace && run.shields < this.shieldCap()) { run.shields++; this.emit('status', run); P.text(this.ball.x, this.ball.y - 96, HR.t('sg_grace'), '#fff3c2', 22); }
         if (wave !== run.bossWave && run.ringsResolved + 1 < L.rings) { run.bossWave = wave; HR.Audio.sfx('phase'); this.emit('wave', wave + 1); P.burst({ x: this.ball.x, y: this.ball.y, n: 40, speed: 600, color: [r.color, '#ffffff'], size: 6, life: 1, type: 'spark', drag: 0.92 }); HR.Audio.setIntensity(0.4 + 0.6 * wave / (L.waves - 1)); }
       } else HR.Audio.setIntensity(0.2 + 0.8 * run.ringsResolved / L.rings);
     } else if (!r.event) {
@@ -869,7 +976,7 @@ HR.Game = class {
       if (ph.number !== run.phaseNumber) {
         run.phaseNumber = ph.number; run.phaseIdx = ph.idx;
         this.bg.setTint(ph.phase.accent);
-        this.fx = ph.phase.fx || null; this.bg.setFx(this.fx);
+        this.fx = this.themeFx || ph.phase.fx || null; this.bg.setFx(this.fx);
         HR.Audio.sfx('phase');
         HR.Audio.setIntensity(Math.min(1, (ph.number - 1) / 8));
         P.burst({ x: this.ball.x, y: this.ball.y, n: 40, speed: 600, color: [ph.phase.accent, '#ffffff'], size: 6, life: 1, type: 'spark', drag: 0.92 });
@@ -880,7 +987,7 @@ HR.Game = class {
     if (r.event) { this.emit('score', run, perfect); return; }
     this.emit('score', run, perfect);
     // infinito: eventos a cada 22–30 arcos a partir do 18º (nunca junto com anomalia)
-    if (!run.level && !this.demo && run.ringsPassed >= this.eventNextRing && !this.event && !this.pendingEvent && !run.anomalyActive && !this.anomalyPending) {
+    if (!run.level && !this.demo && !run.jetLeft && run.ringsPassed >= this.eventNextRing && !this.event && !this.pendingEvent && !run.anomalyActive && !this.anomalyPending) {
       const ids = Object.keys(HR.CONFIG.EVENTS).filter(k => k !== this.lastEvent); this.queueEvent(ids[Math.floor(Math.random() * ids.length)]);
       const E = HR.CONFIG.EVENT.every; this.eventNextRing = run.ringsPassed + E[0] + Math.floor(Math.random() * (E[1] - E[0] + 1));
     }
@@ -908,7 +1015,7 @@ HR.Game = class {
   damage(src, bypass) {
     const run = this.run, R = HR.CONFIG.RUN, P = this.particles;
     if (src) { src.resolved = true; src.hit = true; src.flash = 1; }
-    run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0; this.breakFlow();
+    run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0; run.angelStreak = 0; this.breakFlow();
     if (this.event && src) run.eventHits++;
     if (src && src.type === 'anomaly') { P.text(this.ball.x, this.ball.y - 64, HR.t('anomaly_hit'), '#ff3d2e', 24); this.ringResolved(); }
     if (src && src.event) this.ringResolved(src);
@@ -917,6 +1024,17 @@ HR.Game = class {
       P.text(this.ball.x, this.ball.y - 60, '✕', '#ff5e7e', 34);
       run.invuln = 0.6;
       this.emit('score', run, false);
+      return;
+    }
+    // Égide (v5): o primeiro erro quebra a bolha e a bola segue
+    if (!bypass && run.aegisT > 0) {
+      const sk = HR.Gear.current('aegis');
+      run.aegisT = 0; run.aegisCd = HR.GEAR.consumables.aegis.cd * (run.mods.aegisCd || 1); run.aegisSaves++; HR.Store.data.stats5.aegisSaves++; run.invuln = 0.9;
+      P.burst({ x: this.ball.x, y: this.ball.y, n: 40, speed: 560, color: [sk.color, sk.color2, '#ffffff'], size: 8, life: 0.9, type: 'shard', drag: 0.94 });
+      P.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: sk.color, size: 48, life: 0.7, type: 'wave' });
+      P.text(this.ball.x, this.ball.y - 70, HR.t('aegis_broken'), sk.color, 28);
+      this.shake = 10; HR.Audio.sfx('shield'); HR.U.vibrate([30, 20, 50]);
+      this.emit('gear', { kind: 'aegis' }); this.emit('status', run);
       return;
     }
     if (!bypass && run.shields > 0) {
@@ -932,6 +1050,15 @@ HR.Game = class {
       HR.Audio.sfx('revive'); HR.U.vibrate([20, 30, 20]);
       P.burst({ x: this.ball.x, y: this.ball.y, n: 30, speed: 420, color: ['#ffcf4a', '#ffffff'], size: 6, life: 0.9, type: 'spark' });
       P.text(this.ball.x, this.ball.y - 64, HR.t('second_chance_used'), '#ffcf4a', 26);
+      this.emit('status', run);
+      return;
+    }
+    if (!bypass && run.phoenixT > 0) {
+      run.phoenixT = 0; run.invuln = 1.6;
+      HR.Audio.sfx('revive'); HR.U.vibrate([20, 40, 60]);
+      P.burst({ x: this.ball.x, y: this.ball.y, n: 44, speed: 520, color: ['#ff8a3d', '#ffe27a', '#ffffff'], size: 7, life: 1, type: 'spark', drag: 0.94 });
+      P.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: '#ff8a3d', size: 56, life: 0.8, type: 'wave' });
+      P.text(this.ball.x, this.ball.y - 70, HR.t('ab_phoenix').toUpperCase(), '#ff8a3d', 28);
       this.emit('status', run);
       return;
     }
@@ -996,7 +1123,8 @@ HR.Game = class {
       pickups: run.pickups, anomaliesBeaten: run.anomaliesBeaten, starsUsed: run.starsUsed, shattered: run.shattered || 0, obstaclesDestroyed: run.obstaclesDestroyed, gemsFound: run.gemsFound, autoPerks: run.autoPerks,
       levelDone: 0, starsGot: 0, threeStar: 0, bossDone: 0, flawless: 0, bossFlawlessRun: (run.level && run.level.boss && success && run.hits === 0) ? 1 : 0,
       flowMax: Math.round(run.flowMax * 100), flowTime: Math.round(run.flowTime), centerPickups: run.centerPickups, eventsDone: run.eventsDone,
-      guardians: run.guardians, sentinels: run.sentinels, warps: run.warps, asteroidsDestroyed: run.asteroidsDestroyed
+      guardians: run.guardians, sentinels: run.sentinels, warps: run.warps, asteroidsDestroyed: run.asteroidsDestroyed,
+      aegisUsed: run.aegisUses, aegisSaves: run.aegisSaves, jetsUsed: run.jetsUsed, maxSpeed: Math.round(run.maxSpeed || 0), speedPct: Math.round((run.maxSpeed || 0) / HR.CONFIG.SPEED.base * 100)
     };
     HR.ABILITIES.forEach(a => { s['ab_' + a.id] = run.abUse[a.id] || 0; });
     return s;
@@ -1055,6 +1183,7 @@ HR.Game = class {
       if (r.alpha < 0.05) continue;
       if (r.coin && !r.coinTaken) HR.Render.drawCoin(ctx, r.x, r.y, 12, t, r.index);
       if (!r.centerItem) HR.Render.drawRingCenter(ctx, r, r.aligned && this.state === 'playing', t);
+      if ((r.nova || r.prism) && !r.resolved) { ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.tilt || 0); ctx.strokeStyle = r.nova ? 'rgba(255,226,122,' + (0.5 + 0.3 * Math.sin(t * 8)).toFixed(2) + ')' : 'rgba(255,122,217,0.55)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, 0, r.r * HR.Render.RX + 8, r.r + 8, 0, 0, 6.283); ctx.stroke(); ctx.restore(); }
     }
     for (const o of this.obstacles) HR.Render.drawObstacle(ctx, o, t);
     for (const p of this.pickups) HR.Render.drawPickup(ctx, p, t);
@@ -1073,14 +1202,23 @@ HR.Game = class {
       if (run.ghostT > 0) orbs.push({ n: 2, color: '#e8f0ff', rad: 1.45, speed: 1.6, size: 4, T: run.ghostT, wisp: true });
       if (run.slowmoT > 0) orbs.push({ n: 2, color: '#9be7ff', rad: 1.9, speed: 1.1, size: 4, T: run.slowmoT });
       if (run.freezeT > 0) orbs.push({ n: 3, color: '#dff8ff', rad: 1.65, speed: 1.8, size: 3.5, T: run.freezeT });
-      if (run.autoT > 0 && !run.anomalyActive) orbs.push({ n: 2, color: '#a29bfe', rad: 1.85, speed: 2.6, size: 3.5, T: run.autoT });
+      if (run.jetLeft > 0 && HR.Render.drawJet) HR.Render.drawJet(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, HR.Gear.current('jet'), t, run.jetKind === 'megajet' ? 1.35 : 1);
+      if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) orbs.push({ n: 2, color: '#a29bfe', rad: 1.85, speed: 2.6, size: 3.5, T: run.autoT });
       if (run.lensT > 0) orbs.push({ n: 3, color: '#7cff6b', rad: 2.1, speed: 1.4, size: 3.5, T: run.lensT });
       if (run.echoT > 0) orbs.push({ n: 3, color: '#ff5ecf', rad: 1.5, speed: -2.2, size: 4, T: run.echoT });
+      if (run.bholeT > 0) orbs.push({ n: 5, color: '#a88bff', rad: 2.4, speed: -4, size: 3, T: run.bholeT });
+      if (run.prismT > 0) orbs.push({ n: 3, color: '#ff7ad9', rad: 1.7, speed: 2.8, size: 4, T: run.prismT });
+      if (run.phoenixT > 0) orbs.push({ n: 2, color: '#ff8a3d', rad: 2.0, speed: 3.4, size: 5, T: run.phoenixT });
+      if (run.goldT > 0) orbs.push({ n: 4, color: '#ffd24a', rad: 1.8, speed: -2.6, size: 3.5, T: run.goldT });
+      if (run.microT > 0) orbs.push({ n: 2, color: '#9dff8a', rad: 1.2, speed: 4, size: 3, T: run.microT });
+      if (run.chronoT > 0) orbs.push({ n: 4, color: '#c3b8ff', rad: 2.2, speed: 0.6, size: 3.5, T: run.chronoT });
+      if (run.cometT > 0 && !run.jetLeft && HR.Render.drawJet) HR.Render.drawJet(ctx, b.x, b.y, b.r, { color: '#9be7ff', color2: '#ffffff' }, t, 0.9);
       if (orbs.length) HR.Render.drawOrbs(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, orbs, t);
       ctx.save(); ctx.translate(b.x, b.y + Math.sin(t * 3) * 2); ctx.rotate(-rot);
-      HR.Render.drawBall(ctx, 0, 0, b.r, this.skin, t, { vy: spd, sqAxis: sqAxisNow, alpha: b.alpha * (blink ? 0.45 : 1) * (ghost ? 0.5 : 1), shield: run.shields > 0, shields: run.shields, heat: run.combo >= 5 ? heat : 0, star: run.starT > 0 ? run.starT : 0, ending: run.powerEnding || 0 });
+      HR.Render.drawBall(ctx, 0, 0, this.ballR(), this.skin, t, { vy: spd, sqAxis: sqAxisNow, alpha: b.alpha * (blink ? 0.45 : 1) * (ghost ? 0.5 : 1), shield: run.shields > 0, shields: run.shields, heat: run.combo >= 5 ? heat : 0, star: run.starT > 0 ? run.starT : 0, ending: run.powerEnding || 0 });
       ctx.restore();
-      if (run.autoT > 0 && !run.anomalyActive) { ctx.strokeStyle = 'rgba(162,155,254,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+      if (run.aegisT > 0 && HR.Render.drawAegis) HR.Render.drawAegis(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, HR.Gear.current('aegis'), t, run.aegisT);
+      if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) { ctx.strokeStyle = 'rgba(162,155,254,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
     }
     for (const r of this.rings) HR.Render.drawRing(ctx, r, 'front', { alpha: r.alpha, t });
     this.particles.draw(ctx, p => p.type !== 'text');

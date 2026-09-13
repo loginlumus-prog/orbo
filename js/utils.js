@@ -25,7 +25,7 @@ HR.U = {
     }
     return (n < 0 ? '-' : '') + out;
   },
-  compact(n) { return n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.0', '') + 'k' : String(n); },
+  compact(n) { return n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace('.0', '').replace('.', ',') + 'M' : n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace('.0', '').replace('.', ',') + 'k' : String(n); },
 
   dateKey(d) {
     d = d || new Date();

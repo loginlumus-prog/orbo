@@ -14,7 +14,26 @@
   const PREFIX = { skins: 'skin_', trails: 'trail_', themes: 'theme_' };
   const FLAVOR = { skins: 'flavor_skin_', trails: 'flavor_trail_', themes: 'flavor_theme_' };
 
-  function rarity(type, id) { return (RAR[type] && RAR[type][id]) || 'common'; }
+  function rarity(type, id) { const it = HR.Unlocks.catalog(type).find(i => i.id === id); if (it && it.rar) return it.rar; return (RAR[type] && RAR[type][id]) || 'common'; }
+  function rewardText(item) { return item.cur === 'reward' ? HR.t('reward_galaxy', { name: HR.t('gal_' + HR.REGIONS[item.galaxy || 0].gal) }) : HR.t('reward_archon', { n: (item.layer || 0) + 1 }); }
+  // botões de preço: moedas (grátis) · gemas (pago) · IAP; ou um só botão (equipar, bloqueado, prêmio)
+  function priceArea(type, item, st) {
+    const special = item.cur === 'reward' || item.cur === 'archon';
+    if (st.equipped || st.owned || st.locked || special || item.cur === 'pack' || item.cur === 'iap') {
+      const btn = HR.U.el('button', 'btn shop-price' + (st.equipped ? ' is-on' : st.owned ? ' is-owned' : item.cur === 'iap' && !st.locked ? ' is-iap' : ''));
+      btn.innerHTML = st.equipped ? HR.UI.svg('check') + HR.t('equipped') : st.owned ? HR.t('equip') : st.locked ? HR.UI.svg('lock') + HR.t('locked_lvl', { n: item.lvl }) : special ? HR.UI.svg('lock') + HR.t('reward_only') : priceHtml(item);
+      btn.disabled = st.locked || special || st.equipped;
+      btn.addEventListener('click', e => { e.stopPropagation(); buyOrEquip(type, item); });
+      return btn;
+    }
+    const row = HR.U.el('div', 'shop-price-row');
+    const bc = HR.U.el('button', 'btn shop-price', '<i class="ic-coin"></i>' + HR.U.compact(item.price));
+    bc.setAttribute('data-tip', HR.t('buy_coins') + ': ' + HR.U.fmt(item.price));
+    bc.addEventListener('click', e => { e.stopPropagation(); buyOrEquip(type, item, 'coins'); }); row.appendChild(bc);
+    if (item.gems > 0) { const bg = HR.U.el('button', 'btn shop-price is-gem', '<i class="ic-gem"></i>' + HR.U.fmt(item.gems)); bg.setAttribute('data-tip', HR.t('buy_gems') + ': ' + HR.U.fmt(item.gems)); bg.addEventListener('click', e => { e.stopPropagation(); buyOrEquip(type, item, 'gems'); }); row.appendChild(bg); }
+    if (item.product) { const p = HR.IAP.product(item.product); if (p) { const bi = HR.U.el('button', 'btn shop-price is-iap', HR.IAP.price(p)); bi.addEventListener('click', e => { e.stopPropagation(); buyOrEquip(type, item, 'iap'); }); row.appendChild(bi); } }
+    return row;
+  }
   function rarColor(r) { return HR.RARITY[r] ? HR.RARITY[r].color : '#9aa6c9'; }
   function equippedSkin() { return HR.CONFIG.SKINS.find(s => s.id === HR.Store.data.equipped.skin) || HR.CONFIG.SKINS[0]; }
   function itemState(type, item) {
@@ -31,10 +50,24 @@
     cv.width = size * dpr; cv.height = size * dpr; cv.style.width = size + 'px'; cv.style.height = size + 'px';
     cv._size = size; cv._dpr = dpr; return cv;
   }
-  function addPreview(cv, type, item, opts) { HR.UI.previews.push(Object.assign({ cv, type, item, seed: Math.random() * 10 }, opts || {})); }
+  // só anima o que está visível (a loja tem 138 bolas)
+  let io = null;
+  function addPreview(cv, type, item, opts) {
+    const p = Object.assign({ cv, type, item, seed: Math.random() * 10 }, opts || {}); HR.UI.previews.push(p);
+    if ('IntersectionObserver' in window) {
+      if (!io) io = new IntersectionObserver(es => es.forEach(e => { const pp = HR.UI.previews.find(x => x.cv === e.target); if (pp) pp.vis = e.isIntersecting; }), { rootMargin: '120px' });
+      io.observe(cv);
+    }
+  }
   function drawPreview(p, t) {
     const cv = p.cv, S = cv._size, ctx = cv.getContext('2d');
     ctx.setTransform(cv._dpr, 0, 0, cv._dpr, 0, 0); ctx.clearRect(0, 0, S, S);
+    if (p.type === 'aegis' || p.type === 'jet') {
+      const bx = S / 2 + (p.type === 'jet' ? S * 0.16 : 0), by = S / 2 + Math.sin(t * 2 + p.seed) * S * 0.03, br = S * 0.15, sk = equippedSkin();
+      if (p.type === 'jet') { HR.Render.drawJet(ctx, bx, by, br, p.item, t, 1); HR.Render.drawBall(ctx, bx, by, br, sk, t, {}); }
+      else { HR.Render.drawBall(ctx, bx, by, br, sk, t, {}); HR.Render.drawAegis(ctx, bx, by, br, p.item, t, 30); }
+      return;
+    }
     const cx = S / 2, cy = S / 2, r = S * (p.big ? 0.2 : 0.22);
     const fy = Math.sin(t * 2 + p.seed) * S * 0.04;
     const skin = p.type === 'skins' ? p.item : equippedSkin();
@@ -45,27 +78,29 @@
       for (let i = 0; i < 16; i++) { const k = 16 - i; pts.push({ x: cx - k * S * 0.045, y: cy + Math.sin(t * 2 + p.seed - k * 0.25) * S * 0.04, t: t - k * 0.03 }); }
       HR.Render.drawTrail(ctx, p.item.id, pts, skin, t);
     }
-    HR.Render.drawBall(ctx, cx, cy + fy, r, skin, t + p.seed, { vy: Math.cos(t * 2 + p.seed) * 600 });
+    HR.Render.drawBall(ctx, cx, cy + fy, r, skin, t + p.seed, { vy: Math.cos(t * 2 + p.seed) * 140 });
     if (ring) HR.Render.drawRing(ctx, ring, 'front', {});
   }
   function startPreviews() {
     if (HR.UI.previewRaf || !HR.UI.previews.length) return;
-    const loop = () => { const t = performance.now() / 1000; HR.UI.previews.forEach(p => { if (p.cv.isConnected) drawPreview(p, t); }); HR.UI.previewRaf = requestAnimationFrame(loop); };
+    const loop = () => { const t = performance.now() / 1000; HR.UI.previews.forEach(p => { if (p.cv.isConnected && (p.vis !== false || !p.drawn)) { drawPreview(p, t); p.drawn = true; } }); HR.UI.previewRaf = requestAnimationFrame(loop); };
     HR.UI.previewRaf = requestAnimationFrame(loop);
   }
-  function stopPreviews() { if (HR.UI.previewRaf) cancelAnimationFrame(HR.UI.previewRaf); HR.UI.previewRaf = null; HR.UI.previews = []; }
+  function stopPreviews() { if (HR.UI.previewRaf) cancelAnimationFrame(HR.UI.previewRaf); HR.UI.previewRaf = null; HR.UI.previews = []; if (io) { io.disconnect(); io = null; } }
 
   /* ---------------- ações ---------------- */
-  async function buyOrEquip(type, item) {
+  async function buyOrEquip(type, item, cur) {
     const st = itemState(type, item);
     if (st.equipped) return;
     if (st.owned) { HR.Unlocks.equip(type, item.id); HR.Audio.sfx('click'); }
     else {
       if (st.locked) { HR.UI.toast(HR.icon('lock') + ' ' + HR.t('locked_lvl', { n: item.lvl })); return; }
-      if (item.cur === 'iap') { if (await HR.IAP.buy(item.product)) { HR.Unlocks.equip(type, item.id); HR.game.applyCosmetics(); HR.UI.refreshMenu(); HR.UI.closeItemDetail(); HR.UI.renderShop(); } return; }
+      if (item.cur === 'reward' || item.cur === 'archon') { HR.UI.toast(HR.icon('lock') + ' ' + rewardText(item)); return; }
+      if (item.cur === 'iap' || cur === 'iap') { if (await HR.IAP.buy(item.product)) { HR.Unlocks.equip(type, item.id); HR.game.applyCosmetics(); HR.UI.refreshMenu(); HR.UI.closeItemDetail(); HR.UI.renderShop(); } return; }
       if (item.season && !HR.Seasons.isActive(item.season)) { HR.UI.toast(HR.icon('calendar') + ' ' + HR.t('season_only', { name: HR.t('season_' + item.season) })); return; }
-      if (item.cur === 'gems') { const ok = await HR.UI.confirm(HR.t('confirm_buy_title'), HR.t('confirm_buy_text', { item: HR.t(PREFIX[type] + item.id), price: '<i class="ic-gem"></i> ' + item.price })); if (!ok) return; }
-      if (!HR.Unlocks.buy(type, item.id)) return;
+      const useGems = cur === 'gems' || item.cur === 'gems';
+      if (useGems) { const ok = await HR.UI.confirm(HR.t('confirm_buy_title'), HR.t('confirm_buy_text', { item: HR.t(PREFIX[type] + item.id), price: '<i class="ic-gem"></i> ' + HR.U.fmt(item.cur === 'gems' ? item.price : item.gems) })); if (!ok) return; }
+      if (!HR.Unlocks.buy(type, item.id, useGems ? 'gems' : 'coins')) return;
       HR.UI.toast(HR.icon('check') + ' ' + HR.t('purchased'), 'good');
     }
     HR.game.applyCosmetics(); HR.UI.refreshMenu(); HR.UI.closeItemDetail(); HR.UI.renderShop();
@@ -97,17 +132,14 @@
     el.appendChild(tags);
     el.appendChild(HR.U.el('span', 'shop-rar', HR.t('rarity_' + rar)));
     el.appendChild(HR.U.el('b', 'shop-name', HR.t(PREFIX[type] + item.id)));
-    const btn = HR.U.el('button', 'btn shop-price' + (st.equipped ? ' is-on' : st.owned ? ' is-owned' : ''));
-    btn.innerHTML = st.equipped ? HR.UI.svg('check') + HR.t('equipped') : st.owned ? HR.t('equip') : st.locked ? HR.UI.svg('lock') : priceHtml(item);
-    btn.disabled = st.locked;
-    btn.addEventListener('click', e => { e.stopPropagation(); buyOrEquip(type, item); });
-    el.appendChild(btn);
+    if ((item.cur === 'reward' || item.cur === 'archon') && !st.owned) tags.appendChild(HR.U.el('span', 'shop-tag lock', HR.icon(item.cur === 'archon' ? 'sigil' : 'crown')));
+    el.appendChild(priceArea(type, item, st));
     el.addEventListener('click', () => { HR.Audio.sfx('click'); HR.UI.openItemDetail(type, item.id); });
     return el;
   }
   function featured(type, list) {
     const d = HR.Store.data;
-    const pool = list.filter(i => !HR.Unlocks.owned(type, i.id) && d.level >= i.lvl && i.cur !== 'pack' && i.cur !== 'iap');
+    const pool = list.filter(i => !HR.Unlocks.owned(type, i.id) && d.level >= i.lvl && !['pack', 'iap', 'reward', 'archon'].includes(i.cur) && i.rar !== 'ultimate');
     const seed = HR.U.dateKey().split('-').reduce((a, b) => a + parseInt(b, 10), 0) + type.length;
     const item = pool.length ? pool[seed % pool.length] : list.find(i => i.id === HR.Unlocks.equipped(type)) || list[0];
     const st = itemState(type, item), rar = rarity(type, item.id);
@@ -123,8 +155,22 @@
     return el;
   }
   function renderCosmetics(body, type) {
-    const list = HR.Unlocks.catalog(type).filter(i => (i.cur !== 'pack' || HR.Unlocks.owned(type, i.id)) && (!i.season || HR.Seasons.isActive(i.season) || HR.Unlocks.owned(type, i.id)));
-    body.appendChild(featured(type, list));
+    let list = HR.Unlocks.catalog(type).filter(i => (i.cur !== 'pack' || HR.Unlocks.owned(type, i.id)) && (!i.season || HR.Seasons.isActive(i.season) || HR.Unlocks.owned(type, i.id)));
+    const col = type === 'skins' ? (HR.UI.shopCol || 'all') : 'all';
+    if (type === 'skins') {
+      const chips = HR.U.el('div', 'col-chips');
+      [{ id: 'all', icon: 'layers' }].concat(HR.COLLECTIONS || []).forEach(c => {
+        const items = c.id === 'all' ? list : list.filter(i => i.col === c.id); if (!items.length) return;
+        const own = items.filter(i => HR.Unlocks.owned('skins', i.id)).length;
+        const b = HR.U.el('button', 'col-chip' + (col === c.id ? ' on' : ''), HR.icon(c.icon) + '<span>' + HR.t('col_' + c.id) + '</span><b>' + own + '/' + items.length + '</b>');
+        b.setAttribute('data-tip', HR.t('col_' + c.id)); b.setAttribute('data-tip-d', HR.t('col_progress', { a: own, b: items.length }));
+        b.addEventListener('click', e => { e.stopPropagation(); HR.UI.shopCol = c.id; HR.Audio.sfx('click'); renderShop(); });
+        chips.appendChild(b);
+      });
+      body.appendChild(chips);
+      if (col !== 'all') list = list.filter(i => i.col === col);
+    }
+    if (col === 'all') body.appendChild(featured(type, list));
     const seasonal = list.filter(i => i.season && HR.Seasons.isActive(i.season));
     if (seasonal.length) { const S = HR.Seasons.current(); body.appendChild(HR.U.el('div', 'shop-season', '<span class="shop-season-ic">' + HR.icon('calendar') + '</span><span class="shop-season-txt"><b>' + HR.t('season_' + S.id) + '</b><small>' + HR.t('season_shop_note', { d: HR.Seasons.endLabel() }) + '</small></span>')); }
     const grid = HR.U.el('div', 'shop-grid');
@@ -144,14 +190,12 @@
     host.appendChild(HR.U.el('h3', '', HR.t(PREFIX[type] + item.id)));
     host.appendChild(HR.U.el('p', 'shop-flavor', HR.t(FLAVOR[type] + item.id)));
     const meta = HR.U.el('div', 'shop-detail-meta');
-    meta.appendChild(HR.U.el('span', 'shop-chip', HR.icon(type === 'skins' ? 'ring' : type === 'trails' ? 'sparkle' : 'layers') + ' ' + HR.t('tab_' + (type === 'skins' ? 'balls' : type))));
+    const colDef = item.col && HR.COLLECTIONS ? HR.COLLECTIONS.find(c => c.id === item.col) : null;
+    meta.appendChild(HR.U.el('span', 'shop-chip', colDef ? HR.icon(colDef.icon) + ' ' + HR.t('col_' + colDef.id) : HR.icon(type === 'trails' ? 'trail' : 'palette') + ' ' + HR.t('tab_' + type)));
     if (item.lvl > 1) meta.appendChild(HR.U.el('span', 'shop-chip' + (st.locked ? ' bad' : ''), HR.icon(st.locked ? 'lock' : 'unlock') + ' ' + HR.t('locked_lvl', { n: item.lvl })));
     host.appendChild(meta);
-    const btn = HR.U.el('button', 'btn' + (st.equipped ? ' btn-ghost' : ''));
-    btn.innerHTML = st.equipped ? HR.UI.svg('check') + HR.t('equipped') : st.owned ? HR.t('equip') : st.locked ? HR.UI.svg('lock') + HR.t('locked_lvl', { n: item.lvl }) : HR.t('buy') + ' · ' + priceHtml(item);
-    btn.disabled = st.locked || st.equipped;
-    btn.addEventListener('click', e => { e.stopPropagation(); buyOrEquip(type, item); });
-    host.appendChild(btn);
+    if (item.cur === 'reward' || item.cur === 'archon') host.appendChild(HR.U.el('p', 'lb-note', HR.icon(item.cur === 'archon' ? 'sigil' : 'crown') + ' ' + rewardText(item)));
+    const pa = priceArea(type, item, st); pa.classList.add('detail-price'); host.appendChild(pa);
     const close = HR.U.el('button', 'btn btn-ghost', HR.t('close')); close.addEventListener('click', e => { e.stopPropagation(); closeItemDetail(); }); host.appendChild(close);
     if (!modal.dataset.shopBackdrop) { modal.dataset.shopBackdrop = '1'; modal.addEventListener('click', e => { if (e.target === modal && host.classList.contains('shop-detail')) closeItemDetail(); }); }
     modal.classList.add('visible'); startPreviews();
@@ -201,6 +245,53 @@
     body.appendChild(HR.U.el('p', 'iap-note', HR.t('slot_locked_lvl', { n: HR.ABILITY_UPGRADE.secondSlotLevel })));
   }
 
+  /* ---------------- itens: Égide, Jatos e seus visuais (v5) ---------------- */
+  function renderGear(body) {
+    const C = HR.GEAR.consumables;
+    body.appendChild(HR.U.el('div', 'shop-section', HR.icon('bag') + ' ' + HR.t('gear_consumables')));
+    body.appendChild(HR.U.el('p', 'shop-intro', HR.t('gear_consumables_d')));
+    ['aegis', 'jet', 'megajet'].forEach(id => {
+      const G = C[id], n = HR.Consumables.count(id);
+      const el = HR.U.el('div', 'gear-card'); el.style.setProperty('--ac', G.color);
+      el.innerHTML = HR.plate(G.icon, G.color, 'lg') + '<div class="gear-info"><b>' + HR.t(id) + ' <span class="gear-count">' + HR.t('gear_owned_n', { n }) + '</span></b><span>' + HR.t(id + '_d') + '</span></div>';
+      const act = HR.U.el('div', 'gear-actions');
+      const one = HR.U.el('button', 'btn shop-price', HR.t('gear_buy_one') + ' <i class="ic-coin"></i>' + HR.U.fmt(G.price));
+      one.addEventListener('click', e => { e.stopPropagation(); if (HR.Consumables.buy(id, false)) { HR.UI.toast(HR.icon(G.icon) + ' +1 ' + HR.t(id), 'good'); renderShop(); } });
+      const bun = HR.U.el('button', 'btn shop-price is-owned', HR.t('gear_bundle', { n: G.bundle.n }) + ' <i class="ic-coin"></i>' + HR.U.fmt(G.bundle.price));
+      bun.addEventListener('click', e => { e.stopPropagation(); if (HR.Consumables.buy(id, true)) { HR.UI.toast(HR.icon(G.icon) + ' +' + G.bundle.n + ' ' + HR.t(id), 'good'); renderShop(); } });
+      act.appendChild(one); act.appendChild(bun); el.appendChild(act); body.appendChild(el);
+    });
+    const skinSection = (kind, titleKey) => {
+      body.appendChild(HR.U.el('div', 'shop-section', HR.icon(kind) + ' ' + HR.t(titleKey)));
+      const grid = HR.U.el('div', 'shop-grid');
+      HR.Gear.list(kind).forEach(it => {
+        const owned = HR.Gear.owned(kind, it.id), eq = HR.Gear.current(kind).id === it.id, rar = it.rar, name = HR.t((kind === 'jet' ? 'jetskin_' : 'aegisskin_') + it.id);
+        const card = HR.U.el('div', 'shop-card rar-' + rar + (eq ? ' equipped' : '')); card.style.setProperty('--rc', rarColor(rar));
+        const cv = makeCanvas(120); cv.className = 'shop-preview'; addPreview(cv, kind, it, {}); card.appendChild(cv);
+        const tags = HR.U.el('div', 'shop-tags'); if (eq) tags.appendChild(HR.U.el('span', 'shop-tag on', HR.t('equipped'))); card.appendChild(tags);
+        card.appendChild(HR.U.el('span', 'shop-rar', HR.t('rarity_' + rar)));
+        card.appendChild(HR.U.el('b', 'shop-name', name));
+        if (owned) {
+          const b = HR.U.el('button', 'btn shop-price' + (eq ? ' is-on' : ' is-owned'), eq ? HR.UI.svg('check') + HR.t('equipped') : HR.t('equip')); b.disabled = eq;
+          b.addEventListener('click', e => { e.stopPropagation(); HR.Gear.equip(kind, it.id); HR.Audio.sfx('click'); renderShop(); });
+          card.appendChild(b);
+        } else {
+          const row = HR.U.el('div', 'shop-price-row');
+          const bc = HR.U.el('button', 'btn shop-price', '<i class="ic-coin"></i>' + HR.U.compact(it.price));
+          bc.addEventListener('click', e => { e.stopPropagation(); if (HR.Gear.buy(kind, it.id, 'coins')) { HR.UI.toast(HR.icon('check') + ' ' + name, 'good'); renderShop(); } });
+          const bg = HR.U.el('button', 'btn shop-price is-gem', '<i class="ic-gem"></i>' + it.gems);
+          bg.addEventListener('click', async e => { e.stopPropagation(); const ok = await HR.UI.confirm(HR.t('confirm_buy_title'), HR.t('confirm_buy_text', { item: name, price: '<i class="ic-gem"></i> ' + it.gems })); if (ok && HR.Gear.buy(kind, it.id, 'gems')) { HR.UI.toast(HR.icon('check') + ' ' + name, 'good'); renderShop(); } });
+          row.appendChild(bc); row.appendChild(bg); card.appendChild(row);
+        }
+        grid.appendChild(card);
+      });
+      body.appendChild(grid);
+    };
+    skinSection('aegis', 'gear_aegis_skins');
+    skinSection('jet', 'gear_jet_skins');
+    body.appendChild(HR.U.el('p', 'iap-note', HR.t('gear_cosmetic_note')));
+  }
+
   /* ---------------- gemas ---------------- */
   function renderGems(body) {
     const d = HR.Store.data;
@@ -234,9 +325,6 @@
     HR.CONFIG.PRODUCTS.filter(p => p.type === 'gems').forEach(p => {
       pack('<i class="ic-gem"></i>', HR.UI.productName(p), '', HR.UI.productPrice(p), async () => { if (await HR.IAP.buy(p.id)) HR.UI.renderShop(); }, p.tag === 'best' ? 'hot' : '', p.tag);
     });
-    const E = HR.CONFIG.ECONOMY;
-    section(HR.t('exchange_title'));
-    pack(HR.icon('refresh'), HR.t('exchange', { g: E.exchangeGems, c: E.exchangeCoins }), '', '<i class="ic-gem"></i>' + E.exchangeGems, () => { if (HR.Economy.exchange()) HR.UI.renderShop(); });
     body.appendChild(HR.U.el('p', 'iap-note', HR.t('iap_note') + ' ' + HR.t('sub_note')));
   }
 
@@ -248,6 +336,7 @@
     const tab = HR.UI.shopTab;
     if (tab === 'skins' || tab === 'trails' || tab === 'themes') renderCosmetics(body, tab);
     else if (tab === 'abilities') renderAbilities(body);
+    else if (tab === 'gear') renderGear(body);
     else renderGems(body);
     body.scrollTop = 0;
     startPreviews();

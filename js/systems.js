@@ -69,7 +69,7 @@ HR.Progress = {
   },
   unlocksAt(level) {
     const C = HR.CONFIG, out = [];
-    C.SKINS.forEach(s => { if (s.lvl === level && s.cur !== 'pack' && s.cur !== 'iap' && !s.season) out.push({ type: 'skin', id: s.id }); });
+    C.SKINS.forEach(s => { if (s.lvl === level && level > 1 && !['pack', 'iap', 'reward', 'archon'].includes(s.cur) && !s.season && s.rar !== 'mythic' && s.rar !== 'ultimate') out.push({ type: 'skin', id: s.id }); });
     C.TRAILS.forEach(s => { if (s.lvl === level) out.push({ type: 'trail', id: s.id }); });
     C.THEMES.forEach(s => { if (s.lvl === level) out.push({ type: 'theme', id: s.id }); });
     return out;
@@ -90,6 +90,12 @@ HR.Missions = {
     while (out.length < n && p.length) out.push(p.splice(Math.floor(rnd() * p.length), 1)[0]);
     return out;
   },
+  // só sorteia o que dá para cumprir agora (habilidade comprada, Singularidade aberta, Égide em estoque…)
+  eligible(t, weekly) {
+    if (t.season || (t.weeklyOnly && !weekly)) return false;
+    if (/^ab_/.test(t.src) && HR.Abilities && !HR.Abilities.owned(t.src.slice(3))) return false;
+    try { return !t.req || !!t.req(); } catch (e) { return false; }
+  },
   ensureDaily() {
     const d = HR.Store.data, C = HR.CONFIG, today = HR.U.dateKey();
     let changed = false;
@@ -97,7 +103,7 @@ HR.Missions = {
     if (d.missions.date !== today || d.missions.list.length !== wantDaily) {
       d.missions.date = today; d.missions.rerolls = 0;
       const seed = today.split('-').reduce((a, b) => a * 31 + parseInt(b, 10), 7) + d.level;
-      d.missions.list = this.pickN(HR.MISSIONS.filter(t => !t.season), C.MISSIONS_DAILY, seed).map(t => this.make(t, false));
+      d.missions.list = this.pickN(HR.MISSIONS.filter(t => this.eligible(t, false)), C.MISSIONS_DAILY, seed).map(t => this.make(t, false));
       if (HR.Seasons && HR.Seasons.current()) { const st = HR.MISSIONS.find(t => t.season); if (st) d.missions.list.push(this.make(st, false)); }
       changed = true;
     }
@@ -105,7 +111,7 @@ HR.Missions = {
     if (d.missions.weekKey !== wk || d.missions.weekly.length !== C.MISSIONS_WEEKLY) {
       d.missions.weekKey = wk;
       const seed = wk.split('-').reduce((a, b) => a * 17 + parseInt(b, 10), 3);
-      d.missions.weekly = this.pickN(HR.MISSIONS.filter(t => t.weekly && !t.season), C.MISSIONS_WEEKLY, seed).map(t => this.make(t, true));
+      d.missions.weekly = this.pickN(HR.MISSIONS.filter(t => t.weekly && this.eligible(t, true)), C.MISSIONS_WEEKLY, seed).map(t => this.make(t, true));
       changed = true;
     }
     if (changed) HR.Store.save();
@@ -120,7 +126,7 @@ HR.Missions = {
   make(tpl, weekly) {
     const C = HR.CONFIG, tier = this.tierFor();
     let [target, coins, gems, xp] = tpl.tiers[tier];
-    if (weekly) { target = Math.round(target * C.WEEKLY_TARGET_MUL); coins *= C.WEEKLY_REWARD_MUL; gems = Math.max(gems * C.WEEKLY_REWARD_MUL, 10); xp *= C.WEEKLY_REWARD_MUL; }
+    if (weekly) { if (!tpl.noMul) target = Math.round(target * C.WEEKLY_TARGET_MUL); coins *= C.WEEKLY_REWARD_MUL; gems = Math.max(gems * C.WEEKLY_REWARD_MUL, 10); xp *= C.WEEKLY_REWARD_MUL; }
     return { uid: HR.U.uid(), id: tpl.id, target, coins, gems, xp, progress: 0, claimed: false, weekly: !!weekly, seen: [] };
   },
   decorate(m) {
@@ -163,7 +169,8 @@ HR.Missions = {
     const i = d.missions.list.findIndex(x => x.uid === uid);
     if (i < 0 || d.missions.rerolls >= HR.CONFIG.MISSION_REROLLS) return false;
     const used = d.missions.list.map(x => x.id);
-    const pool = HR.MISSIONS.filter(t => !used.includes(t.id) && !t.season);
+    const pool = HR.MISSIONS.filter(t => !used.includes(t.id) && this.eligible(t, false));
+    if (!pool.length) return false;
     d.missions.list[i] = this.make(HR.U.pick(pool), false);
     d.missions.rerolls++;
     HR.Store.save();
@@ -203,7 +210,7 @@ HR.Daily = {
     if (!d.vip || d.daily.vipClaim === today) return null;
     const p = HR.CONFIG.PRODUCTS.find(x => x.id === 'vip');
     d.daily.vipClaim = today;
-    HR.Economy.addGems(p.gemsDaily, 'vip'); HR.Economy.addCoins(p.coinsDaily, 'vip');
+    HR.Economy.addGems(p.gemsDaily, 'vip'); if (p.coinsDaily) HR.Economy.addCoins(p.coinsDaily, 'vip');
     HR.Store.save();
     return { gems: p.gemsDaily, coins: p.coinsDaily };
   }
@@ -220,7 +227,24 @@ HR.Achievements = {
       levelsCleared: HR.Campaign ? HR.Campaign.levelsCleared() : 0, starsTotal: HR.Campaign ? HR.Campaign.totalStars() : 0, regionsCleared: HR.Campaign ? HR.Campaign.regionsCleared() : 0,
       ringsFound: d.codex ? d.codex.rings.length : 0, itemsFound: d.codex ? d.codex.items.length : 0,
       coreLevel: d.core || 0, regionsVisited: (s.regionsVisited || []).length, contractsDone: s.contractsDone || 0
-    });
+    }, this.stats5());
+  },
+  // v5: sistemas, Singularidade, Égide/Jato, velocidade e coleções
+  stats5() {
+    const d = HR.Store.data, s5 = d.stats5 || {}, C = HR.Campaign, SG = HR.Singularity, out = {};
+    out.systemsCleared = C && C.systemsCleared ? C.systemsCleared() : 0;
+    out.archonsPassed = SG ? SG.passedCount() : 0;
+    out.understood = s5.understood || 0; out.questioned = s5.questioned || 0; out.forced = s5.forced || 0;
+    out.ecosFound = SG ? SG.totalEcos() : 0; out.wordsEarned = SG ? SG.wordsEarned().length : 0; out.dialogues = s5.dialogues || 0;
+    out.journeyPct = C && C.progressPct ? Math.floor(C.progressPct()) : 0;
+    out.aegisUsed = s5.aegisUsed || 0; out.aegisSaves = s5.aegisSaves || 0; out.jetsUsed = s5.jetsUsed || 0; out.megajetsUsed = s5.megajetsUsed || 0;
+    out.abilitiesOwned = d.abilities.owned.length; out.speedPct = s5.speedPct || 0;
+    let done = 0;
+    (HR.COLLECTIONS || []).forEach(c => { const all = HR.CONFIG.SKINS.filter(x => x.col === c.id), own = all.filter(x => d.owned.skins.includes(x.id)).length; out['col_' + c.id] = own; if (all.length && own >= all.length) done++; });
+    out.collectionsDone = done;
+    const g = d.gear || {}; out.aegisSkins = (g.ownedAegis || ['crystal']).length; out.jetSkins = (g.ownedJet || ['blue']).length;
+    out.ownTon618 = d.owned.skins.includes('ton618') ? 1 : 0;
+    return out;
   },
   check() {
     const d = HR.Store.data, st = this.stats(), out = [];
@@ -289,13 +313,15 @@ HR.Unlocks = {
     HR.Analytics.log('equip', { type, id });
     return true;
   },
-  buy(type, id) {
+  // v5: cosméticos com preço duplo — cur 'gems' paga com gemas (pago), senão moedas (grátis)
+  buy(type, id, cur) {
     const item = this.catalog(type).find(i => i.id === id);
     if (!item || this.owned(type, id)) return false;
     if (HR.Store.data.level < item.lvl) return false;
-    if (item.cur === 'pack' || item.cur === 'iap') return false;
+    if (['pack', 'iap', 'reward', 'archon'].includes(item.cur)) return false;
     if (item.season && !(HR.Seasons && HR.Seasons.isActive(item.season))) return false;
-    const ok = item.cur === 'gems' ? HR.Economy.spendGems(item.price, type + '_' + id) : HR.Economy.spendCoins(item.price, type + '_' + id);
+    const useGems = (cur === 'gems' && item.gems > 0) || item.cur === 'gems';
+    const ok = useGems ? HR.Economy.spendGems(item.cur === 'gems' ? item.price : item.gems, type + '_' + id) : HR.Economy.spendCoins(item.price, type + '_' + id);
     if (!ok) return false;
     HR.Store.data.owned[type].push(id);
     HR.Store.data.stats.itemsBought++; if (item.season) HR.Store.data.stats.seasonItems = (HR.Store.data.stats.seasonItems || 0) + 1;

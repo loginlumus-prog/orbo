@@ -13,6 +13,7 @@
 
   async function boot() {
     HR.Store.load();
+    if (HR.Campaign && HR.Campaign.backfill) HR.Campaign.backfill();
     const s = HR.Store.data.settings;
     HR.setLang(s.lang || HR.detectLang());
     layout();
@@ -65,7 +66,7 @@
     HR.UI.goMenu();
     HR.Analytics.log('app_open', { runs: HR.Store.data.runs, level: HR.Store.data.level, lang: HR.lang, mode: HR.Store.data.mode });
 
-    if (HR.Daily.status().vipToday) { const r = HR.Daily.claimVip(); if (r) HR.UI.toast(HR.icon('crown') + ' ' + HR.t('daily_bonus_vip') + ' +' + r.gems + ' <i class="ic-gem"></i> +' + r.coins + ' <i class="ic-coin"></i>', 'good'); }
+    if (HR.Daily.status().vipToday) { const r = HR.Daily.claimVip(); if (r) HR.UI.toast(HR.icon('crown') + ' ' + HR.t('daily_bonus_vip') + ' +' + r.gems + ' <i class="ic-gem"></i>', 'good'); }
     if (HR.Daily.status().canClaim && HR.Store.data.runs > 0) setTimeout(() => HR.UI.toast(HR.icon('gift') + ' ' + HR.t('daily_reward'), 'good'), 600);
 
     const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(location.hostname);

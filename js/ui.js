@@ -11,9 +11,9 @@ const $ = (s, r) => HR.U.$(s, r), $$ = (s, r) => HR.U.$$(s, r);
 HR.UI = {
   svg(name) { const map = { back: 'arrowLeft' }; return HR.icon(map[name] || name); },
 
-  game: null, current: 'splash', stack: [], shopTab: 'skins', missionsTab: 'daily', lbTab: 'global', achTab: 'all',
+  game: null, current: 'splash', stack: [], shopTab: 'skins', missionsTab: 'daily', lbTab: 'journey', achTab: 'all',
   previews: [], previewRaf: null, adResolve: null, adTimer: null, reviveTimer: null, lastSummary: null, pendingUps: [], abandon: false, missionTimerInt: null,
-  PANELS: ['shop', 'galaxy', 'region', 'abilities', 'missions', 'achievements', 'daily', 'leaderboard', 'settings'],
+  PANELS: ['shop', 'galaxy', 'region', 'system', 'singularity', 'abilities', 'missions', 'achievements', 'daily', 'leaderboard', 'settings'],
 
   /* ---------------- inicialização ---------------- */
   init(game) {
@@ -93,13 +93,13 @@ HR.UI = {
   // open(panel, arg): arg = aba (loja/missões) ou índice da região
   open(panel, arg) {
     if (!['menu', 'over', 'levelend'].includes(this.current)) return;
-    if (this.stack.includes(panel) && panel !== 'region') return;
+    if (this.stack.includes(panel) && panel !== 'region' && panel !== 'system') return;
     if (panel === 'shop' && arg) { this.shopTab = arg; this.setTab('shop-tabs', arg); }
     if (panel === 'missions' && arg) { this.missionsTab = arg; this.setTab('missions-tabs', arg); }
     if (!this.stack.includes(panel)) this.stack.push(panel);
     this.showScreen(panel);
     HR.Audio.sfx('open');
-    const fn = { shop: 'renderShop', missions: 'renderMissions', daily: 'renderDaily', leaderboard: 'renderLeaderboard', settings: 'renderSettings', galaxy: 'renderGalaxy', region: 'renderRegion', abilities: 'renderAbilities', achievements: 'renderAchievements' }[panel];
+    const fn = { shop: 'renderShop', missions: 'renderMissions', daily: 'renderDaily', leaderboard: 'renderLeaderboard', settings: 'renderSettings', galaxy: 'renderGalaxy', region: 'renderRegion', system: 'renderSystem', singularity: 'renderSingularity', abilities: 'renderAbilities', achievements: 'renderAchievements' }[panel];
     if (fn && this[fn]) this[fn](arg);
     HR.Analytics.log('open_' + panel, panel === 'region' ? { ri: arg } : undefined);
   },
@@ -108,7 +108,7 @@ HR.UI = {
     this.stopPreviews();
     if (p === 'missions') { clearInterval(this.missionTimerInt); this.missionTimerInt = null; }
     if (p === 'region' && HR.Music && this.current === 'menu') HR.Music.play('menu');
-    if (this.stack.length) { const top = this.stack[this.stack.length - 1]; if (top === 'galaxy' && this.renderGalaxy) this.renderGalaxy(); }
+    if (this.stack.length) { const top = this.stack[this.stack.length - 1]; if (top === 'galaxy' && this.renderGalaxy) this.renderGalaxy(); if (top === 'region' && this.renderRegion) this.renderRegion(); if (top === 'system' && this.renderSystem) this.renderSystem(); }
     if (this.current === 'menu') this.refreshMenu();
   },
   startPreviews() {}, stopPreviews() { if (this.previewRaf) cancelAnimationFrame(this.previewRaf); this.previewRaf = null; this.previews = []; },
@@ -239,7 +239,7 @@ HR.UI = {
     scene.style.setProperty('--ball-d', (rad * 2).toFixed(0) + 'px');
     this.game.setShowcase((sr.left + sr.width / 2 - cr.left) / this.game.scale, (sr.top + sr.height / 2 - cr.top) / this.game.scale, rad / this.game.scale);
   },
-  showcaseList() { return HR.CONFIG.SKINS.filter(s => (s.cur !== 'pack' && s.cur !== 'iap' && !s.season) || HR.Unlocks.owned('skins', s.id)); },
+  showcaseList() { return HR.CONFIG.SKINS.filter(s => (!['pack', 'iap', 'reward', 'archon'].includes(s.cur) && !s.season) || HR.Unlocks.owned('skins', s.id)); },
   cycleSkin(dir) {
     HR.Audio.sfx('click');
     const list = this.showcaseList();
@@ -278,10 +278,12 @@ HR.UI = {
     HR.Analytics.log('run_start', { mode, level: HR.Store.data.level });
   },
   startLevel(id) {
-    const level = HR.Campaign.level(id); if (!level) return;
-    if (!HR.Campaign.isUnlocked(id)) { this.toast(HR.icon('lock') + ' ' + HR.t('locked'), 'bad'); return; }
+    const sg = !!(HR.Singularity && HR.Singularity.isLevel(id));
+    const level = sg ? HR.Singularity.level(id) : HR.Campaign.level(id); if (!level) return;
+    if (sg ? !HR.Singularity.canPlay(id) : !HR.Campaign.isUnlocked(id)) { this.toast(HR.icon('lock') + ' ' + HR.t('locked'), 'bad'); return; }
     HR.Audio.unlock();
-    HR.Store.data.campaign.last = id; HR.Store.data.campaign.lastRegion = level.ri; HR.Store.data.mode = 'campaign'; HR.Store.data.hints.galaxy = true; HR.Store.save();
+    if (!sg) { HR.Store.data.campaign.last = id; HR.Store.data.campaign.lastRegion = level.ri; HR.Store.data.mode = 'campaign'; HR.Store.data.hints.galaxy = true; }
+    HR.Store.save();
     this.closePanels(); this.hideModals();
     HR.Ads.banner(false);
     this.game.prepareRun({ mode: 'campaign', level });
@@ -333,7 +335,7 @@ HR.UI = {
   showRevive(run) {
     const R = HR.CONFIG.RUN;
     const cost = R.reviveGems[Math.min(run.revives, R.reviveGems.length - 1)];
-    this.bind('reviveGemCost', cost);
+    this.bind('reviveGemCost', HR.U.fmt(R.reviveCoins[Math.min(run.revives, R.reviveCoins.length - 1)]));
     $('#btn-revive-ad').style.display = HR.Ads.isRewardedReady() ? '' : 'none';
     this.showScreen('revive');
     const total = R.reviveSeconds; let left = total, shown = total;
@@ -356,12 +358,13 @@ HR.UI = {
     if (ok) { this.clearRevive(); this.game.revive(); HR.Analytics.log('revive_ad'); }
     else if (this.game.state === 'revive') this.showRevive(this.game.run);
   },
+  // v5: continuar é mecânica → só moedas (ou anúncio)
   reviveWithGems() {
     const R = HR.CONFIG.RUN, run = this.game.run;
-    const cost = R.reviveGems[Math.min(run.revives, R.reviveGems.length - 1)];
-    if (HR.Store.data.gems < cost) { this.toast(HR.t('not_enough_gems'), 'bad'); HR.Audio.sfx('error'); return; }
-    HR.Economy.spendGems(cost, 'revive');
-    this.clearRevive(); this.game.revive(); HR.Analytics.log('revive_gems', { cost });
+    const cost = R.reviveCoins[Math.min(run.revives, R.reviveCoins.length - 1)];
+    if (HR.Store.data.coins < cost) { this.toast(HR.t('not_enough_coins'), 'bad'); HR.Audio.sfx('error'); return; }
+    HR.Economy.spendCoins(cost, 'revive');
+    this.clearRevive(); this.game.revive(); HR.Analytics.log('revive_coins', { cost });
   },
   declineRevive() { this.clearRevive(); this.game.declineRevive(); },
 
@@ -378,12 +381,18 @@ HR.UI = {
     d.bestCombo = Math.max(d.bestCombo, s.maxCombo);
     HR.Store.save();
     HR.Economy.addCoins(s.coins, 'run_' + s.mode);
+    // v5: as primeiras partidas do dia dão XP em dobro (aproxima quem joga pouco de quem joga muito)
+    const P5 = HR.CONFIG.PROGRESSION, xb = d.xpBonus || (d.xpBonus = { date: null, used: 0 }), today = HR.U.dateKey();
+    if (xb.date !== today) { xb.date = today; xb.used = 0; }
+    if (s.xp > 0 && s.mode !== 'practice' && xb.used < P5.dailyBonusRuns) { xb.used++; s.xpBonus = Math.round(s.xp * (P5.dailyBonusMul - 1)); s.xp += s.xpBonus; }
     const ups = s.xp > 0 ? HR.Progress.addXp(s.xp) : [];
     if (s.mode !== 'practice') HR.Missions.onRunEnd(s);
+    if (d.stats5) d.stats5.speedPct = Math.max(d.stats5.speedPct || 0, s.speedPct || 0);
     st.flowMax = Math.max(st.flowMax || 0, s.flowMax || 0); st.flowTime = (st.flowTime || 0) + (s.flowTime || 0); st.centerPickups = (st.centerPickups || 0) + (s.centerPickups || 0); st.eventsDone = (st.eventsDone || 0) + (s.eventsDone || 0); st.guardians = (st.guardians || 0) + (s.guardians || 0); st.shattered = (st.shattered || 0) + (s.shattered || 0); st.sentinels = (st.sentinels || 0) + (s.sentinels || 0); st.warps = (st.warps || 0) + (s.warps || 0); st.asteroidsDestroyed = (st.asteroidsDestroyed || 0) + (s.asteroidsDestroyed || 0);
     const contracts = HR.Campaign.onRunEnd(s);
     contracts.forEach((c, i) => { setTimeout(() => this.toast(HR.icon('flag') + ' ' + HR.t('contract_done', { name: HR.Campaign.contractText(c) }) + ' +' + c.coins + ' <i class="ic-coin"></i> +' + c.gems + ' <i class="ic-gem"></i> +' + c.xp + ' XP', 'good'), 900 + i * 800); ups.push.apply(ups, HR.Progress.addXp(c.xp)); });
     const ach = HR.Achievements.check();
+    if (HR.Online) HR.Online.submit();
     HR.Analytics.log('run_end', { mode: s.mode, levelId: s.levelId, success: s.success, score: s.score, coins: s.coins, perfects: s.perfects, phase: s.phase, duration: s.duration, revives: s.revives, perks: Object.keys(s.perks).length, record: isRecord });
     s.isRecord = isRecord; s.doubled = false;
     return { ups, ach, isRecord };
@@ -402,7 +411,7 @@ HR.UI = {
     $('[data-bind="recordTag"]').classList.toggle('show', res.isRecord);
     this.bind('overCoins', '+' + HR.U.fmt(s.coins) + (s.mode === 'practice' ? ' (½)' : ''));
     this.bind('overPerfects', s.perfects); this.bind('overCombo', s.maxCombo); this.bind('overPhase', s.phase); this.bind('overMisses', s.misses); this.bind('overPickups', s.pickups);
-    this.bind('overXp', '+' + s.xp + ' XP');
+    this.bind('overXp', '+' + s.xp + ' XP' + (s.xpBonus ? ' · ×2' : ''));
     this.renderBuild($('[data-bind="overBuild"]'), s.perks);
     const xpFrac = res.ups.length ? 1 : HR.Progress.info().frac;
     this.bind('overLevel', before.level); this.fill('overXpFill', Math.max(0, before.frac - (s.xp / before.need)));
@@ -505,19 +514,35 @@ HR.UI = {
   },
 
   /* ---------------- ranking ---------------- */
+  // v5: Jornada % (quanto do jogo zerou) · Infinito (recorde) · Meus recordes — online via HR.Online
   renderLeaderboard() {
+    if (!['journey', 'endless', 'local'].includes(this.lbTab)) this.lbTab = 'journey';
     this.setTab('lb-tabs', this.lbTab);
     const body = $('#lb-body'); body.innerHTML = '';
-    if (this.lbTab === 'global') {
-      const g = HR.Leaderboard.global();
-      body.appendChild(HR.U.el('p', 'lb-note', HR.t('rank_you', { n: g.myRank })));
-      g.rows.slice(0, 30).forEach((r, i) => {
-        const row = HR.U.el('div', 'lb-row' + (r.me ? ' me' : ''));
-        const pos = i < 3 ? '<span class="lb-pos top">' + HR.icon(i === 0 ? 'crown' : 'medal') + '</span>' : '<span class="lb-pos">' + (i + 1) + '</span>';
-        row.innerHTML = pos + '<span class="lb-flag">' + this.esc(r.flag) + '</span><span class="lb-name">' + this.esc(r.name) + (r.vip ? ' <span class="tag">' + HR.t('vip_badge') + '</span>' : '') + '</span><span class="lb-score">' + HR.U.fmt(r.score) + '</span>';
-        body.appendChild(row);
+    const tab = this.lbTab, O = HR.Online;
+    const nr = HR.U.el('form', 'lb-name-row');
+    nr.innerHTML = HR.plate('user', '#4cf0ff', 'sm') + '<label class="lb-name-main"><small>' + this.esc(HR.t('lb_name')) + '</small><input type="text" maxlength="18" value="' + this.esc(O.name()) + '"></label><button type="submit" class="btn btn-play small-btn">' + this.esc(HR.t('lb_save')) + '</button>';
+    nr.addEventListener('submit', e => { e.preventDefault(); if (O.setName($('input', nr).value)) { this.toast(HR.icon('check') + ' ' + HR.t('lb_saved'), 'good'); O.cache = {}; this.renderLeaderboard(); } else this.toast(HR.t('lb_name_bad'), 'bad'); });
+    body.appendChild(nr);
+    if (tab !== 'local') {
+      const d = HR.Store.data, journey = tab === 'journey';
+      body.appendChild(HR.U.el('div', 'lb-me', HR.plate(journey ? 'percent' : 'infinity', journey ? '#ffcf4a' : '#4cf0ff') + '<div class="lb-me-main"><span class="kicker">' + this.esc(HR.t(journey ? 'lb_you_pct' : 'lb_you_best')) + '</span><b>' + (journey ? O.pct().toFixed(2) + '%' : HR.U.fmt(d.best)) + '</b>' + (journey ? '<small>' + this.esc(HR.t('lb_layers', { n: HR.Singularity ? HR.Singularity.passedCount() : 0 })) + '</small>' : '') + '</div><span class="lb-me-rank">#…</span>'));
+      if (journey) body.appendChild(HR.U.el('p', 'lb-note', HR.t('lb_journey_d')));
+      const list = HR.U.el('div', 'lb-list', '<p class="lb-note">' + HR.t('lb_loading') + '</p>'); body.appendChild(list);
+      O.top(journey ? 'journey' : 'endless').then(v => {
+        if (this.lbTab !== tab || !list.isConnected) return;
+        list.innerHTML = '';
+        if (journey) list.appendChild(HR.U.el('div', 'lb-first', HR.plate('chest', '#ffcf4a', 'sm') + '<span>' + this.esc(v.first ? HR.t('lb_first', { name: v.first.name }) : HR.t('lb_first_none')) + '</span>'));
+        v.rows.slice(0, 50).forEach((r, i) => {
+          const row = HR.U.el('div', 'lb-row' + (r.me ? ' me' : ''));
+          const pos = i < 3 ? '<span class="lb-pos top">' + HR.icon(i === 0 ? 'crown' : 'medal') + '</span>' : '<span class="lb-pos">' + (i + 1) + '</span>';
+          const val = journey ? '<span class="lb-score">' + (+r.pct).toFixed(2) + '%' + (r.layers ? ' <small>' + HR.icon('light') + r.layers + '</small>' : '') + '</span>' : '<span class="lb-score">' + HR.U.fmt(r.best) + '</span>';
+          row.innerHTML = pos + '<span class="lb-flag">' + this.esc(r.flag || '') + '</span><span class="lb-name">' + this.esc(r.name) + '</span>' + val;
+          list.appendChild(row);
+        });
+        const rk = body.querySelector('.lb-me-rank'); if (rk) rk.textContent = '#' + v.myRank;
+        list.appendChild(HR.U.el('p', 'lb-note', HR.t(v.online ? 'lb_online' : 'lb_offline')));
       });
-      body.appendChild(HR.U.el('p', 'lb-note', HR.t('global_note')));
     } else {
       const list = HR.Leaderboard.local();
       if (!list.length) body.appendChild(HR.U.el('p', 'lb-note', HR.t('local_empty')));
@@ -554,6 +579,12 @@ HR.UI = {
     row('sparkle', HR.t('perk_auto'), HR.t('perk_auto_d'), toggle('autoPerk'));
     body.appendChild(HR.U.el('div', 'section-title', HR.t('profile')));
     row('user', HR.t('language'), '', seg([{ v: 'pt', l: 'PT' }, { v: 'en', l: 'EN' }, { v: 'es', l: 'ES' }], HR.lang, v => { s.lang = v; HR.Store.save(); HR.setLang(v); this.renderSettings(); this.refreshMenu(); }));
+    if (HR.Online) {
+      const nameForm = HR.U.el('form', 'name-edit');
+      nameForm.innerHTML = '<input type="text" maxlength="18" value="' + this.esc(HR.Online.name()) + '"><button type="submit" class="btn small-btn">' + this.esc(HR.t('lb_save')) + '</button>';
+      nameForm.addEventListener('submit', e => { e.preventDefault(); if (HR.Online.setName($('input', nameForm).value)) this.toast(HR.icon('check') + ' ' + HR.t('lb_saved'), 'good'); else this.toast(HR.t('lb_name_bad'), 'bad'); });
+      row('user', HR.t('lb_name'), '', nameForm).classList.add('setting-stack');
+    }
     if (d.titles && d.titles.length) {
       const opts = [{ v: null, l: HR.t(HR.Progress.titleKey(d.level)) }].concat(d.titles.map(t => ({ v: t, l: HR.t(t) })));
       const wrap = HR.U.el('div', 'title-pick');
@@ -578,9 +609,9 @@ Object.assign(HR.I18N.pt, {
   tip_1: 'Passe pelo centro do arco para fazer PERFEITO e subir o combo.', tip_2: 'Toque nos botões dos cantos para usar habilidades. Elas recarregam sozinhas.',
   tip_3: 'A cada 10 arcos você escolhe um perk. Monte sua build.', tip_4: 'Os arcos podem vir de cima, de baixo ou dos lados. Fique atento ao aviso de direção.',
   tip_5: 'No modo Treino não existe morte. Use para aprender.', tip_6: 'Escudos absorvem um erro. Vidas extras continuam a corrida na hora.',
-  tip_7: 'A bola pode ir para frente e para trás. Recue para ganhar tempo.', tip_8: 'Cada região da galáxia tem a própria música e o próprio chefe.',
-  tip_9: 'Cada região tem um Portal: chefe, estrelas, patente, Núcleo e contratos.', tip_10: 'Missões semanais renovam na segunda-feira e pagam quatro vezes mais.',
-  tip_11: 'Raspar a borda de um arco conta como "por um fio" — há uma conquista secreta.', tip_12: 'Domine a Singularidade (chefe da região 10) para ganhar +25 % de moedas no infinito.',
+  tip_7: 'A bola pode ir para frente e para trás. Recue para ganhar tempo.', tip_8: 'Cada galáxia tem 10 sistemas, e cada sistema termina num chefe. Estrelas abrem o próximo.',
+  tip_9: 'Para abrir a próxima galáxia, o Portal pede chefe, estrelas, patente, Núcleo e contratos.', tip_10: 'Missões semanais renovam na segunda-feira e pagam quatro vezes mais.',
+  tip_11: 'Raspar a borda de um arco conta como "por um fio" — há uma conquista secreta.', tip_12: 'A Égide absorve um erro por 30 s. O Jato só pode ser usado antes do primeiro arco.',
   load_fonts: 'Carregando fontes', load_audio: 'Preparando áudio', load_save: 'Lendo progresso', load_ready: 'Pronto', load_galaxy: 'Desenhando a galáxia',
   abilities_short: 'Poderes', near_miss: 'POR UM FIO', audio: 'Áudio', sfx_vol: 'Volume dos sons', music_vol: 'Volume da música', profile: 'Perfil', account: 'Conta',
   title: 'Título', title_d: 'Aparece no menu, abaixo do nome do jogo', weekly_note: 'Alvos maiores, prêmios ×4. Renovam na segunda.', reroll_left: '{n} trocas de missão restantes hoje (anúncio)'
@@ -589,9 +620,9 @@ Object.assign(HR.I18N.en, {
   tip_1: 'Pass through the ring center for a PERFECT and a bigger combo.', tip_2: 'Tap the corner buttons to use abilities. They recharge on their own.',
   tip_3: 'Every 10 rings you pick a perk. Build your run.', tip_4: 'Rings can come from the top, bottom or sides. Watch the direction warning.',
   tip_5: 'Practice mode has no death. Use it to learn.', tip_6: 'Shields absorb one mistake. Extra lives continue the run instantly.',
-  tip_7: 'The ball can move forward and back. Fall back to buy time.', tip_8: 'Each galaxy region has its own music and its own boss.',
-  tip_9: 'Every region has a Portal: boss, stars, rank, Core and contracts.', tip_10: 'Weekly missions reset on Monday and pay four times more.',
-  tip_11: 'Grazing a ring rim counts as "by a hair" — there is a secret achievement.', tip_12: 'Master the Singularity (region 10 boss) for +25% coins in endless.',
+  tip_7: 'The ball can move forward and back. Fall back to buy time.', tip_8: 'Each galaxy has 10 systems, and every system ends with a boss. Stars open the next one.',
+  tip_9: 'To open the next galaxy, the Portal asks for boss, stars, rank, Core and contracts.', tip_10: 'Weekly missions reset on Monday and pay four times more.',
+  tip_11: 'Grazing a ring rim counts as "by a hair" — there is a secret achievement.', tip_12: 'The Aegis absorbs one mistake for 30 s. The Jet can only be used before the first ring.',
   load_fonts: 'Loading fonts', load_audio: 'Preparing audio', load_save: 'Reading progress', load_ready: 'Ready', load_galaxy: 'Drawing the galaxy',
   abilities_short: 'Powers', near_miss: 'BY A HAIR', audio: 'Audio', sfx_vol: 'Sound volume', music_vol: 'Music volume', profile: 'Profile', account: 'Account',
   title: 'Title', title_d: 'Shown in the menu, under the game name', weekly_note: 'Bigger targets, ×4 rewards. Reset on Monday.', reroll_left: '{n} mission swaps left today (ad)'
@@ -600,9 +631,9 @@ Object.assign(HR.I18N.es, {
   tip_1: 'Pasa por el centro del aro para un PERFECTO y más combo.', tip_2: 'Toca los botones de las esquinas para usar habilidades. Se recargan solas.',
   tip_3: 'Cada 10 aros eliges un perk. Arma tu build.', tip_4: 'Los aros pueden venir de arriba, abajo o los lados. Atento al aviso de dirección.',
   tip_5: 'En Práctica no hay muerte. Úsala para aprender.', tip_6: 'Los escudos absorben un error. Las vidas extra continúan la partida al instante.',
-  tip_7: 'La bola puede ir adelante y atrás. Retrocede para ganar tiempo.', tip_8: 'Cada región de la galaxia tiene su música y su jefe.',
-  tip_9: 'Cada región tiene un Portal: jefe, estrellas, rango, Núcleo y contratos.', tip_10: 'Las misiones semanales se renuevan el lunes y pagan cuatro veces más.',
-  tip_11: 'Rozar el borde de un aro cuenta como "por un pelo": hay un logro secreto.', tip_12: 'Domina la Singularidad (jefe de la región 10) para +25 % de monedas en infinito.',
+  tip_7: 'La bola puede ir adelante y atrás. Retrocede para ganar tiempo.', tip_8: 'Cada galaxia tiene 10 sistemas y cada sistema termina con un jefe. Las estrellas abren el siguiente.',
+  tip_9: 'Para abrir la siguiente galaxia, el Portal pide jefe, estrellas, rango, Núcleo y contratos.', tip_10: 'Las misiones semanales se renuevan el lunes y pagan cuatro veces más.',
+  tip_11: 'Rozar el borde de un aro cuenta como "por un pelo": hay un logro secreto.', tip_12: 'La Égida absorbe un error durante 30 s. El Propulsor solo se usa antes del primer aro.',
   load_fonts: 'Cargando fuentes', load_audio: 'Preparando audio', load_save: 'Leyendo progreso', load_ready: 'Listo', load_galaxy: 'Dibujando la galaxia',
   abilities_short: 'Poderes', near_miss: 'POR UN PELO', audio: 'Audio', sfx_vol: 'Volumen de sonidos', music_vol: 'Volumen de música', profile: 'Perfil', account: 'Cuenta',
   title: 'Título', title_d: 'Aparece en el menú, bajo el nombre del juego', weekly_note: 'Objetivos mayores, premios ×4. Se renuevan el lunes.', reroll_left: '{n} cambios de misión restantes hoy (anuncio)'

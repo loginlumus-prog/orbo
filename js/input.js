@@ -42,6 +42,8 @@ HR.Input = {
       else if (e.code === 'ArrowRight' || e.code === 'KeyD') { this.keys.right = true; e.preventDefault(); }
       else if (e.code === 'KeyQ') { if (this.onAbility) this.onAbility(0); }
       else if (e.code === 'KeyE') { if (this.onAbility) this.onAbility(1); }
+      else if (e.code === 'KeyF') { if (this.onAegis) this.onAegis(); }
+      else if (e.code === 'KeyJ') { if (this.onJet) this.onJet(); }
       else if (e.code === 'Space' || e.code === 'Enter') { if (this.onTap && !e.target.closest('button,input')) this.onTap(e); }
       else if (e.code === 'Escape') { if (this.onEscape) this.onEscape(); }
     });

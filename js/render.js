@@ -47,6 +47,10 @@ HR.Render = {
     const sq = U.clamp(Math.abs(vy) / 2600, 0, 0.18);
     if (o.sqAxis === 'x') ctx.scale(1 + sq, 1 - sq * 0.6); else ctx.scale(1 - sq * 0.6, 1 + sq);
 
+    // v5: forma própria (HR.Render.SHAPES) no lugar do corpo redondo
+    const shaped = skin.shape && HR.Render.SHAPES && HR.Render.SHAPES[skin.shape];
+    if (shaped) { ctx.globalAlpha = alpha; shaped(ctx, r, skin, t, rot, vy); }
+    else {
     // corpo
     const p = skin.pattern;
     const bodyAlpha = p === 'ghost' ? 0.62 : p === 'glass' ? 0.88 : 1;
@@ -208,13 +212,16 @@ HR.Render = {
         }
         break;
       }
+      default: if (HR.Render.PATTERNS && HR.Render.PATTERNS[p]) HR.Render.PATTERNS[p](ctx, r, skin, t, rot, vy);
     }
     ctx.restore();
+    if (skin.decor && HR.Render.DECOR && HR.Render.DECOR[skin.decor]) HR.Render.DECOR[skin.decor](ctx, r, skin, t, rot, vy);
 
     // reflexo especular
     ctx.globalAlpha = alpha * 0.9;
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.beginPath(); ctx.ellipse(-r * 0.38, -r * 0.42, r * 0.22, r * 0.13, -0.6, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
 
     // escudos (um anel por carga)
@@ -395,6 +402,28 @@ HR.Render = {
       case 'mist':
         ctx.strokeStyle = U.rgba(color, 0.12); ctx.lineWidth = w * 4.6;
         ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); break;
+      // v5: estilos dos temas novos
+      case 'synth':
+        ctx.strokeStyle = 'rgba(255,94,207,0.75)'; ctx.lineWidth = w * 0.3; ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.16, r * 1.1, 0, a0, a1); ctx.stroke();
+        ctx.strokeStyle = 'rgba(76,240,255,0.55)'; ctx.lineWidth = w * 0.22; ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.84, r * 0.9, 0, a0, a1); ctx.stroke(); break;
+      case 'dust':
+        ctx.strokeStyle = 'rgba(255,170,120,0.55)'; ctx.lineWidth = w * 0.34; ctx.setLineDash([2, 6]); ctx.lineDashOffset = -t * 20;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.1, r * 1.06, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+      case 'sakura':
+        for (let k = 0; k < 4; k++) { const a = a0 + (a1 - a0) * (0.12 + k * 0.25) + Math.sin(t * 0.8 + idx + k) * 0.04; ctx.save(); ctx.translate(Math.cos(a) * rx, Math.sin(a) * r); ctx.rotate(a + t); ctx.fillStyle = 'rgba(255,183,213,0.9)'; ctx.beginPath(); ctx.ellipse(0, 0, w * 0.8, w * 0.45, 0, 0, 6.283); ctx.fill(); ctx.restore(); }
+        break;
+      case 'snow':
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = w * 0.22; ctx.setLineDash([1, 7]);
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.06, r * 1.04, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+      case 'cosmos':
+        for (let k = 0; k < 7; k++) { const a = a0 + (a1 - a0) * (k + 0.5) / 7, tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 3 + k + idx)); ctx.fillStyle = 'rgba(255,255,255,' + tw.toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Math.cos(a) * rx * 1.12, Math.sin(a) * r * 1.08, w * 0.22, 0, 6.283); ctx.fill(); }
+        break;
+      case 'matrix':
+        ctx.strokeStyle = 'rgba(53,226,154,0.7)'; ctx.lineWidth = w * 0.3; ctx.setLineDash([6, 5]); ctx.lineDashOffset = t * 40;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+      case 'flare':
+        ctx.strokeStyle = U.rgba('#ffcf7a', 0.35 + 0.25 * Math.sin(t * 6 + idx)); ctx.lineWidth = w * 0.9;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.18, r * 1.1, 0, a0, a1); ctx.stroke(); break;
     }
   },
 
@@ -505,6 +534,13 @@ HR.Render = {
         ctx.beginPath(); ctx.moveTo(-s * 0.7, -s); ctx.lineTo(s * 0.7, -s); ctx.lineTo(0, 0); ctx.closePath(); ctx.moveTo(-s * 0.7, s); ctx.lineTo(s * 0.7, s); ctx.lineTo(0, 0); ctx.closePath(); ctx.stroke(); break;
       case 'gem':
         ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.9, -s * 0.2); ctx.lineTo(0, s); ctx.lineTo(-s * 0.9, -s * 0.2); ctx.closePath(); ctx.fill(); break;
+      case 'eco': {
+        const k = 1 + 0.12 * Math.sin(t * 4 + p.seed);
+        ctx.beginPath(); ctx.moveTo(0, -s * 1.15 * k); ctx.lineTo(s * 0.55, -s * 0.1); ctx.lineTo(0, s * 1.15 * k); ctx.lineTo(-s * 0.55, -s * 0.1); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.6;
+        for (const a of [0, Math.PI]) { ctx.beginPath(); ctx.arc(0, 0, s * 1.4 + Math.sin(t * 3) * 2, a - 0.55, a + 0.55); ctx.stroke(); }
+        break;
+      }
     }
     ctx.restore();
   },
@@ -558,7 +594,7 @@ HR.Render.Background = class {
   drawBiome(ctx, t, fx, sx, sy) {
     const U = RU(), W = this.W, H = this.H;
     if (!this.fxObjs) {
-      const n = { aurora: 3, garden: 34, mist: 5, crystal: 12, storm: 56, abyss: 36, vortex: 7, horizon: 44 }[fx] || 0;
+      const n = { aurora: 3, garden: 34, mist: 5, crystal: 12, storm: 56, abyss: 36, vortex: 7, horizon: 44, synth: 1, dust: 60, sakura: 30, snow: 70, cosmos: 160, matrix: 26, flare: 6 }[fx] || 0;
       this.fxObjs = []; for (let i = 0; i < n; i++) this.fxObjs.push({ x: Math.random(), y: Math.random(), s: U.rand(0.5, 1.5), p: U.rand(0, 6.28), v: U.rand(0.5, 1.5), h: U.rand(0, 360), a: U.rand(0, 6.28) });
     }
     const O = this.fxObjs;
@@ -634,6 +670,35 @@ HR.Render.Background = class {
         ctx.strokeStyle = 'rgba(255,240,210,' + ((1 - d) * 0.55).toFixed(3) + ')'; ctx.lineWidth = 1 + (1 - d) * 1.2;
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); ctx.stroke();
       });
+    } else if (fx === 'synth') {
+      // v5: sol listrado no horizonte e grade em perspectiva correndo
+      const hy = H * 0.64, cx = W / 2, SR = Math.min(130, W * 0.3);
+      ctx.save(); ctx.beginPath(); ctx.arc(cx, hy, SR, Math.PI, 0); ctx.clip();
+      const sun = ctx.createLinearGradient(0, hy - SR, 0, hy); sun.addColorStop(0, 'rgba(255,214,90,0.5)'); sun.addColorStop(1, 'rgba(255,60,170,0.45)');
+      ctx.fillStyle = sun; ctx.fillRect(cx - SR, hy - SR, SR * 2, SR);
+      ctx.fillStyle = 'rgba(12,4,32,0.85)'; for (let k = 0; k < 6; k++) { const y = hy - 8 - k * 17 + ((t * 10) % 17); ctx.fillRect(cx - SR - 4, y, SR * 2 + 8, 2.5 + k * 0.9); }
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(255,94,207,0.22)'; ctx.lineWidth = 1.4;
+      for (let k = -12; k <= 12; k++) { ctx.beginPath(); ctx.moveTo(cx + k * 22, hy); ctx.lineTo(cx + k * 150, H); ctx.stroke(); }
+      for (let k = 0; k < 12; k++) { const f = (k + (t * 0.9) % 1) / 12, y = hy + f * f * (H - hy); ctx.strokeStyle = 'rgba(76,240,255,' + (0.06 + f * 0.26).toFixed(3) + ')'; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    } else if (fx === 'dust') {
+      const hz = ctx.createLinearGradient(0, H * 0.45, 0, H); hz.addColorStop(0, 'rgba(255,120,60,0)'); hz.addColorStop(1, 'rgba(255,120,60,0.14)'); ctx.fillStyle = hz; ctx.fillRect(0, 0, W, H);
+      O.forEach(o => { const x = this.wrap(o.x * W - t * o.v * 150 + sx * 0.1, W + 40) - 20, y = this.wrap(o.y * H + Math.sin(t * 0.7 + o.p) * 22 + sy * 0.1, H); ctx.strokeStyle = 'rgba(255,175,125,' + (0.08 + o.s * 0.1).toFixed(3) + ')'; ctx.lineWidth = 0.8 + o.s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 8 + o.s * 16, y - 2); ctx.stroke(); });
+    } else if (fx === 'sakura') {
+      O.forEach(o => { const x = this.wrap(o.x * W + t * 18 * o.v + Math.sin(t + o.p) * 24 + sx * 0.06, W), y = this.wrap(o.y * H + t * 34 * o.v + sy * 0.06, H); ctx.save(); ctx.translate(x, y); ctx.rotate(t * 1.4 * o.v + o.a); ctx.fillStyle = o.s > 1 ? 'rgba(255,183,213,0.55)' : 'rgba(255,140,190,0.45)'; ctx.beginPath(); ctx.ellipse(0, 0, 3 + o.s * 3, 1.6 + o.s * 1.4, 0, 0, 6.283); ctx.fill(); ctx.restore(); });
+    } else if (fx === 'snow') {
+      O.forEach(o => { const x = this.wrap(o.x * W + Math.sin(t * 0.8 + o.p) * 20 + sx * 0.08, W), y = this.wrap(o.y * H + t * (30 + o.v * 40) + sy * 0.08, H); ctx.fillStyle = 'rgba(255,255,255,' + (0.25 + o.s * 0.3).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(x, y, 0.8 + o.s * 1.8, 0, 6.283); ctx.fill(); });
+    } else if (fx === 'cosmos') {
+      ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(-0.55);
+      const band = ctx.createLinearGradient(0, -140, 0, 140); band.addColorStop(0, 'rgba(160,140,255,0)'); band.addColorStop(0.5, 'rgba(210,190,255,0.13)'); band.addColorStop(1, 'rgba(160,140,255,0)');
+      ctx.fillStyle = band; ctx.fillRect(-W * 1.2, -140, W * 2.4, 280);
+      O.forEach(o => { const x = this.wrap(o.x * W * 2.4 + sx * 0.04, W * 2.4) - W * 1.2, y = (o.y - 0.5) * 300 * (0.35 + o.s * 0.5); ctx.fillStyle = 'rgba(255,255,255,' + (0.2 + 0.6 * (0.5 + 0.5 * Math.sin(t * 2 * o.v + o.p))).toFixed(2) + ')'; ctx.fillRect(x, y, 1 + (o.s > 1.3 ? 1 : 0), 1 + (o.s > 1.3 ? 1 : 0)); });
+      ctx.restore();
+    } else if (fx === 'matrix') {
+      O.forEach((o, i) => { const x = (i + 0.5) * W / O.length + sx * 0.02 % 4, head = this.wrap(o.y * H + t * (60 + o.v * 90), H + 200); for (let k = 0; k < 10; k++) { const y = head - k * 16; if (y < -10 || y > H) continue; ctx.fillStyle = k === 0 ? 'rgba(200,255,210,0.6)' : 'rgba(53,226,154,' + (0.28 - k * 0.025).toFixed(3) + ')'; ctx.fillRect(x - 3, y, 6, 9 - (k % 3)); } });
+    } else if (fx === 'flare') {
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(W, H) * 0.8); g.addColorStop(0, 'rgba(255,190,90,0.3)'); g.addColorStop(0.4, 'rgba(255,110,40,0.08)'); g.addColorStop(1, 'rgba(255,110,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      O.forEach((o, i) => { const k = (t * 0.2 * o.v + o.p) % 1, R0 = 80 + i * 55; ctx.strokeStyle = 'rgba(255,' + (150 + i * 12) + ',80,' + (0.18 * Math.sin(k * Math.PI)).toFixed(3) + ')'; ctx.lineWidth = 6 + o.s * 5; ctx.beginPath(); ctx.arc(0, 0, R0 + k * 60, 0.1 + o.a * 0.1, 1.45 - o.a * 0.08); ctx.stroke(); });
     }
     ctx.restore();
   }

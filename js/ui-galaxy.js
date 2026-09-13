@@ -158,7 +158,7 @@
   }
   function renderGalaxy() {
     const body = $('#galaxy-body'), cv = $('#galaxy-canvas'), host = $('#galaxy-nodes'); if (!body || !cv) return;
-    const C = HR.Campaign, d = HR.Store.data;
+    const C = HR.Campaign;
     const r = body.getBoundingClientRect(); if (!r.width || !r.height) { setTimeout(renderGalaxy, 60); return; }
     const W = Math.round(r.width), H = Math.round(r.height), dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -170,67 +170,76 @@
     const cur = C.currentRegion();
     let h = '';
     HR.REGIONS.forEach((R, i) => {
-      const st = C.regionState(i), p = geo.pts[i], stars = C.regionStars(i);
+      const st = C.regionState(i), p = geo.pts[i], stars = C.regionStars(i), sys = C.systemsClearedIn(i);
       const isCur = i === cur && st !== 'locked';
       const gate = st === 'locked' && C.isRegionUnlocked(i - 1) ? C.gate(i) : null;
-      h += '<button type="button" class="gx-node is-' + st + (isCur ? ' is-current' : '') + (LABEL_TOP[i] ? ' lbl-top' : '') + '" data-region="' + i + '" style="left:' + p.x + 'px;top:' + p.y + 'px;' + accentVars(R.accent) + '" aria-label="' + esc(galName(R)) + '">';
+      const tipD = st === 'locked' ? (gate ? HR.t('portal') + ' ' + gate.open + '/5' : HR.t('locked')) : HR.t('galaxy_progress', { a: C.levelsClearedIn(i), b: 100, c: sys, d: 10 }) + ' · ' + HR.t('stars_of', { a: stars, b: 300 });
+      h += '<button type="button" class="gx-node is-' + st + (isCur ? ' is-current' : '') + (LABEL_TOP[i] ? ' lbl-top' : '') + '" data-region="' + i + '" style="left:' + p.x + 'px;top:' + p.y + 'px;' + accentVars(R.accent) + '" aria-label="' + esc(galName(R)) + '"' + HR.tip(galName(R) + ' · ' + HR.t('gal_' + R.gal + '_c'), tipD) + ' data-tip-c="' + R.accent + '">';
       h += '<span class="gx-badge">' + (st === 'locked' ? HR.icon('lock') : st === 'done' ? HR.icon('check') : '<b>' + (i + 1) + '</b>') + '</span>';
-      h += '<span class="gx-name"><b>' + esc(galName(R)) + '</b><small>' + esc(regionName(R)) + (st !== 'locked' ? ' · <em>' + stars + '/30</em>' : gate ? ' · <em class="gx-portal">' + esc(HR.t('portal')) + ' ' + gate.open + '/5</em>' : '') + '</small></span>';
+      h += '<span class="gx-name"><b>' + esc(galName(R)) + '</b><small>' + esc(regionName(R)) + (st !== 'locked' ? ' · <em>' + sys + '/10</em>' : gate ? ' · <em class="gx-portal">' + esc(HR.t('portal')) + ' ' + gate.open + '/5</em>' : '') + '</small></span>';
       h += '</button>';
     });
-    const mastered = C.singularityMastered();
-    h += '<button type="button" class="gx-core' + (mastered ? ' is-mastered' : '') + '" id="gx-core" style="left:' + geo.cx.toFixed(0) + 'px;top:' + geo.cy.toFixed(0) + 'px" aria-label="' + esc(HR.t('bh_name')) + '"><span class="gx-core-hit"></span><span class="gx-name"><b>' + esc(HR.t('bh_name')) + '</b><small>' + esc(HR.t('bh_sub')) + (mastered ? ' ' + HR.icon('crown') : '') + '</small></span></button>';
+    const open = C.singularityOpen(), passed = HR.Singularity ? HR.Singularity.passedCount() : 0;
+    h += '<button type="button" class="gx-core' + (open ? ' is-open' : '') + '" id="gx-core" style="left:' + geo.cx.toFixed(0) + 'px;top:' + geo.cy.toFixed(0) + 'px" aria-label="' + esc(HR.t('bh_name')) + '"' + HR.tip(HR.t('bh_name'), HR.t(open ? 'sg_layers_n' : 'singularity_hint', { n: passed })) + ' data-tip-c="#ffcf4a"><span class="gx-core-hit"></span><span class="gx-name"><b>' + esc(HR.t('bh_name')) + '</b><small>' + esc(HR.t('bh_sub')) + ' · ' + (open ? passed + '/11' : HR.icon('lock')) + '</small></span></button>';
     host.innerHTML = h;
     const foot = $('#galaxy-foot');
     const level = C.currentLevel(), done = C.levelsCleared();
-    const complete = done >= 100;
+    const complete = C.singularityMastered();
     const nextRi = C.nextPortal(), gate = nextRi != null ? C.gate(nextRi) : null;
     const portalTxt = gate ? ' · ' + esc(HR.t('portal')) + ' ' + gate.open + '/5' : '';
     const regionDone = C.regionCleared(level.ri) && gate != null;
     foot.innerHTML = '<div class="gx-foot-card" style="' + accentVars(HR.REGIONS[level.ri].accent) + '">' +
-      '<div class="gx-foot-main"><span class="kicker gx-kicker">' + done + '/100 ' + esc(HR.t('levels')) + ' · ' + C.totalStars() + ' ' + HR.icon('star', '', true) + portalTxt + '</span><b>' + esc(complete ? HR.t('camp_complete') : regionDone ? HR.t('portal') + ': ' + galName(HR.REGIONS[nextRi]) + ' ' + gate.open + '/5' : HR.t('continue_campaign', { n: level.id }) + ' · ' + galName(HR.REGIONS[level.ri])) + '</b></div>' +
+      '<div class="gx-foot-main"><span class="kicker gx-kicker">' + HR.U.fmt(done) + '/1.000 ' + esc(HR.t('levels')) + ' · ' + HR.U.fmt(C.totalStars()) + ' ' + HR.icon('star', '', true) + portalTxt + '</span><b>' + esc(complete ? HR.t('camp_complete') : regionDone ? HR.t('portal') + ': ' + galName(HR.REGIONS[nextRi]) + ' ' + gate.open + '/5' : HR.t('continue_campaign', { n: level.id }) + ' · ' + galName(HR.REGIONS[level.ri])) + '</b></div>' +
       '<button type="button" class="btn btn-play small-btn" id="gx-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t(complete ? 'levels' : 'play_mode')) + '</span></button></div>';
     if (!body.dataset.bound) {
       body.dataset.bound = '1';
       host.addEventListener('click', e => {
-        const core = e.target.closest('#gx-core'); if (core) { e.stopPropagation(); sfx('click'); openSingularityDetail(); return; }
+        const core = e.target.closest('#gx-core'); if (core) { e.stopPropagation(); sfx('click'); if (HR.UI.renderSingularity) HR.UI.open('singularity'); else openSingularityDetail(); return; }
         const btn = e.target.closest('[data-region]'); if (!btn) return; e.stopPropagation();
         const ri = +btn.getAttribute('data-region');
         if (!C.isRegionUnlocked(ri) && !C.isRegionUnlocked(ri - 1)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('region_locked_hint', { name: galName(HR.REGIONS[ri - 1]) }), 'bad'); btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); return; }
         sfx('click'); HR.UI.open('region', ri);
       });
     }
-    $('#gx-continue').addEventListener('click', e => { e.stopPropagation(); sfx('click'); HR.UI.open('region', regionDone ? nextRi : level.ri); });
-    d.hints.galaxy = true; HR.Store.save();
+    $('#gx-continue').addEventListener('click', e => {
+      e.stopPropagation(); sfx('click');
+      if (regionDone) { HR.UI.open('region', nextRi); return; }
+      HR.UI.open('region', level.ri); HR.UI.open('system', level.ri + '-' + level.si);
+    });
+    HR.Store.data.hints.galaxy = true; HR.Store.save();
   }
 
-  /* =================== PORTAL / CONTRATOS / NÚCLEO (v4) =================== */
-  const GATE_ICON = { boss: 'crown', stars: 'star', rank: 'award', core: 'orbit', contracts: 'flag' };
+  /* =================== PORTAL / CONTRATOS / NÚCLEO =================== */
+  const GATE_ICON = { boss: 'crown', stars: 'star', rank: 'rank', core: 'core', contracts: 'contract' };
   function gateHtml(ri) {
     const C = HR.Campaign; if (ri <= 0) return '';
     const gt = C.gate(ri), Rp = HR.REGIONS[ri - 1];
     let h = '<div class="reg-card portal' + (gt.ok ? ' open' : '') + '"><span class="reg-card-ic">' + HR.icon(gt.ok ? 'unlock' : 'lock') + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('portal')) + ' · ' + gt.open + '/5</span><b>' + esc(HR.t(gt.ok ? 'portal_open' : 'portal_locked')) + '</b><p>' + esc(HR.t('portal_d', { name: regionName(Rp) })) + '</p><div class="gate-list">';
-    gt.items.forEach(it => { h += '<span class="gate' + (it.ok ? ' ok' : '') + '"><span class="gate-ic">' + HR.icon(it.ok ? 'check' : GATE_ICON[it.id]) + '</span><span class="gate-txt">' + esc(HR.t('gate_' + it.id, { n: it.b, name: regionName(Rp) })) + '</span><b>' + (it.id === 'boss' ? '' : Math.min(it.a, it.b) + '/' + it.b) + '</b></span>'; });
+    gt.items.forEach(it => {
+      const txt = HR.t('gate_' + it.id, { n: it.b, name: galName(Rp) });
+      h += '<span class="gate' + (it.ok ? ' ok' : '') + '"' + HR.tip(txt, it.id === 'boss' ? '' : Math.min(it.a, it.b) + '/' + it.b) + '><span class="gate-ic">' + HR.icon(it.ok ? 'check' : GATE_ICON[it.id]) + '</span><span class="gate-txt">' + esc(txt) + '</span><b>' + (it.id === 'boss' ? '' : HR.U.fmt(Math.min(it.a, it.b)) + '/' + HR.U.fmt(it.b)) + '</b>' + (it.id === 'boss' ? '' : '<i class="gate-bar"><span style="width:' + (Math.min(1, it.a / Math.max(1, it.b)) * 100).toFixed(0) + '%"></span></i>') + '</span>';
+    });
     return h + '</div></div></div>';
   }
   function contractsHtml(ri) {
     const C = HR.Campaign, list = C.contractsOf(ri), done = C.contractsDone(ri);
-    let h = '<div class="section-title">' + esc(HR.t('contracts')) + ' <span class="muted">' + done + '/5</span></div><p class="lb-note contracts-note">' + esc(HR.t('contracts_d', { n: HR.CONFIG.PROGRESSION.contractsNeed })) + '</p>';
+    let h = '<div class="section-title">' + HR.icon('contract') + ' ' + esc(HR.t('contracts')) + ' <span class="muted">' + done + '/' + list.length + '</span></div><p class="lb-note contracts-note">' + esc(HR.t('contracts_d', { n: HR.CONFIG.PROGRESSION.contractsNeed })) + '</p>';
     list.forEach(c => {
-      const ok = C.contractDone(c), p = ok ? c.target : C.contractProgress(c);
-      h += '<div class="contract' + (ok ? ' done' : '') + '"><span class="m-ic">' + HR.icon(ok ? 'check' : c.icon) + '</span><div class="m-info"><div class="m-title">' + esc(C.contractText(c)) + '</div><div class="bar' + (ok ? ' green' : '') + '"><span class="bar-fill" style="width:' + (p / c.target * 100).toFixed(0) + '%"></span></div><div class="m-meta"><span class="num">' + HR.U.fmt(p) + ' / ' + HR.U.fmt(c.target) + '</span><span class="m-reward"><i class="ic-coin"></i>' + c.coins + ' <i class="ic-gem"></i>' + c.gems + ' <b class="xp">+' + c.xp + ' XP</b></span></div></div></div>';
+      const ok = C.contractDone(c), p = ok ? c.target : C.contractProgress(c), txt = C.contractText(c);
+      h += '<div class="contract' + (ok ? ' done' : '') + '"' + HR.tip(txt, HR.U.fmt(p) + ' / ' + HR.U.fmt(c.target) + ' · +' + HR.U.fmt(c.coins) + ' ' + HR.t('coins_earned').toLowerCase() + ' · +' + c.gems + ' ' + HR.t('tab_gems').toLowerCase() + ' · +' + c.xp + ' XP') + '>' + HR.plate(ok ? 'check' : c.icon, ok ? '#35e29a' : HR.REGIONS[ri].accent, 'sm') + '<div class="m-info"><div class="m-title">' + esc(txt) + '</div><div class="bar' + (ok ? ' green' : '') + '"><span class="bar-fill" style="width:' + (p / c.target * 100).toFixed(0) + '%"></span></div><div class="m-meta"><span class="num">' + HR.U.fmt(p) + ' / ' + HR.U.fmt(c.target) + '</span><span class="m-reward"><i class="ic-coin"></i>' + HR.U.fmt(c.coins) + ' <i class="ic-gem"></i>' + c.gems + ' <b class="xp">+' + c.xp + ' XP</b></span></div></div></div>';
     });
     return h;
   }
   function coreHtml() {
     const n = HR.Core.level(), C = HR.CONFIG.CORE, m = HR.Core.mods(), cost = HR.Core.cost(), nm = HR.Core.nextMilestone(n);
     const pct = v => Math.round(v * 100);
+    const chip = (ic, txt) => '<span' + HR.tip(txt) + '>' + HR.icon(ic) + ' ' + esc(txt) + '</span>';
     let h = '<div class="core-card"><div class="core-head"><span class="core-orb"><i></i></span><div class="core-main"><span class="kicker">' + esc(HR.t('core')) + '</span><b>' + esc(HR.t('core_level', { n })) + ' <small>/ ' + C.maxLevel + '</small></b><p>' + esc(HR.t('core_d')) + '</p></div></div>';
-    h += '<div class="core-bonus"><span>' + HR.icon('coin') + ' ' + esc(HR.t('core_b_coins', { n: pct(C.coinMul * n) })) + '</span><span>' + HR.icon('ring') + ' ' + esc(HR.t('core_b_forgive', { n: pct(C.forgive * n) })) + '</span><span>' + HR.icon('target') + ' ' + esc(HR.t('core_b_perfect', { n: (C.perfect * n * 100).toFixed(1).replace('.0', '') })) + '</span><span>' + HR.icon('award') + ' ' + esc(HR.t('core_b_xp', { n: pct(C.xp * n) })) + '</span>';
-    if (m.shieldCap) h += '<span>' + HR.icon('shield') + ' +' + m.shieldCap + ' ' + esc(HR.t('core_ms_shield').replace('+1 ', '')) + '</span>';
-    if (m.startShield) h += '<span>' + HR.icon('shield') + ' ' + esc(HR.t('core_ms_start')) + '</span>';
-    if (m.life) h += '<span>' + HR.icon('heart') + ' ' + esc(HR.t('core_ms_life')) + '</span>';
-    if (m.pickupMul > 1) h += '<span>' + HR.icon('gift') + ' ' + esc(HR.t('core_ms_pickup')) + '</span>';
+    h += '<div class="core-bonus">' + chip('coin', HR.t('core_b_coins', { n: pct(C.coinMul * n) })) + chip('ring', HR.t('core_b_forgive', { n: pct(C.forgive * n) })) + chip('target', HR.t('core_b_perfect', { n: (C.perfect * n * 100).toFixed(1).replace('.0', '') })) + chip('rank', HR.t('core_b_xp', { n: pct(C.xp * n) }));
+    if (m.shieldCap) h += chip('shield', '+' + m.shieldCap + ' ' + HR.t('core_ms_shield').replace('+1 ', ''));
+    if (m.startShield) h += chip('shieldPlus', HR.t('core_ms_start'));
+    if (m.life) h += chip('heart', HR.t('core_ms_life'));
+    if (m.pickupMul > 1) h += chip('gift', HR.t('core_ms_pickup'));
     h += '</div>';
     if (nm) h += '<p class="core-next">' + HR.icon('sparkle') + ' ' + esc(HR.t('core_next_ms', { n: nm })) + ': ' + esc(HR.t(HR.Core.milestone(nm))) + '</p>';
     h += '<button type="button" class="btn ' + (cost == null ? 'btn-ghost' : 'btn-play') + '" id="core-up"' + (cost == null ? ' disabled' : '') + '><span class="ic">' + HR.icon(cost == null ? 'check' : 'arrowUp') + '</span><span class="btn-label">' + (cost == null ? esc(HR.t('core_max')) : esc(HR.t('upgrade')) + ' · <i class="ic-coin"></i>' + HR.U.fmt(cost)) + '</span></button></div>';
@@ -238,46 +247,77 @@
   }
   function bindCore(body) {
     const b = $('#core-up', body); if (!b) return;
-    b.addEventListener('click', e => { e.stopPropagation(); if (HR.Core.upgrade()) { const n = HR.Core.level(); HR.UI.toast(HR.icon('orbit') + ' ' + HR.t('core_up_toast', { n }) + (HR.Core.milestone(n) ? ' · ' + HR.t(HR.Core.milestone(n)) : ''), 'good'); const ach = HR.Achievements.check(); ach.forEach((a, i) => HR.UI.achToast(a, i)); HR.UI.rerenderAbilities(); } });
+    b.addEventListener('click', e => { e.stopPropagation(); if (HR.Core.upgrade()) { const n = HR.Core.level(); HR.UI.toast(HR.icon('core') + ' ' + HR.t('core_up_toast', { n }) + (HR.Core.milestone(n) ? ' · ' + HR.t(HR.Core.milestone(n)) : ''), 'good'); const ach = HR.Achievements.check(); ach.forEach((a, i) => HR.UI.achToast(a, i)); HR.UI.rerenderAbilities(); } });
   }
 
-  /* =================== FICHA DA REGIÃO =================== */
-  let curRegion = 0, previewOn = false;
-  function levelNodes(R, ri, bodyW) {
-    const C = HR.Campaign, levels = C.levelsOf(ri), current = C.currentLevel();
-    // caminho em "serpentina": 3 por linha (esq→dir, dir→esq…), chefe sozinho na última linha; ligações curvas
-    const cols = [18, 50, 82], pitch = 88, top = 44;
-    const pts = levels.map((l, i) => {
-      if (i === 9) return { x: 50, y: top + 3 * pitch + 16 };
-      const row = Math.floor(i / 3), col = i % 3;
-      return { x: row % 2 ? cols[2 - col] : cols[col], y: top + row * pitch };
-    });
-    const height = pts[9].y + 78, W = bodyW || 340;
+  /* =================== CAMINHO (10 nós em serpentina) =================== */
+  const GREEK = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ'];
+  // nodes: [{ data, inner, below, boss, done, current, unlocked, pct, orbit, dot, tipT, tipD, aria }]
+  function pathHtml(nodes, bodyW) {
+    const cols = [18, 50, 82], pitch = 94, top = 46;
+    const pts = nodes.map((n, i) => { if (i === 9) return { x: 50, y: top + 3 * pitch + 20 }; const row = Math.floor(i / 3), col = i % 3; return { x: row % 2 ? cols[2 - col] : cols[col], y: top + row * pitch }; });
+    const height = pts[9].y + 92, W = bodyW || 340;
     let h = '<div class="lv-path" style="height:' + height + 'px"><svg class="lv-links" aria-hidden="true">';
     for (let i = 0; i < 9; i++) {
       const a = { x: pts[i].x / 100 * W, y: pts[i].y }, b = { x: pts[i + 1].x / 100 * W, y: pts[i + 1].y }, c = ctrl(a, b, i);
-      const sA = C.stars(levels[i].id), sB = C.stars(levels[i + 1].id);
-      const state = sB > 0 ? 'done' : sA > 0 ? 'next' : '';
+      const state = nodes[i + 1].done ? 'done' : nodes[i].done ? 'next' : '';
       const dd = 'd="M' + a.x.toFixed(1) + ' ' + a.y + ' Q' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ' ' + b.x.toFixed(1) + ' ' + b.y + '"';
       if (state === 'done') h += '<path class="lv-link-glow" ' + dd + '/>';
       h += '<path class="lv-link' + (state ? ' ' + state : '') + '" ' + dd + '/>';
     }
     h += '</svg>';
-    levels.forEach((l, i) => {
-      const p = pts[i], isBoss = !!l.boss, stars = C.stars(l.id), unlocked = C.isUnlocked(l.id), isCur = current && current.id === l.id;
-      const cls = ['lv-node', isBoss ? 'lv-node--boss' : '', stars > 0 ? 'is-done' : '', isCur ? 'is-current' : '', unlocked ? '' : 'is-locked'].filter(Boolean).join(' ');
-      h += '<button type="button" class="' + cls + '" data-level="' + esc(l.id) + '" style="left:' + p.x + '%;top:' + p.y + 'px" aria-label="' + esc(HR.t('level_n', { n: l.id })) + '">';
-      h += '<span class="lv-circle-wrap">' + (isCur ? '<span class="lv-halo"></span>' : '') + '<span class="lv-circle">' + (isBoss ? '<span class="lv-boss-ic">' + HR.icon(HR.BOSSES[l.boss].icon) + '</span>' : '<b>' + (i + 1) + '</b>') + '</span>' + (stars > 0 && !isBoss ? '<span class="lv-orbit"></span>' : '') + (!unlocked ? '<span class="lv-lock">' + HR.icon('lock') + '</span>' : '') + (isBoss ? '<span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span>' : '') + ((l.mods && l.mods.length) || (l.events && l.events.length) ? '<span class="lv-dot-ev"></span>' : '') + '</span>';
-      h += starsHtml(stars);
-      if (isBoss) h += '<span class="lv-boss-name">' + esc(HR.t('boss_' + l.boss)) + '</span>';
-      h += '</button>';
+    nodes.forEach((n, i) => {
+      const p = pts[i];
+      const cls = ['lv-node', n.boss ? 'lv-node--boss' : '', n.kind ? 'lv-node--' + n.kind : '', n.done ? 'is-done' : '', n.current ? 'is-current' : '', n.unlocked ? '' : 'is-locked'].filter(Boolean).join(' ');
+      h += '<button type="button" class="' + cls + '" ' + n.data + ' style="left:' + p.x + '%;top:' + p.y + 'px' + (n.pct != null ? ';--pct:' + n.pct.toFixed(3) : '') + '"' + HR.tip(n.tipT, n.tipD) + ' aria-label="' + esc(n.aria || n.tipT) + '">';
+      h += '<span class="lv-circle-wrap">' + (n.current ? '<span class="lv-halo"></span>' : '') + (n.pct != null ? '<span class="lv-prog"></span>' : '') + '<span class="lv-circle">' + n.inner + '</span>' + (n.orbit ? '<span class="lv-orbit"></span>' : '') + (!n.unlocked ? '<span class="lv-lock">' + HR.icon('lock') + '</span>' : '') + (n.boss ? '<span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span>' : '') + (n.dot ? '<span class="lv-dot-ev"></span>' : '') + '</span>';
+      h += (n.below || '') + '</button>';
     });
     return h + '</div>';
   }
-  // cabeçalho animado da galáxia: fundo do bioma (o mesmo motor do jogo) + a galáxia + um arco e a bola
-  let heroRaf = null;
-  function startRegionHero(R, ri) {
-    const cv = $('#reg-hero-cv'); if (!cv) return;
+  function systemNodes(ri) {
+    const C = HR.Campaign, R = HR.REGIONS[ri], cur = C.currentSystem(ri), galOpen = C.isRegionUnlocked(ri), need = HR.CONFIG.PROGRESSION.systemStars[ri];
+    return HR.SYSTEM_KEYS.map((key, si) => {
+      const st = C.systemState(ri, si), stars = C.systemStars(ri, si), boss = C.at(ri, si, 9), unlocked = st !== 'locked';
+      const name = HR.t('system_n', { name: C.systemName(si) });
+      const tipD = !galOpen ? HR.t('locked') : !unlocked ? HR.t('system_locked', { name: C.systemName(si - 1), n: need }) : HR.t('stars_of', { a: stars, b: 30 }) + ' · ' + HR.t(si === 9 ? 'galaxy_boss' : 'system_boss') + ': ' + C.bossName(boss);
+      return {
+        data: 'data-system="' + ri + '-' + si + '"', kind: 'sys', boss: si === 9, done: st === 'done', unlocked, current: galOpen && si === cur && st === 'open', pct: unlocked ? stars / 30 : null,
+        inner: si === 9 ? '<span class="lv-boss-ic">' + HR.icon(HR.BOSSES[R.boss].icon) + '</span>' : '<b class="lv-greek">' + GREEK[si] + '</b>',
+        below: '<span class="lv-sys-name">' + esc(C.systemName(si)) + '</span><span class="lv-sys-stars">' + HR.icon('star', '', true) + ' ' + stars + '/30</span>',
+        tipT: name, tipD, aria: name
+      };
+    });
+  }
+  function stageNodes(ri, si) {
+    const C = HR.Campaign, levels = C.systemLevels(ri, si), current = C.currentLevel();
+    return levels.map((l, i) => {
+      const stars = C.stars(l.id), unlocked = C.isUnlocked(l.id), isBoss = !!l.boss;
+      const tipD = (isBoss ? C.bossName(l) + ' · ' : '') + HR.t('rings_n', { n: l.rings }) + ' · ×' + l.speed.toFixed(2) + (l.events.length ? ' · ' + l.events.map(ev => HR.t('ev_' + ev.id)).join(', ') : '') + (l.mods.length ? ' · ' + l.mods.map(m => HR.t('mut_' + m)).join(', ') : '');
+      return {
+        data: 'data-level="' + esc(l.id) + '"', boss: isBoss, done: stars > 0, unlocked, current: current && current.id === l.id, orbit: stars > 0 && !isBoss, dot: !!(l.mods.length || l.events.length),
+        inner: isBoss ? '<span class="lv-boss-ic">' + HR.icon(HR.BOSSES[l.boss].icon) + '</span>' : '<b>' + (i + 1) + '</b>',
+        below: starsHtml(stars) + (isBoss ? '<span class="lv-boss-name">' + esc(C.bossName(l)) + '</span>' : ''),
+        tipT: HR.t('level_n', { n: l.id }), tipD
+      };
+    });
+  }
+
+  /* =================== CABEÇALHO ANIMADO (galáxia e sistema) =================== */
+  const heroRafs = {};
+  function drawMiniSystem(ctx, x, y, s, color, t, si) {
+    const U = HR.U;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, s * 1.4); g.addColorStop(0, '#ffffff'); g.addColorStop(0.25, U.mix(color, '#ffffff', 0.4)); g.addColorStop(1, U.rgba(color, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s * 1.4, 0, 6.283); ctx.fill();
+    for (let k = 0; k < 3; k++) {
+      const rx = s * (1.6 + k * 0.9), ry = rx * 0.34, a = t * (0.9 - k * 0.22) + si * 0.8 + k * 2.1;
+      ctx.strokeStyle = U.rgba(color, 0.35 - k * 0.07); ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, -0.2, 0, 6.283); ctx.stroke();
+      const px = x + Math.cos(a) * rx * Math.cos(-0.2) - Math.sin(a) * ry * Math.sin(-0.2), py = y + Math.cos(a) * rx * Math.sin(-0.2) + Math.sin(a) * ry * Math.cos(-0.2);
+      ctx.fillStyle = k === 1 ? '#ffffff' : color; ctx.beginPath(); ctx.arc(px, py, 2.2 + k * 0.6, 0, 6.283); ctx.fill();
+    }
+  }
+  function startHero(cvId, panel, R, ri, si) {
+    const cv = $('#' + cvId); if (!cv) return;
     const host = cv.parentElement, rect = host.getBoundingClientRect();
     const W = Math.round(rect.width) || 340, H = Math.round(rect.height) || 150, dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -285,67 +325,142 @@
     const bg = new HR.Render.Background(); bg.resize(W, H); bg.setTheme({ colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx }); bg.setFx(R.fx || null); bg.setTint(R.accent);
     const skin = HR.CONFIG.SKINS.find(s => s.id === HR.Store.data.equipped.skin) || HR.CONFIG.SKINS[0];
     const t0 = performance.now(); let last = t0;
+    const speedFeel = si == null ? 110 : 110 + si * 22;
     const draw = now => {
       const t = (now - t0) / 1000, dt = Math.min(0.05, (now - last) / 1000); last = now;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      bg.update(dt, 110, { x: -1, y: 0 }, 0.35); bg.draw(ctx, t);
+      bg.update(dt, speedFeel, { x: -1, y: 0 }, si == null ? 0.35 : 0.35 + si * 0.06); bg.draw(ctx, t);
       const gx = W * 0.76, gy = H * 0.5;
-      drawMiniGalaxy(ctx, gx + 26, gy - 30, 22, R.accent, t, ri, 'open');
+      if (si == null) drawMiniGalaxy(ctx, gx + 26, gy - 30, 22, R.accent, t, ri, 'open');
+      else drawMiniSystem(ctx, gx + 30, gy - 34, 12, R.accent, t, si);
       const ring = { x: gx, y: gy + 6, r: H * 0.33, tilt: Math.sin(t * 0.45) * 0.55, accent: R.accent, color: R.accent, flash: 0, hit: false, type: 'plain', fx: R.fx, index: ri };
       HR.Render.drawRing(ctx, ring, 'back', { t });
       HR.Render.drawBall(ctx, gx - 6, gy + 6 + Math.sin(t * 1.5) * 9, 15, skin, t, { vy: Math.cos(t * 1.5) * 400 });
       HR.Render.drawRing(ctx, ring, 'front', { t });
-      const sh = ctx.createLinearGradient(0, 0, W * 0.7, 0); sh.addColorStop(0, 'rgba(4,6,14,0.55)'); sh.addColorStop(1, 'rgba(4,6,14,0)');
+      const sh = ctx.createLinearGradient(0, 0, W * 0.7, 0); sh.addColorStop(0, 'rgba(4,6,14,0.6)'); sh.addColorStop(1, 'rgba(4,6,14,0)');
       ctx.fillStyle = sh; ctx.fillRect(0, 0, W * 0.7, H);
     };
-    if (heroRaf) cancelAnimationFrame(heroRaf);
-    const loop = now => { if (!HR.UI.stack.includes('region')) { heroRaf = null; return; } draw(now); heroRaf = requestAnimationFrame(loop); };
+    if (heroRafs[panel]) cancelAnimationFrame(heroRafs[panel]);
+    const loop = now => { if (!HR.UI.stack.includes(panel) || !cv.isConnected) { heroRafs[panel] = null; return; } draw(now); heroRafs[panel] = requestAnimationFrame(loop); };
     loop(performance.now());
   }
+  function speedChip(level) {
+    const s = HR.Campaign.speedInfo(level), a = s.from.toFixed(2), b = s.to.toFixed(2);
+    return '<span class="reg-chip speed"' + HR.tip(HR.t('speed') + ' ×' + a + ' → ×' + b, HR.t('speed_d', { a, b, f: Math.round(s.flow * 100) })) + '>' + HR.icon('speed') + ' <span>' + HR.t('speed_label', { a, b }) + '</span><i class="speed-meter"><span style="width:' + (s.pct * 100).toFixed(0) + '%"></span></i></span>';
+  }
+  function mechChip(mech, extra) {
+    return '<span class="reg-chip mech"' + HR.tip(HR.t('mech_' + mech), HR.t('mech_' + mech + '_d')) + '>' + HR.icon(HR.MECH_ICON[mech] || 'ring') + ' <span>' + (extra ? esc(HR.t('system_mech2')) + ': ' : '') + '<b>' + esc(HR.t('mech_' + mech)) + '</b></span></span>';
+  }
+
+  /* =================== FICHA DA GALÁXIA =================== */
+  let curRegion = 0;
   function renderRegion(ri) {
     const C = HR.Campaign;
-    if (ri == null || isNaN(ri)) ri = curRegion; curRegion = ri;
+    if (ri == null || isNaN(ri)) ri = curRegion; curRegion = +ri; ri = curRegion;
     const R = HR.REGIONS[ri], body = $('#region-body'); if (!R || !body) return;
     HR.Store.data.campaign.lastRegion = ri;
     HR.UI.bind('regionTitle', galName(R)); const rb = $('#screen-region .ribbon span'); if (rb) rb.style.fontSize = galName(R).length > 12 ? '17px' : '';
     $$('#screen-region .ribbon').forEach(el => { el.style.cssText = accentVars(R.accent); });
-    HR.UI.bind('regionStars', C.regionStars(ri) + '/30');
-    const boss = C.level((ri + 1) + '-10'), info = HR.BOSSES[R.boss];
-    const stars = C.regionStars(ri), cleared = C.bossBeaten(ri), unlocked = C.isRegionUnlocked(ri);
+    const stars = C.regionStars(ri), cleared = C.bossBeaten(ri), unlocked = C.isRegionUnlocked(ri), info = HR.BOSSES[R.boss], bossL = C.at(ri, 9, 9);
+    const lvDone = C.levelsClearedIn(ri), sysDone = C.systemsClearedIn(ri);
+    HR.UI.bind('regionStars', stars + '/300');
     const musicName = HR.t('region_music') + ': ' + HR.t('music_' + R.music);
     let h = '<div class="reg-wrap" style="' + accentVars(R.accent) + '">';
+    // 1) card da galáxia
     h += '<div class="reg-hero reg-hero--live" style="background:linear-gradient(160deg,' + R.colors[0] + ',' + R.colors[1] + ' 60%,' + R.colors[2] + ')"><canvas id="reg-hero-cv"></canvas>';
-    h += '<div class="reg-hero-text"><span class="kicker">' + esc(HR.t('galaxy_n', { n: ri + 1 })) + ' · ' + esc(HR.t('gal_' + R.gal + '_c')) + '</span><h3>' + esc(galName(R)) + '</h3><p><b>' + esc(regionName(R)) + '</b> · ' + esc(HR.t('reg_' + R.id + '_t')) + '</p></div>';
-    h += '<span class="reg-hero-stars">' + HR.icon('star', '', true) + ' <b>' + stars + '</b>/30</span></div>';
+    h += '<div class="reg-hero-text"><span class="kicker">' + esc(HR.t('galaxy_n', { n: ri + 1 })) + ' · ' + esc(HR.t('gal_' + R.gal + '_c')) + '</span><h3>' + esc(galName(R)) + '</h3><p><b>' + esc(regionName(R)) + '</b> · ' + esc(HR.t('reg_' + R.id + '_t')) + '</p>';
+    h += '<span class="reg-hero-stats"><span' + HR.tip(HR.t('systems'), HR.t('galaxy_progress', { a: lvDone, b: 100, c: sysDone, d: 10 })) + '>' + HR.icon('system') + ' ' + sysDone + '/10</span><span' + HR.tip(HR.t('levels'), lvDone + '/100') + '>' + HR.icon('flag') + ' ' + lvDone + '/100</span></span></div>';
+    h += '<span class="reg-hero-stars"' + HR.tip(HR.t('stars'), HR.t('stars_of', { a: stars, b: 300 })) + '>' + HR.icon('star', '', true) + ' <b>' + stars + '</b>/300</span></div>';
     h += '<p class="reg-gal-fact">' + HR.icon('galaxy') + ' <span>' + esc(HR.t('gal_' + R.gal + '_d')) + '</span></p>';
     if (!unlocked) h += gateHtml(ri);
-    h += '<div class="reg-card"><span class="reg-card-ic">' + HR.icon('compass') + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('region_mech')) + '</span><p>' + esc(HR.t('reg_' + R.id + '_d')) + '</p></div></div>';
-    h += '<div class="reg-card boss' + (cleared ? ' done' : '') + '"><span class="reg-card-ic">' + HR.icon(info.icon) + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('region_boss')) + (cleared ? ' · ' + esc(HR.t('ach_unlocked')) : '') + '</span><b>' + esc(HR.t('boss_' + R.boss)) + '</b><p>' + esc(HR.t('boss_' + R.boss + '_d')) + '</p><span class="reg-chip">' + HR.icon('wave') + ' ' + esc(HR.t('camp_waves_n', { n: info.waves })) + ' · ' + esc(HR.t('rings_n', { n: boss.rings })) + '</span></div></div>';
-    h += '<div class="reg-row"><span class="reg-chip gift">' + HR.icon('gift') + ' <span>' + esc(HR.t('region_reward')) + ': <b>' + esc(cosmeticName(R.reward)) + '</b></span></span>';
-    h += '<button type="button" class="reg-chip music" id="reg-music">' + HR.icon('music') + ' <span>' + esc(musicName) + '</span></button></div>';
+    // 2) mecânica
+    h += '<div class="reg-card"><span class="reg-card-ic">' + HR.icon(HR.MECH_ICON[R.mech] || 'compass') + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('region_mech')) + ' · ' + esc(HR.t('mech_' + R.mech)) + '</span><p>' + esc(HR.t('reg_' + R.id + '_d')) + '</p><div class="reg-chips">' + speedChip(C.at(ri, 0, 0)) + speedChip(bossL) + '</div></div></div>';
+    // 3) chefe da galáxia
+    h += '<div class="reg-card boss' + (cleared ? ' done' : '') + '"><span class="reg-card-ic">' + HR.icon(info.icon) + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t('galaxy_boss')) + (cleared ? ' · ' + esc(HR.t('alb_beaten')) : '') + '</span><b>' + esc(HR.t('boss_' + R.boss)) + '</b><p>' + esc(HR.t('boss_' + R.boss + '_d')) + '</p><div class="reg-chips"><span class="reg-chip"' + HR.tip(HR.t('camp_waves_n', { n: bossL.waves })) + '>' + HR.icon('layers') + ' ' + esc(HR.t('camp_waves_n', { n: bossL.waves })) + '</span><span class="reg-chip"' + HR.tip(HR.t('rings_n', { n: bossL.rings })) + '>' + HR.icon('ring') + ' ' + esc(HR.t('rings_n', { n: bossL.rings })) + '</span>' + (bossL.events.length ? '<span class="reg-chip"' + HR.tip(HR.t('mods'), bossL.events.map(ev => HR.t('ev_' + ev.id)).join(', ')) + '>' + HR.icon('zap') + ' ' + bossL.events.length + '</span>' : '') + '</div></div></div>';
+    h += '<div class="reg-row"><span class="reg-chip gift"' + HR.tip(HR.t('region_reward'), cosmeticName(R.reward)) + '>' + HR.icon('gift') + ' <span>' + esc(HR.t('region_reward')) + ': <b>' + esc(cosmeticName(R.reward)) + '</b></span></span>';
+    h += '<button type="button" class="reg-chip music" id="reg-music"' + HR.tip(musicName) + '>' + HR.icon('music') + ' <span>' + esc(musicName) + '</span></button></div>';
+    // 4) sistemas (as "fases" da galáxia)
+    h += '<div class="section-title">' + HR.icon('system') + ' ' + esc(HR.t('systems')) + ' <span class="muted">' + sysDone + '/10</span></div>';
+    h += '<p class="lb-note">' + esc(HR.t('systems_d')) + '</p>';
+    h += pathHtml(systemNodes(ri), body.clientWidth - 4);
+    const cur = C.currentLevel();
+    const contInGalaxy = unlocked && cur && cur.ri === ri && C.stars(cur.id) === 0;
+    if (contInGalaxy) h += '<button type="button" class="btn btn-play" id="reg-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: cur.id })) + '</span></button>';
+    else if (cleared) h += '<p class="lb-note">' + esc(HR.t('world_progress', { a: stars, b: 300 })) + '</p>';
+    // 5) contratos (no fim)
     if (unlocked) h += contractsHtml(ri);
-    h += '<div class="section-title">' + esc(HR.t('levels')) + '</div>';
-    h += levelNodes(R, ri, body.clientWidth - 4);
-    const next = C.levelsOf(ri).find(l => C.stars(l.id) === 0 && C.isUnlocked(l.id));
-    if (next && unlocked) h += '<button type="button" class="btn btn-play" id="reg-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: next.id })) + '</span></button>';
-    else if (cleared) h += '<p class="lb-note">' + esc(HR.t('world_progress', { a: stars, b: 30 })) + '</p>';
     h += '</div>';
     body.innerHTML = h;
     body.scrollTop = 0;
-    startRegionHero(R, ri);
+    startHero('reg-hero-cv', 'region', R, ri, null);
+    if (!body.dataset.bound) {
+      body.dataset.bound = '1';
+      body.addEventListener('click', e => {
+        const btn = e.target.closest('[data-system]'); if (!btn) return; e.stopPropagation();
+        const [gri, gsi] = btn.getAttribute('data-system').split('-').map(Number);
+        if (!C.systemUnlocked(gri, gsi)) {
+          sfx('error');
+          HR.UI.toast(HR.icon('lock') + ' ' + (C.isRegionUnlocked(gri) ? HR.t('system_locked', { name: C.systemName(gsi - 1), n: HR.CONFIG.PROGRESSION.systemStars[gri] }) : HR.t('locked')), 'bad');
+          const w = btn.querySelector('.lv-circle-wrap'); if (w) { w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); }
+          return;
+        }
+        sfx('click'); HR.UI.open('system', gri + '-' + gsi);
+      });
+    }
+    const cont = $('#reg-continue'); if (cont) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); openLevelDetail(cur.id); });
+    $('#reg-music').addEventListener('click', e => { e.stopPropagation(); sfx('click'); if (HR.Music) { HR.Audio.unlock(); HR.Music.play(R.music); HR.Music.setIntensity(0.6); } });
+    if (HR.Music && HR.Store.data.settings.music && HR.Audio.unlocked) { HR.Music.play(R.music); HR.Music.setIntensity(0.45); }
+  }
+
+  /* =================== FICHA DO SISTEMA =================== */
+  let curSystem = { ri: 0, si: 0 };
+  function renderSystem(arg) {
+    if (typeof arg === 'string' && arg.indexOf('-') > 0) { const p = arg.split('-'); curSystem = { ri: +p[0], si: +p[1] }; }
+    else if (arg && typeof arg === 'object') curSystem = { ri: +arg.ri, si: +arg.si };
+    const { ri, si } = curSystem, C = HR.Campaign, R = HR.REGIONS[ri], body = $('#system-body'); if (!R || !body) return;
+    const levels = C.systemLevels(ri, si), bossL = levels[9], stars = C.systemStars(ri, si), first = levels[0], galaxyBoss = si === 9;
+    const name = HR.t('system_n', { name: C.systemName(si) });
+    HR.UI.bind('systemTitle', name); HR.UI.bind('systemStars', stars + '/30');
+    $$('#screen-system .ribbon').forEach(el => { el.style.cssText = accentVars(R.accent); });
+    const done = levels.filter(l => C.stars(l.id) > 0).length, evN = levels.reduce((a, l) => a + l.events.length, 0), ringsN = levels.reduce((a, l) => a + l.rings, 0);
+    let h = '<div class="reg-wrap" style="' + accentVars(R.accent) + '">';
+    // 1) card do sistema
+    h += '<div class="reg-hero reg-hero--live sys-hero" style="background:linear-gradient(160deg,' + R.colors[0] + ',' + R.colors[1] + ' 60%,' + R.colors[2] + ')"><canvas id="sys-hero-cv"></canvas>';
+    h += '<span class="sys-greek" aria-hidden="true">' + GREEK[si] + '</span>';
+    h += '<div class="reg-hero-text"><span class="kicker">' + esc(galName(R)) + ' · ' + esc(HR.t('gal_' + R.gal + '_c')) + '</span><h3>' + esc(name) + '</h3><p><b>' + esc(regionName(R)) + '</b>' + (first.sec ? ' + ' + esc(HR.t('mech_' + first.sec)) : '') + '</p>';
+    h += '<span class="reg-hero-stats"><span' + HR.tip(HR.t('levels'), done + '/10') + '>' + HR.icon('flag') + ' ' + done + '/10</span><span' + HR.tip(HR.t('rings_n', { n: ringsN })) + '>' + HR.icon('ring') + ' ' + ringsN + '</span>' + (evN ? '<span' + HR.tip(HR.t('ev_warn'), evN + '') + '>' + HR.icon('zap') + ' ' + evN + '</span>' : '') + '</span></div>';
+    h += '<span class="reg-hero-stars"' + HR.tip(HR.t('stars'), HR.t('stars_of', { a: stars, b: 30 })) + '>' + HR.icon('star', '', true) + ' <b>' + stars + '</b>/30</span></div>';
+    // 2) mecânicas + velocidade (ícones com dica)
+    h += '<div class="reg-chips sys-chips">' + mechChip(R.mech) + (first.sec ? mechChip(first.sec, true) : '') + speedChip(first) + '</div>';
+    // 3) chefe
+    const bossDone = C.stars(bossL.id) > 0, rw = C.firstClearReward(bossL);
+    h += '<div class="reg-card boss' + (bossDone ? ' done' : '') + '"><span class="reg-card-ic">' + HR.icon(HR.BOSSES[bossL.boss].icon) + '</span><div class="reg-card-main"><span class="kicker">' + esc(HR.t(galaxyBoss ? 'galaxy_boss' : 'system_boss')) + (bossDone ? ' · ' + esc(HR.t('alb_beaten')) : '') + '</span><b>' + esc(C.bossName(bossL)) + '</b><p>' + esc(HR.t('boss_' + bossL.boss + '_d')) + '</p><div class="reg-chips"><span class="reg-chip"' + HR.tip(HR.t('camp_waves_n', { n: bossL.waves })) + '>' + HR.icon('layers') + ' ' + bossL.waves + '</span><span class="reg-chip"' + HR.tip(HR.t('rings_n', { n: bossL.rings })) + '>' + HR.icon('ring') + ' ' + bossL.rings + '</span>' + speedChip(bossL) + (rw.aegis && !bossDone ? '<span class="reg-chip gift"' + HR.tip(HR.t('aegis'), HR.t('system_reward_aegis')) + '>' + HR.icon('aegis') + ' +1</span>' : '') + (galaxyBoss ? '<span class="reg-chip gift"' + HR.tip(HR.t('region_reward'), cosmeticName(R.reward)) + '>' + HR.icon('gift') + ' ' + esc(cosmeticName(R.reward)) + '</span>' : '') + '</div></div></div>';
+    // 4) selo (abre o próximo sistema)
+    if (!galaxyBoss) {
+      const need = HR.CONFIG.PROGRESSION.systemStars[ri], nextOpen = C.systemUnlocked(ri, si + 1);
+      h += '<div class="seal-card' + (nextOpen ? ' ok' : '') + '"' + HR.tip(HR.t('system_seal'), HR.t('system_seal_d', { a: Math.min(stars, need), b: need })) + '>' + HR.plate(nextOpen ? 'unlock' : 'lock', nextOpen ? '#35e29a' : R.accent, 'sm') + '<div class="seal-main"><span class="kicker">' + esc(HR.t('system_seal')) + ' · ' + esc(HR.t('system_n', { name: C.systemName(si + 1) })) + '</span><b>' + esc(nextOpen ? HR.t('system_open_next') : HR.t('system_seal_d', { a: Math.min(stars, need), b: need })) + '</b><i class="gate-bar"><span style="width:' + (Math.min(1, stars / need) * 100).toFixed(0) + '%"></span></i></div><span class="seal-boss' + (bossDone ? ' ok' : '') + '"' + HR.tip(HR.t('system_boss'), C.bossName(bossL)) + '>' + HR.icon(bossDone ? 'check' : 'crown') + '</span></div>';
+    }
+    // 5) fases
+    h += '<div class="section-title">' + HR.icon('flag') + ' ' + esc(HR.t('levels')) + ' <span class="muted">' + done + '/10</span></div>';
+    h += pathHtml(stageNodes(ri, si), body.clientWidth - 4);
+    const next = levels.find(l => C.stars(l.id) === 0 && C.isUnlocked(l.id));
+    if (next) h += '<button type="button" class="btn btn-play" id="sys-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: next.id })) + '</span></button>';
+    else if (done === 10) h += '<p class="lb-note">' + esc(HR.t('world_progress', { a: stars, b: 30 })) + '</p>';
+    h += '</div>';
+    body.innerHTML = h;
+    body.scrollTop = 0;
+    startHero('sys-hero-cv', 'system', R, ri, si);
     if (!body.dataset.bound) {
       body.dataset.bound = '1';
       body.addEventListener('click', e => {
         const btn = e.target.closest('[data-level]'); if (!btn) return; e.stopPropagation();
         const id = btn.getAttribute('data-level');
-        if (!C.isUnlocked(id)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('locked'), 'bad'); const w = btn.querySelector('.lv-circle-wrap'); if (w) { w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); } return; }
+        if (!HR.Campaign.isUnlocked(id)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('locked'), 'bad'); const w = btn.querySelector('.lv-circle-wrap'); if (w) { w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); } return; }
         sfx('click'); openLevelDetail(id);
       });
     }
-    const cont = $('#reg-continue'); if (cont && next) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); openLevelDetail(next.id); });
-    $('#reg-music').addEventListener('click', e => { e.stopPropagation(); sfx('click'); if (HR.Music) { HR.Audio.unlock(); HR.Music.play(R.music); HR.Music.setIntensity(0.6); } });
-    if (HR.Music && HR.Store.data.settings.music && HR.Audio.unlocked) { HR.Music.play(R.music); HR.Music.setIntensity(0.45); }
-    void previewOn;
+    const cont = $('#sys-continue'); if (cont && next) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); openLevelDetail(next.id); });
+    HR.Store.data.hints.system = true;
   }
 
   /* =================== FICHA DA FASE =================== */
@@ -355,32 +470,33 @@
     const R = HR.REGIONS[level.ri], stars = C.stars(id), isBoss = !!level.boss, info = isBoss ? HR.BOSSES[level.boss] : null;
     const best = (HR.Store.data.campaign.best && HR.Store.data.campaign.best[id]) || 0;
     let h = '<div class="lv-detail-head">';
-    h += '<span class="kicker">' + esc(galName(R)) + ' · ' + esc(regionName(R)) + '</span>';
-    if (isBoss) h += '<span class="lv-detail-boss"><span class="lv-boss-ic">' + HR.icon(info.icon) + '</span><span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span></span><h3 class="lv-detail-title">' + esc(HR.t('boss_' + level.boss)) + '</h3><span class="lv-detail-sub">' + esc(HR.t('level_n', { n: level.id })) + '</span>';
+    h += '<span class="kicker">' + esc(galName(R)) + ' · ' + esc(HR.t('system_n', { name: C.systemName(level.si) })) + '</span>';
+    if (isBoss) h += '<span class="lv-detail-boss"><span class="lv-boss-ic">' + HR.icon(info.icon) + '</span><span class="lv-boss-tag">' + esc(HR.t('boss')) + '</span></span><h3 class="lv-detail-title">' + esc(C.bossName(level)) + '</h3><span class="lv-detail-sub">' + esc(HR.t(level.galaxyBoss ? 'galaxy_boss' : 'system_boss')) + ' · ' + esc(HR.t('level_n', { n: level.id })) + '</span>';
     else h += '<span class="lv-detail-num"><b>' + (level.li + 1) + '</b></span><h3 class="lv-detail-title">' + esc(HR.t('level_n', { n: level.id })) + '</h3>';
     h += starsHtml(stars, 'lv-stars--big');
     h += '<span class="lv-detail-sub">' + esc(HR.t('world_progress', { a: stars, b: 3 })) + (best > 0 ? ' · ' + esc(HR.t('camp_best_perfects', { n: best })) : '') + '</span></div>';
-    h += '<div class="lv-chips"><span class="reg-chip">' + HR.icon('ring') + ' ' + esc(HR.t('rings_n', { n: level.rings })) + '</span>';
-    if (info) h += '<span class="reg-chip">' + HR.icon('wave') + ' ' + esc(HR.t('camp_waves_n', { n: info.waves })) + '</span>';
-    h += '<span class="reg-chip">' + HR.icon('bolt') + ' ×' + level.speed.toFixed(2) + '</span></div>';
+    h += '<div class="lv-chips"><span class="reg-chip"' + HR.tip(HR.t('rings_n', { n: level.rings }), HR.t('level_need', { n: C.passNeed(level), p: 0, t: level.rings }).split('(')[0]) + '>' + HR.icon('ring') + ' ' + esc(HR.t('rings_n', { n: level.rings })) + '</span>';
+    if (info) h += '<span class="reg-chip"' + HR.tip(HR.t('camp_waves_n', { n: level.waves })) + '>' + HR.icon('layers') + ' ' + esc(HR.t('camp_waves_n', { n: level.waves })) + '</span>';
+    h += speedChip(level) + mechChip(R.mech) + (level.sec ? mechChip(level.sec, true) : '') + '</div>';
     h += '<div class="lv-dirs"><span class="section-title">' + esc(HR.t('camp_dirs')) + (level.dirEvery ? ' · ' + esc(HR.t('dir_every', { n: level.dirEvery })) : '') + '</span><div class="lv-dir-row">';
     level.dirs.forEach((dir, i) => { if (i) h += '<span class="lv-dir-sep">›</span>'; h += '<span class="lv-dir"><b>' + esc(HR.t('dir_' + dir)) + '</b><small>' + esc(HR.t('camp_dir_' + dir)) + '</small></span>'; });
     h += '</div></div>';
     if (isBoss) h += '<p class="lv-boss-desc">' + esc(HR.t('boss_' + level.boss + '_d')) + '</p>';
     if ((level.mods && level.mods.length) || (level.events && level.events.length)) {
       h += '<div class="lv-mods">';
-      (level.mods || []).forEach(m => { h += '<span class="reg-chip mut">' + HR.icon('sliders') + ' <span><b>' + esc(HR.t('mut_' + m)) + '</b> · ' + esc(HR.t('mut_' + m + '_d')) + '</span></span>'; });
-      (level.events || []).forEach(ev => { const E = HR.CONFIG.EVENTS && HR.CONFIG.EVENTS[ev.id]; h += '<span class="reg-chip ev" style="--ev:' + (E ? E.color : '#fff') + '">' + HR.icon(E ? E.icon : 'zap') + ' <span><b>' + esc(HR.t('ev_' + ev.id)) + '</b> · ' + esc(HR.t(ev.wave ? 'ev_between_waves' : 'ev_at_ring', { n: ev.at })) + '</span></span>'; });
+      (level.mods || []).forEach(m => { h += '<span class="reg-chip mut"' + HR.tip(HR.t('mut_' + m), HR.t('mut_' + m + '_d')) + '>' + HR.icon('sliders') + ' <span><b>' + esc(HR.t('mut_' + m)) + '</b> · ' + esc(HR.t('mut_' + m + '_d')) + '</span></span>'; });
+      (level.events || []).forEach(ev => { const E = HR.CONFIG.EVENTS && HR.CONFIG.EVENTS[ev.id]; h += '<span class="reg-chip ev" style="--ev:' + (E ? E.color : '#fff') + '"' + HR.tip(HR.t('ev_' + ev.id), HR.t('ev_' + ev.id + '_d')) + '>' + HR.icon(EV_ICON[ev.id] || 'zap') + ' <span><b>' + esc(HR.t('ev_' + ev.id)) + '</b> · ' + esc(HR.t(ev.wave ? 'ev_between_waves' : 'ev_at_ring', { n: ev.at })) + '</span></span>'; });
       h += '</div>';
     }
     h += '<div class="lv-criteria"><span class="section-title">' + esc(HR.t('camp_criteria')) + '</span>';
     ['star_finish', 'star_perfects', 'star_flawless'].forEach((k, i) => { const on = i < stars; h += '<div class="lv-crit' + (on ? ' on' : '') + '"><span class="lv-star' + (on ? ' on' : '') + '">' + HR.icon('star', '', true) + '</span><span>' + esc(HR.t(k)) + '</span>' + (on ? '<span class="lv-crit-check">' + HR.icon('check') + '</span>' : '') + '</div>'; });
     h += '</div>';
-    const fr = C.firstClearReward(level), first = stars === 0;
-    let rv = '<i class="ic-coin"></i>' + HR.U.fmt(first ? fr.coins : Math.round(fr.coins / 3));
-    if (first) rv += ' <i class="ic-gem"></i>' + fr.gems;
-    if (first && isBoss) rv += ' <span class="lv-reward-item">' + HR.icon('gift') + ' ' + esc(cosmeticName(R.reward)) + '</span>';
-    h += '<div class="lv-reward"><span class="lv-reward-label">' + esc(HR.t(first ? 'camp_first_clear' : 'camp_replay_reward')) + '</span><span class="lv-reward-vals">' + rv + '</span></div>';
+    const fr = C.firstClearReward(level), firstClear = stars === 0;
+    let rv = '<i class="ic-coin"></i>' + HR.U.fmt(firstClear ? fr.coins : Math.round(fr.coins / 3));
+    if (firstClear && fr.gems) rv += ' <i class="ic-gem"></i>' + fr.gems;
+    if (firstClear && fr.aegis) rv += ' <span class="lv-reward-item"' + HR.tip(HR.t('aegis'), HR.t('system_reward_aegis')) + '>' + HR.icon('aegis') + ' +1</span>';
+    if (firstClear && level.galaxyBoss) rv += ' <span class="lv-reward-item">' + HR.icon('gift') + ' ' + esc(cosmeticName(R.reward)) + '</span>';
+    h += '<div class="lv-reward"><span class="lv-reward-label">' + esc(HR.t(firstClear ? 'camp_first_clear' : 'camp_replay_reward')) + '</span><span class="lv-reward-vals">' + rv + '</span></div>';
     h += '<button type="button" class="btn btn-play" id="lv-btn-play"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_mode')) + '</span></button>';
     h += '<button type="button" class="btn btn-ghost" id="lv-btn-close"><span class="btn-label">' + esc(HR.t('close')) + '</span></button>';
     host.innerHTML = h;
@@ -392,11 +508,12 @@
     modal.classList.add('visible'); host.scrollTop = 0;
     HR.Analytics.log('level_detail', { id });
   }
+  const EV_ICON = { asteroids: 'asteroid', warp: 'warp', sentinel: 'sentinel', bonanza: 'bonanza', guardian: 'guardianRing' };
   function openSingularityDetail() {
-    const modal = $('#modal-item'), host = $('#item-detail'), d = HR.Store.data, mastered = HR.Campaign.singularityMastered();
-    let h = '<div class="lv-detail-head"><span class="sg-core">' + HR.icon('orbit') + '</span><span class="kicker">' + esc(HR.t('bh_sub')) + '</span><h3 class="lv-detail-title">' + esc(HR.t('bh_name')) + '</h3><span class="lv-detail-sub">' + esc(HR.t('singularity_d')) + '</span></div><p class="reg-gal-fact">' + HR.icon('galaxy') + ' <span>' + esc(HR.t('bh_d')) + '</span></p>';
+    const modal = $('#modal-item'), host = $('#item-detail'), d = HR.Store.data, open = HR.Campaign.singularityOpen();
+    let h = '<div class="lv-detail-head"><span class="sg-core">' + HR.icon('blackhole') + '</span><span class="kicker">' + esc(HR.t('bh_sub')) + '</span><h3 class="lv-detail-title">' + esc(HR.t('bh_name')) + '</h3><span class="lv-detail-sub">' + esc(HR.t('singularity_d')) + '</span></div><p class="reg-gal-fact">' + HR.icon('galaxy') + ' <span>' + esc(HR.t('bh_d')) + '</span></p>';
     h += '<div class="lv-chips"><span class="reg-chip">' + HR.icon('trophy') + ' ' + esc(HR.t('best')) + ' <b>' + HR.U.fmt(d.best) + '</b></span><span class="reg-chip">' + HR.icon('layers') + ' ' + esc(HR.t('phase_reached')) + ' <b>' + d.bestPhase + '</b></span></div>';
-    h += mastered ? '<p class="lv-boss-desc gold">' + HR.icon('crown') + ' ' + esc(HR.t('singularity_mastered')) + '</p>' : '<p class="lb-note">' + esc(HR.t('singularity_hint')) + '</p>';
+    h += open ? '<p class="lv-boss-desc gold">' + HR.icon('crown') + ' ' + esc(HR.t('singularity_mastered')) + '</p>' : '<p class="lb-note">' + esc(HR.t('singularity_hint')) + '</p>';
     h += '<button type="button" class="btn btn-play" id="sg-play"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_endless')) + '</span></button>';
     h += '<button type="button" class="btn btn-ghost" id="sg-close"><span class="btn-label">' + esc(HR.t('close')) + '</span></button>';
     host.innerHTML = h; host.className = 'modal-card item-detail lv-detail sg-detail'; host.style.cssText = accentVars('#ffcf4a');
@@ -413,6 +530,23 @@
     if (modal.dataset.lvBackdrop) return; modal.dataset.lvBackdrop = '1';
     modal.addEventListener('click', e => { if (e.target === modal && host.classList.contains('lv-detail')) { sfx('click'); closeLevelDetail(); } });
   }
+  Object.assign(HR.UI, { renderSystem, accentVars, galName, pathHtml, speedChip, startHero, gateHtml, bindBackdrop, closeLevelDetail });
+
+  Object.assign(HR.I18N.pt, {
+    mech_basic: 'Básico', mech_basic_d: 'Arcos retos para aprender a flutuar.', mech_osc: 'Ondas', mech_osc_d: 'Os arcos sobem e descem.', mech_swarm: 'Enxame', mech_swarm_d: 'Arcos em pares e trios, colados.', mech_shrink: 'Encolher', mech_shrink_d: 'Os arcos diminuem ao se aproximar.', mech_fog: 'Névoa', mech_fog_d: 'Só dá para ver os arcos de perto.',
+    mech_spin: 'Giro', mech_spin_d: 'Os arcos giram e inclinam.', mech_storm: 'Tempestade', mech_storm_d: 'A direção troca e a velocidade vem em rajadas.', mech_dark: 'Escuridão', mech_dark_d: 'A luz só alcança perto da bola.', mech_vortex: 'Vórtice', mech_vortex_d: 'Oscilação, giro e trocas de direção juntos.', mech_hyper: 'Hiper', mech_hyper_d: 'Arcos menores, névoa e muita velocidade.',
+    sg_layers_n: '{n}/11 camadas atravessadas', aegis: 'Égide'
+  });
+  Object.assign(HR.I18N.en, {
+    mech_basic: 'Basic', mech_basic_d: 'Straight rings to learn to float.', mech_osc: 'Waves', mech_osc_d: 'Rings rise and fall.', mech_swarm: 'Swarm', mech_swarm_d: 'Rings in tight pairs and triples.', mech_shrink: 'Shrink', mech_shrink_d: 'Rings get smaller as they approach.', mech_fog: 'Mist', mech_fog_d: 'You only see rings up close.',
+    mech_spin: 'Spin', mech_spin_d: 'Rings spin and tilt.', mech_storm: 'Storm', mech_storm_d: 'Direction changes and speed comes in bursts.', mech_dark: 'Darkness', mech_dark_d: 'Light only reaches near the ball.', mech_vortex: 'Vortex', mech_vortex_d: 'Swing, spin and direction changes together.', mech_hyper: 'Hyper', mech_hyper_d: 'Smaller rings, mist and lots of speed.',
+    sg_layers_n: '{n}/11 layers crossed', aegis: 'Aegis'
+  });
+  Object.assign(HR.I18N.es, {
+    mech_basic: 'Básico', mech_basic_d: 'Aros rectos para aprender a flotar.', mech_osc: 'Olas', mech_osc_d: 'Los aros suben y bajan.', mech_swarm: 'Enjambre', mech_swarm_d: 'Aros en pares y tríos, pegados.', mech_shrink: 'Encoger', mech_shrink_d: 'Los aros encogen al acercarse.', mech_fog: 'Niebla', mech_fog_d: 'Solo ves los aros de cerca.',
+    mech_spin: 'Giro', mech_spin_d: 'Los aros giran e inclinan.', mech_storm: 'Tormenta', mech_storm_d: 'La dirección cambia y la velocidad llega en ráfagas.', mech_dark: 'Oscuridad', mech_dark_d: 'La luz solo llega cerca de la bola.', mech_vortex: 'Vórtice', mech_vortex_d: 'Oscilación, giro y cambios de dirección juntos.', mech_hyper: 'Hiper', mech_hyper_d: 'Aros menores, niebla y mucha velocidad.',
+    sg_layers_n: '{n}/11 capas cruzadas', aegis: 'Égida'
+  });
 
   /* =================== HABILIDADES (loadout + lista) =================== */
   function renderAbilities() {
@@ -437,9 +571,9 @@
   function rerenderAbilities() { const top = HR.UI.stack[HR.UI.stack.length - 1]; if (top === 'abilities') renderAbilities(); else if (HR.UI.renderShop) HR.UI.renderShop(); HR.UI.refreshMenu(); }
 
   /* =================== ÁLBUM (coleção) =================== */
-  const CAT_ICONS = { flight: 'ring', precision: 'target', wealth: 'coin', galaxy: 'galaxy', power: 'zap', collection: 'bag', dedication: 'calendar', secret: 'eye' };
+  const CAT_ICONS = { flight: 'ring', precision: 'target', wealth: 'coins', galaxy: 'galaxy', power: 'powers', collection: 'ball', dedication: 'calendar', secret: 'eyeOff', singularity: 'light' };
   const ALB_TABS = ['ach', 'rings', 'items', 'bosses', 'skins', 'trails', 'themes', 'titles'];
-  const ALB_ICONS = { ach: 'trophy', rings: 'ring', items: 'gift', bosses: 'crown', skins: 'ring', trails: 'sparkle', themes: 'layers', titles: 'award' };
+  const ALB_ICONS = { ach: 'trophy', rings: 'ring', items: 'gift', bosses: 'crown', skins: 'ball', trails: 'trail', themes: 'palette', titles: 'rank' };
   function albumCounts() {
     const d = HR.Store.data, C = HR.Campaign, c = HR.Achievements.counts();
     const bosses = HR.REGIONS.filter((R, i) => C.bossBeaten(i)).length;
@@ -529,13 +663,12 @@
     miss: 'ERROU', misses: 'Erros', items_taken: 'Itens', rings_passed: 'Arcos', anomaly_warn: 'ANOMALIA', anomaly_warn_d: 'Passe por ela você mesmo', anomaly_beat: 'ANOMALIA VENCIDA', anomaly_hit: 'ANOMALIA!', discover_new: 'Novo no Álbum: {name}',
     camp_complete: 'Galáxia concluída!', camp_dirs: 'Direções', camp_dir_right: 'Direita', camp_dir_top: 'Cima', camp_dir_left: 'Esquerda', camp_dir_bottom: 'Baixo',
     camp_waves_n: '{n} ondas', camp_criteria: 'Como ganhar estrelas', camp_best_perfects: 'Melhor: {n} perfeitos', camp_first_clear: 'Prêmio da 1ª vitória', camp_replay_reward: 'Prêmio por repetir',
-    dir_every: 'troca a cada {n} arcos', singularity_hint: 'Vença o chefe da região 10 para dominar a Singularidade.', loadout: 'Equipadas', loadout_d: 'Toque num slot para trocar. Use na partida com os botões dos cantos (Q/E no teclado).',
+    dir_every: 'troca a cada {n} arcos', singularity_hint: 'Vença o chefe de Andrômeda para abrir as 11 camadas da Singularidade.', loadout: 'Equipadas', loadout_d: 'Toque num slot para trocar. Use na partida com os botões dos cantos (Q/E no teclado).',
     slot_n: 'Slot {n}', tap_to_change: 'Toque para escolher', ach_all: 'Todas',
     portal: 'Portal', portal_open: 'Portal aberto', portal_locked: 'Portal fechado', portal_d: 'Para entrar, complete em {name}:',
     gate_boss: 'Vencer o chefe de {name}', gate_stars: '{n} estrelas em {name}', gate_rank: 'Patente {n} (nível do jogador)', gate_core: 'Núcleo nível {n}', gate_contracts: '{n} contratos de {name}',
-    contracts: 'Contratos', contracts_d: 'Objetivos desta região. O prêmio chega sozinho no fim da partida; {n} deles abrem o Portal seguinte.', contract_done: 'Contrato concluído: {name}',
-    c_perfects: 'Faça {n} perfeitos nesta região', c_clears: 'Conclua {n} fases desta região', c_coins: 'Colete {n} moedas nesta região', c_pickups: 'Pegue {n} itens nesta região', c_flawless: 'Conclua {n} fases sem dano aqui', c_events: 'Vença {n} eventos nesta região', c_nomiss: 'Passe {n} arcos seguidos sem errar aqui', c_bossflawless: 'Vença o chefe desta região sem dano',
-    core: 'Núcleo', core_d: 'A força da sua bola. Cada nível melhora tudo um pouco e abre regiões.', core_level: 'Núcleo {n}', core_max: 'Núcleo no máximo', core_b_coins: '+{n} % moedas', core_b_forgive: '+{n} % perdão na borda', core_b_perfect: '+{n} % zona de perfeito', core_b_xp: '+{n} % XP',
+    contracts: 'Contratos', contracts_d: 'Objetivos desta galáxia. O prêmio chega sozinho no fim da partida; {n} deles abrem o Portal seguinte.', contract_done: 'Contrato concluído: {name}',
+    core: 'Núcleo', core_d: 'A força da sua bola. Cada nível melhora tudo um pouco e abre galáxias.', core_level: 'Núcleo {n}', core_max: 'Núcleo no máximo', core_b_coins: '+{n} % moedas', core_b_forgive: '+{n} % perdão na borda', core_b_perfect: '+{n} % zona de perfeito', core_b_xp: '+{n} % XP',
     core_ms_shield: '+1 escudo máximo', core_ms_start: 'Começa com 1 escudo', core_ms_life: '1 vida extra por partida', core_ms_pickup: 'Sacos de moedas +50 %', core_next_ms: 'Marco no nível {n}', core_up_toast: 'Núcleo nível {n}!',
     mods: 'Modificadores', mut_narrow: 'Estreito', mut_narrow_d: 'arcos 10 % menores', mut_dense: 'Denso', mut_dense_d: 'arcos mais juntos', mut_wind: 'Vento', mut_wind_d: 'mais arcos inclinados', mut_pairs: 'Pares', mut_pairs_d: 'mais arcos duplos', mut_bursts: 'Rajadas', mut_bursts_d: 'velocidade em surtos',
     shattered: 'DESPEDAÇOU',
@@ -560,13 +693,12 @@
     miss: 'MISS', misses: 'Misses', items_taken: 'Items', rings_passed: 'Rings', anomaly_warn: 'ANOMALY', anomaly_warn_d: 'Pass it yourself', anomaly_beat: 'ANOMALY BEATEN', anomaly_hit: 'ANOMALY!', discover_new: 'New in the Album: {name}',
     camp_complete: 'Galaxy complete!', camp_dirs: 'Directions', camp_dir_right: 'Right', camp_dir_top: 'Top', camp_dir_left: 'Left', camp_dir_bottom: 'Bottom',
     camp_waves_n: '{n} waves', camp_criteria: 'How to earn stars', camp_best_perfects: 'Best: {n} perfects', camp_first_clear: '1st clear reward', camp_replay_reward: 'Replay reward',
-    dir_every: 'changes every {n} rings', singularity_hint: 'Beat the region 10 boss to master the Singularity.', loadout: 'Equipped', loadout_d: 'Tap a slot to change. Use in the run with the corner buttons (Q/E on keyboard).',
+    dir_every: 'changes every {n} rings', singularity_hint: 'Beat the Andromeda boss to open the 11 layers of the Singularity.', loadout: 'Equipped', loadout_d: 'Tap a slot to change. Use in the run with the corner buttons (Q/E on keyboard).',
     slot_n: 'Slot {n}', tap_to_change: 'Tap to choose', ach_all: 'All',
     portal: 'Portal', portal_open: 'Portal open', portal_locked: 'Portal closed', portal_d: 'To enter, complete in {name}:',
     gate_boss: 'Beat the {name} boss', gate_stars: '{n} stars in {name}', gate_rank: 'Rank {n} (player level)', gate_core: 'Core level {n}', gate_contracts: '{n} contracts of {name}',
-    contracts: 'Contracts', contracts_d: 'Goals for this region. Rewards arrive by themselves at the end of a run; {n} of them open the next Portal.', contract_done: 'Contract done: {name}',
-    c_perfects: 'Score {n} perfects in this region', c_clears: 'Clear {n} levels of this region', c_coins: 'Collect {n} coins in this region', c_pickups: 'Grab {n} items in this region', c_flawless: 'Clear {n} levels here without damage', c_events: 'Beat {n} events in this region', c_nomiss: 'Pass {n} rings in a row here without missing', c_bossflawless: 'Beat this region\'s boss without damage',
-    core: 'Core', core_d: 'The strength of your ball. Each level improves everything a little and opens regions.', core_level: 'Core {n}', core_max: 'Core maxed', core_b_coins: '+{n}% coins', core_b_forgive: '+{n}% rim forgiveness', core_b_perfect: '+{n}% perfect zone', core_b_xp: '+{n}% XP',
+    contracts: 'Contracts', contracts_d: 'Goals for this galaxy. Rewards arrive by themselves at the end of a run; {n} of them open the next Portal.', contract_done: 'Contract done: {name}',
+    core: 'Core', core_d: 'The strength of your ball. Each level improves everything a little and opens galaxies.', core_level: 'Core {n}', core_max: 'Core maxed', core_b_coins: '+{n}% coins', core_b_forgive: '+{n}% rim forgiveness', core_b_perfect: '+{n}% perfect zone', core_b_xp: '+{n}% XP',
     core_ms_shield: '+1 max shield', core_ms_start: 'Start with 1 shield', core_ms_life: '1 extra life per run', core_ms_pickup: 'Coin bags +50%', core_next_ms: 'Milestone at level {n}', core_up_toast: 'Core level {n}!',
     mods: 'Modifiers', mut_narrow: 'Narrow', mut_narrow_d: 'rings 10% smaller', mut_dense: 'Dense', mut_dense_d: 'rings closer together', mut_wind: 'Wind', mut_wind_d: 'more tilted rings', mut_pairs: 'Pairs', mut_pairs_d: 'more double rings', mut_bursts: 'Bursts', mut_bursts_d: 'speed in bursts',
     shattered: 'SHATTERED',
@@ -591,13 +723,12 @@
     miss: 'FALLO', misses: 'Fallos', items_taken: 'Objetos', rings_passed: 'Aros', anomaly_warn: 'ANOMALÍA', anomaly_warn_d: 'Pásala tú mismo', anomaly_beat: 'ANOMALÍA VENCIDA', anomaly_hit: '¡ANOMALÍA!', discover_new: 'Nuevo en el Álbum: {name}',
     camp_complete: '¡Galaxia completada!', camp_dirs: 'Direcciones', camp_dir_right: 'Derecha', camp_dir_top: 'Arriba', camp_dir_left: 'Izquierda', camp_dir_bottom: 'Abajo',
     camp_waves_n: '{n} oleadas', camp_criteria: 'Cómo ganar estrellas', camp_best_perfects: 'Mejor: {n} perfectos', camp_first_clear: 'Premio de la 1ª victoria', camp_replay_reward: 'Premio por repetir',
-    dir_every: 'cambia cada {n} aros', singularity_hint: 'Vence al jefe de la región 10 para dominar la Singularidad.', loadout: 'Equipadas', loadout_d: 'Toca una ranura para cambiar. Úsalas en la partida con los botones de las esquinas (Q/E en teclado).',
+    dir_every: 'cambia cada {n} aros', singularity_hint: 'Vence al jefe de Andrómeda para abrir las 11 capas de la Singularidad.', loadout: 'Equipadas', loadout_d: 'Toca una ranura para cambiar. Úsalas en la partida con los botones de las esquinas (Q/E en teclado).',
     slot_n: 'Ranura {n}', tap_to_change: 'Toca para elegir', ach_all: 'Todos',
     portal: 'Portal', portal_open: 'Portal abierto', portal_locked: 'Portal cerrado', portal_d: 'Para entrar, completa en {name}:',
     gate_boss: 'Vencer al jefe de {name}', gate_stars: '{n} estrellas en {name}', gate_rank: 'Rango {n} (nivel del jugador)', gate_core: 'Núcleo nivel {n}', gate_contracts: '{n} contratos de {name}',
-    contracts: 'Contratos', contracts_d: 'Objetivos de esta región. El premio llega solo al final de la partida; {n} de ellos abren el siguiente Portal.', contract_done: 'Contrato completado: {name}',
-    c_perfects: 'Haz {n} perfectos en esta región', c_clears: 'Completa {n} niveles de esta región', c_coins: 'Recoge {n} monedas en esta región', c_pickups: 'Recoge {n} objetos en esta región', c_flawless: 'Completa {n} niveles aquí sin daño', c_events: 'Vence {n} eventos en esta región', c_nomiss: 'Pasa {n} aros seguidos aquí sin fallar', c_bossflawless: 'Vence al jefe de esta región sin daño',
-    core: 'Núcleo', core_d: 'La fuerza de tu bola. Cada nivel mejora todo un poco y abre regiones.', core_level: 'Núcleo {n}', core_max: 'Núcleo al máximo', core_b_coins: '+{n} % monedas', core_b_forgive: '+{n} % perdón en el borde', core_b_perfect: '+{n} % zona de perfecto', core_b_xp: '+{n} % XP',
+    contracts: 'Contratos', contracts_d: 'Objetivos de esta galaxia. El premio llega solo al final de la partida; {n} de ellos abren el siguiente Portal.', contract_done: 'Contrato completado: {name}',
+    core: 'Núcleo', core_d: 'La fuerza de tu bola. Cada nivel mejora todo un poco y abre galaxias.', core_level: 'Núcleo {n}', core_max: 'Núcleo al máximo', core_b_coins: '+{n} % monedas', core_b_forgive: '+{n} % perdón en el borde', core_b_perfect: '+{n} % zona de perfecto', core_b_xp: '+{n} % XP',
     core_ms_shield: '+1 escudo máximo', core_ms_start: 'Empieza con 1 escudo', core_ms_life: '1 vida extra por partida', core_ms_pickup: 'Bolsas de monedas +50 %', core_next_ms: 'Hito en el nivel {n}', core_up_toast: '¡Núcleo nivel {n}!',
     mods: 'Modificadores', mut_narrow: 'Estrecho', mut_narrow_d: 'aros un 10 % más pequeños', mut_dense: 'Denso', mut_dense_d: 'aros más juntos', mut_wind: 'Viento', mut_wind_d: 'más aros inclinados', mut_pairs: 'Pares', mut_pairs_d: 'más aros dobles', mut_bursts: 'Ráfagas', mut_bursts_d: 'velocidad a ráfagas',
     shattered: '¡DESTROZADO!',

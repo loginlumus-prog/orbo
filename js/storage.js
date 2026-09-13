@@ -6,7 +6,7 @@ HR.Store = {
 
   defaults() {
     return {
-      v: 4, created: Date.now(), lastOpen: Date.now(),
+      v: 5, created: Date.now(), lastOpen: Date.now(),
       coins: 0, gems: 0, xp: 0, level: 1, core: 0,
       best: 0, runs: 0, totalRings: 0, totalCoins: 0, totalPerfects: 0, bestCombo: 0, bestPhase: 0, revives: 0, powerupsUsed: 0,
       noAds: false, vip: false, vipSince: null,
@@ -35,8 +35,29 @@ HR.Store = {
         flowMax: 0, flowTime: 0, centerPickups: 0, eventsDone: 0, guardians: 0, sentinels: 0, warps: 0, asteroidsDestroyed: 0, contractsDone: 0, coreLevel: 0, regionsVisited: [], seasonItems: 0, shattered: 0
       },
       codex: { rings: [], items: [] },
-      hints: { ability: false, direction: false, perk: false, galaxy: false }
+      hints: { ability: false, direction: false, perk: false, galaxy: false, system: false, aegis: false, jet: false, singularity: false },
+      // v5
+      consumables: { aegis: 2, jet: 1, megajet: 0 },
+      gear: { aegis: 'crystal', jet: 'blue', ownedAegis: ['crystal'], ownedJet: ['blue'] },
+      singularity: { layers: {}, words: [], ecos: [], firstClear: null },
+      online: { id: null, name: null, lastSubmit: 0 },
+      xpBonus: { date: null, used: 0 },
+      album: { claimed: [] },
+      stats5: { systemsCleared: 0, aegisUsed: 0, aegisSaves: 0, jetsUsed: 0, megajetsUsed: 0, ecosFound: 0, archonsPassed: 0, dialogues: 0, understood: 0, questioned: 0, forced: 0, collectionsDone: 0, maxSpeed: 0, systemBosses: 0 }
     };
+  },
+  // v5: as 100 fases antigas (r-f) viram os sistemas da galáxia 1 (1-r-f); contratos recomeçam na escala nova
+  migrate(d) {
+    if ((d.v || 0) >= 5) return d;
+    const c = d.campaign || (d.campaign = {});
+    const conv = obj => { const out = {}; for (const k in (obj || {})) { const p = k.split('-'); out[p.length === 2 ? '1-' + k : k] = obj[k]; } return out; };
+    c.stars = conv(c.stars); c.best = conv(c.best);
+    if (c.last && String(c.last).split('-').length === 2) c.last = '1-' + c.last;
+    const sum = { perfects: 0, clears: 0, coins: 0, pickups: 0, flawless: 0, events: 0, noMiss: 0, bossFlawless: 0 };
+    for (const k in (c.rstats || {})) { const r = c.rstats[k]; for (const f in sum) sum[f] = f === 'noMiss' ? Math.max(sum[f], r[f] || 0) : sum[f] + (r[f] || 0); }
+    c.rstats = { 0: sum }; c.contracts = {}; c.lastRegion = 0;
+    d.v = 5; d.migratedV5 = Date.now(); d.pendingBackfillV5 = true;
+    return d;
   },
 
   load() {
@@ -56,6 +77,7 @@ HR.Store = {
     d = merge(def, d);
     if (legacy) { d.v = 3; d.migratedFrom = 'halorush'; }
     if (d.v < 4) d.v = 4;
+    this.migrate(d);
     d.lastOpen = Date.now();
     this.data = d;
     this.save();

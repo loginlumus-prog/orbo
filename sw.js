@@ -1,11 +1,12 @@
 /* Service worker: cache do app shell para jogar offline (PWA). Suba a versão ao publicar. */
-const CACHE = 'orbo-v3.0.0';
+const CACHE = 'orbo-v5.0.0';
 const ASSETS = [
   './', './index.html', './manifest.json', './assets/icon.svg',
-  './css/style.css', './css/hud.css', './css/shop.css', './css/galaxy.css',
-  './js/config.js', './js/utils.js', './js/icons.js', './js/i18n.js', './js/brand.js', './js/storage.js', './js/audio.js', './js/music.js', './js/input.js',
-  './js/services.js', './js/content.js', './js/seasons.js', './js/systems.js', './js/perks.js', './js/modes.js', './js/render.js', './js/game.js',
-  './js/ui.js', './js/ui-hud.js', './js/ui-shop.js', './js/ui-galaxy.js', './js/main.js'
+  './css/style.css', './css/hud.css', './css/shop.css', './css/galaxy.css', './css/v5.css',
+  './js/config.js', './js/utils.js', './js/icons.js', './js/tips.js', './js/i18n.js', './js/brand.js', './js/storage.js', './js/audio.js', './js/music.js', './js/input.js',
+  './js/services.js', './js/content.js', './js/seasons.js', './js/systems.js', './js/perks.js', './js/gear.js', './js/modes.js', './js/campaign.js', './js/skins.js', './js/singularity.js', './js/online.js', './js/content-v5.js',
+  './js/render.js', './js/render-gear.js', './js/render-skins.js', './js/game.js',
+  './js/ui.js', './js/ui-hud.js', './js/ui-shop.js', './js/ui-galaxy.js', './js/ui-singularity.js', './js/main.js'
 ];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
