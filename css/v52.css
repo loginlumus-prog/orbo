@@ -150,12 +150,12 @@ body:has(.screen.panel.visible) #scene * { animation-play-state: paused !importa
 .shop-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px 10px; color: var(--muted); font-size: 13px; text-align: center; }
 .shop-empty .i { width: 30px; height: 30px; opacity: 0.7; }
 
-/* ---------- subiu de nível: brilho redondo centrado atrás do número ----------
+/* ---------- subiu de nível: brilho redondo no centro exato do card ----------
    antes: inset -40% num card alto virava um retângulo esticado girando, com faixas de borda dura por cima dos chips */
 .levelup-card { isolation: isolate; }
 .levelup-card > :not(.levelup-glow) { position: relative; z-index: 1; }
 .levelup-glow {
-  inset: auto; left: 50%; top: 90px; width: 380px; height: 380px; margin: -190px 0 0 -190px; border-radius: 50%; z-index: 0;
+  inset: auto; left: 50%; top: 50%; width: 480px; height: 480px; max-width: none; max-height: none; margin: -240px 0 0 -240px; border-radius: 50%; z-index: 0;
   background: radial-gradient(closest-side, rgba(190,160,255,0.3), rgba(143,107,255,0.12) 45%, rgba(76,240,255,0) 100%);
   background: radial-gradient(closest-side, rgba(190,160,255,0.3), rgba(143,107,255,0.12) 45%, rgba(76,240,255,0) 100%), repeating-conic-gradient(from 0deg, rgba(255,255,255,0.08) 0deg 8deg, rgba(255,255,255,0) 8deg 30deg);
   -webkit-mask-image: radial-gradient(closest-side, #000 35%, transparent 100%); mask-image: radial-gradient(closest-side, #000 35%, transparent 100%);
