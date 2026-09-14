@@ -62,6 +62,12 @@
   function drawPreview(p, t) {
     const cv = p.cv, S = cv._size, ctx = cv.getContext('2d');
     ctx.setTransform(cv._dpr, 0, 0, cv._dpr, 0, 0); ctx.clearRect(0, 0, S, S);
+    if (p.type === 'themes') {
+      if (!p.bg) { p.bg = new HR.Render.Background(); p.bg.resize(S, S); p.bg.setTheme(p.item); p.bg.setFx(p.item.fx || null); p.last = t; }
+      const dt = Math.min(0.05, Math.max(0, t - p.last)); p.last = t;
+      p.bg.update(dt, 70, { x: -1, y: 0 }, 0.15); p.bg.draw(ctx, t);
+      return;
+    }
     if (p.type === 'aegis' || p.type === 'jet') {
       const bx = S / 2 + (p.type === 'jet' ? S * 0.16 : 0), by = S / 2 + Math.sin(t * 2 + p.seed) * S * 0.03, br = S * 0.15, sk = equippedSkin();
       if (p.type === 'jet') { HR.Render.drawJet(ctx, bx, by, br, p.item, t, 1); HR.Render.drawBall(ctx, bx, by, br, sk, t, {}); }
@@ -115,7 +121,7 @@
     return sw;
   }
   function previewFor(type, item, size, big) {
-    if (type === 'themes') return themeSwatch(item, big);
+    if (type === 'themes' && !HR.Render.Background) return themeSwatch(item, big);
     const cv = makeCanvas(size); addPreview(cv, type, item, { big }); cv.className = 'shop-preview'; return cv;
   }
   function card(type, item) {
@@ -342,7 +348,7 @@
     startPreviews();
   }
 
-  Object.assign(HR.UI, { renderShop, startPreviews, stopPreviews, openItemDetail, closeItemDetail, renderAbilityCards: renderAbilities, shopPreview: previewFor });
+  Object.assign(HR.UI, { renderShop, startPreviews, stopPreviews, openItemDetail, closeItemDetail, renderAbilityCards: renderAbilities, shopPreview: previewFor, gearPreview: (kind, it, size) => { const cv = makeCanvas(size); cv.className = 'shop-preview'; addPreview(cv, kind, it, {}); return cv; } });
 
   /* ---------------- textos ---------------- */
   Object.assign(HR.I18N.pt, {

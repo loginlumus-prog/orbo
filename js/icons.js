@@ -106,6 +106,10 @@ window.HR = window.HR || {};
     flag: P('M6 21.5V3.5') + P('M6 4.5c2.5-1.3 4.6-1.3 6.8 0s4.3 1.3 6.2 0v7.5c-1.9 1.3-4 1.3-6.2 0s-4.3-1.3-6.8 0', 'ds'),
     bag: P('M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z', 'ds') + P('M9 8V6.5a3 3 0 0 1 6 0V8'),
     dice: P('M4.5 3.5h15a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z', 'ds') + C(8.3, 8.3, 1.3, 'f') + C(15.7, 8.3, 1.3, 'f') + C(12, 12, 1.3, 'f') + C(8.3, 15.7, 1.3, 'f') + C(15.7, 15.7, 1.3, 'f'),
+    collection: C(7.4, 7.6, 3.4, 'ds') + C(16.6, 7.6, 3.4, 'ds') + C(7.4, 16.6, 3.4, 'ds') + C(16.6, 16.6, 3.4) + P('M16.6 15v3.2M15 16.6h3.2') + C(6.4, 6.6, 0.8, 'f'),
+    ctrlStick: E(12, 17.6, 8, 3.2, 0, 'ds') + P('M12 17.4V10.2') + C(12, 7.4, 3.6, 'ds') + C(10.9, 6.3, 0.9, 'f'),
+    ctrlDrag: P('M5 8.2h14M8.2 5 5 8.2l3.2 3.2M15.8 5 19 8.2l-3.2 3.2') + DASH(P('M5.5 17h8.2'), '1.6 2.4') + C(17.2, 17, 3.2, 'ds') + C(17.2, 17, 1, 'f'),
+    ctrlFollow: C(12, 12, 8.6) + C(12, 12, 4.4, 'ds') + C(12, 12, 1.5, 'f') + P('M12 1.6v3.2M12 19.2v3.2M1.6 12h3.2M19.2 12h3.2'),
     gamepad: P('M7 7.5h10a5 5 0 0 1 4.8 6.3l-.9 3.4a2.6 2.6 0 0 1-4.4 1.1l-1.9-2H9.4l-1.9 2a2.6 2.6 0 0 1-4.4-1.1l-.9-3.4A5 5 0 0 1 7 7.5Z', 'ds') + P('M7.5 10.8v3.4M5.8 12.5h3.4') + C(15.8, 11.5, 1.1, 'f') + C(17.8, 13.6, 1.1, 'f'),
     school: P('M22 9.5 12 4.5 2 9.5l10 5Z', 'ds') + P('M6 11.5v5c3 2.8 9 2.8 12 0v-5M22 9.5v5'),
     skull: P('M12 2.8a8 8 0 0 0-5 14.3V20.5h10v-3.4A8 8 0 0 0 12 2.8Z', 'ds') + C(9, 11.2, 1.8, 'f') + C(15, 11.2, 1.8, 'f') + P('M10.5 20.5v-2.2M13.5 20.5v-2.2'),
@@ -209,7 +213,9 @@ window.HR = window.HR || {};
   for (const k in G) HR.ICON[k] = G[k].replace(/ class="(ds|d|fs|f)"/g, (m, c) => ' ' + LAYER[c]);
 
   HR.icon = function (name, cls, filled) {
-    const inner = HR.ICON[name] || HR.ICON.info;
+    let inner = HR.ICON[name] || HR.ICON.info;
+    // filled: as camadas translúcidas viram sólidas (estrela ganha, contadores)
+    if (filled) inner = inner.replace(/ fill-opacity="\.24"/g, '');
     return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="' + (filled ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
   };
   // ícone numa placa (gradiente + borda interna + brilho): menus, poderes, missões, loja

@@ -12,7 +12,7 @@ HR.Store = {
       noAds: false, vip: false, vipSince: null,
       owned: { skins: ['classic'], trails: ['none'], themes: ['aurora'] },
       equipped: { skin: 'classic', trail: 'none', theme: 'aurora' },
-      settings: { sound: true, music: true, vibration: true, control: 'auto', sensitivity: 1, lang: null, musicVol: 0.8, sfxVol: 1, autoPerk: false },
+      settings: { sound: true, music: true, vibration: true, control: 'auto', sensitivity: 1, lang: null, musicVol: 0.8, sfxVol: 1, autoPerk: false, adaptSlowmo: true },
       missions: { date: null, list: [], rerolls: 0, weekKey: null, weekly: [] },
       daily: { lastClaim: null, streak: 0, vipClaim: null },
       ads: { lastInterstitial: 0, runsSince: 0, freeGemsDate: null, freeGemsCount: 0 },

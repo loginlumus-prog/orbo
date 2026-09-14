@@ -100,7 +100,7 @@ HR.Game = class {
     this.run = {
       mode: 'endless', level: null, score: 0, coins: 0, perfects: 0, combo: 0, maxCombo: 0, ringsSpawned: 0, ringsPassed: 0, ringsResolved: 0, misses: 0, revives: 0,
       shields: 0, lives: 0, hits: 0, coinsMissed: 0, secondUsed: false, invuln: 0, phaseNumber: 1, phaseIdx: 0, startTime: 0, dist: 0,
-      perks: {}, mods: HR.Perks.baseMods(), abilities: [], slowmoT: 0, magnetT: 0, autoT: 0, ghostT: 0, freezeT: 0, reflexT: 0, starT: 0, lensT: 0, echoT: 0,
+      perks: {}, mods: HR.Perks.baseMods(), abilities: [], slowmoT: 0, adaptT: 0, adaptDur: 1, adaptMin: 1, adaptNext: null, magnetT: 0, autoT: 0, ghostT: 0, freezeT: 0, reflexT: 0, starT: 0, lensT: 0, echoT: 0,
       bossWave: 0, levelDone: false, perksOffered: 0, rerollUsed: false, autoPerks: 0,
       dirChanges: 0, nearMisses: 0, shieldsAbsorbed: 0, livesUsed: 0, abilitiesUsed: 0, abUse: {}, cleanStreak: 0, cleanRings: 0, noMissStreak: 0, noMissRings: 0,
       goldRings: 0, doubleRings: 0, comboBonuses: 0, coinsTaken: 0, ringsTop: 0, ringsLeft: 0, rarePerks: 0,
@@ -127,11 +127,11 @@ HR.Game = class {
     run.abilities = HR.Abilities.equipped().map(id => id && HR.Abilities.def(id) ? { id, cd: 0, active: 0 } : null);
     run.core = HR.Core.mods(); run.shields = Math.min(this.shieldCap(), run.shields + run.core.startShield); run.lives += run.core.life;
     if (run.level && run.level.sg) { this.levelTheme = { colors: ['#1c1408', '#0b0804', '#000000'], shapes: 'nebula', stars: true, fx: 'horizon' }; this.fx = 'horizon'; }
-    else if (run.level) { const R = HR.REGIONS[run.level.ri]; this.levelTheme = { colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx || null }; this.fx = R.fx || null; }
+    else if (run.level) { const R = HR.REGIONS[run.level.ri], SF = HR.systemFx ? HR.systemFx(run.level.ri, run.level.si || 0) : { fx: R.fx, fx2: null }; this.levelTheme = { colors: R.colors, shapes: R.shapes, stars: R.stars, fx: SF.fx || null }; this.fx = SF.fx || null; this.fx2 = SF.fx2 || null; }
     else { this.levelTheme = null; this.themeFx = run.mode === 'endless' ? this.themeFxNow() : null; this.fx = this.themeFx || this.phaseFor(0).phase.fx || null; }
     if (run.level) this.themeFx = null;
     this.applyCosmetics();
-    this.bg.setFx(this.fx); this.bg.season = null;
+    this.bg.setFx(this.fx, run.level && !run.level.sg ? this.fx2 : null); this.bg.season = null;
     this.setDir(this.dirForRing(0));
     this.ball.y = this.ball.ty = this.Lv / 2; this.ball.vx = this.ball.vy = 0; this.lastY = this.ball.y;
     const ph = this.phaseFor(0);
@@ -149,6 +149,7 @@ HR.Game = class {
     this.state = 'playing';
     if (!this.run.startTime) this.run.startTime = Date.now();
     this.emit('begin', this.run);
+    if (this.run.adaptNext) { this.adapt(this.run.adaptNext); this.run.adaptNext = null; }
     const L = this.run.level;
     if (L && L.sg && !this.demo && !this.run.announced) { this.run.announced = true; this.emit('banner', { title: HR.t('sg_title_' + L.archon).toUpperCase(), sub: L.trial ? HR.t('sg_trial') : HR.t('sg_passage_n', { n: L.passage + 1 }), color: HR.ARCHONS[L.archon].color }); }
     if (L && !L.sg && L.li === 0 && L.si != null && !this.demo && !this.run.announced) { this.run.announced = true; this.emit('banner', { title: HR.t('system_n', { name: HR.Campaign.systemName(L.si) }).toUpperCase(), sub: HR.t('speed_up') + ' · ×' + L.speed.toFixed(2), color: HR.REGIONS[L.ri].accent }); }
@@ -363,6 +364,7 @@ HR.Game = class {
       b.x = this.clampU(b.x); b.tx = this.clampU(b.tx); this.lastY = b.y;
       this.trans = null; this.nextX = this.Lu + 300; this.fill();
       this.state = 'playing';
+      this.adapt('turn');
       this.emit('status', this.run);
     }
   }
@@ -487,9 +489,23 @@ HR.Game = class {
     const run = this.run;
     let ts = 1;
     if (this.state === 'dying') ts *= HR.CONFIG.RUN.deathSlowmo;
+    if (run.adaptT > 0) ts *= this.adaptScale();
     if (run.slowmoT > 0) ts *= 0.45;
     else if (run.reflexT > 0) ts *= 0.5;
     return ts;
+  }
+  // câmera lenta de adaptação (v5.1): depois de um susto (Égide quebrada, erro, sequência perdida, poder escolhido, curva)
+  // o tempo cai e volta suave à velocidade normal; o mais forte vence se dois vierem juntos
+  adapt(kind) {
+    const run = this.run, A = HR.CONFIG.ADAPT[kind];
+    if (!A || this.demo || !run || HR.Store.data.settings.adaptSlowmo === false) return;
+    if (run.adaptT > 0 && this.adaptScale() <= A.min) return;
+    run.adaptMin = A.min; run.adaptDur = A.dur; run.adaptT = A.dur;
+  }
+  adaptScale() {
+    const run = this.run; if (!run || !(run.adaptT > 0)) return 1;
+    const p = 1 - run.adaptT / run.adaptDur, k = p < 0.3 ? 0 : (p - 0.3) / 0.7, e = k * k * (3 - 2 * k);
+    return run.adaptMin + (1 - run.adaptMin) * e;
   }
   protectedNow() { const run = this.run; return this.demo || run.invuln > 0 || run.ghostT > 0 || run.starT > 0 || run.jetLeft > 0 || run.cometT > 0; }
   // raio efetivo da bola (perk Compacta, habilidade Micro)
@@ -505,7 +521,7 @@ HR.Game = class {
       // escolha automática (ligada pelo jogador) a partir da 4ª oferta: não pausa
       if (HR.Store.data.settings.autoPerk && run.perksOffered > HR.CONFIG.AUTOPERK.afterOffers) {
         const id = HR.Perks.autoPick(run);
-        if (id) { HR.Perks.take(run, id); run.autoPerks++; HR.Store.data.stats.perksTaken++; const p = HR.Perks.def(id); if (p && p.rarity !== 'common') run.rarePerks++; this.emit('autoperk', { id }); this.emit('status', run); }
+        if (id) { HR.Perks.take(run, id); run.autoPerks++; HR.Store.data.stats.perksTaken++; const p = HR.Perks.def(id); if (p && p.rarity !== 'common') run.rarePerks++; this.emit('autoperk', { id }); this.adapt('autoperk'); this.emit('status', run); }
         return;
       }
       this.perkTimer = 0.7;
@@ -525,7 +541,7 @@ HR.Game = class {
       HR.Store.data.stats.bestPerksRun = Math.max(HR.Store.data.stats.bestPerksRun, Object.keys(this.run.perks).length);
     }
     else { this.run.coins += 15; HR.Audio.sfx('coin'); }
-    this.state = 'ready'; HR.Input.reset();
+    this.state = 'ready'; HR.Input.reset(); this.run.adaptNext = 'perk';
     this.emit('status', this.run);
     this.emit('ready', this.run);
   }
@@ -630,6 +646,7 @@ HR.Game = class {
     this.timeScale = this.effectiveTimeScale();
     const sdt = dt * this.timeScale;
     if (s === 'playing') this.updateAbilities(dt);
+    if (s === 'playing' && run.adaptT > 0) run.adaptT = Math.max(0, run.adaptT - dt);
     if (s === 'playing' || s === 'dying') this.moveRings(sdt);
     if (s === 'playing' || s === 'ready') this.updateBall(sdt, dt);
     if (s === 'playing') { this.checkRings(); this.checkReflex(); this.checkField(dt); this.updateAnomaly(dt); this.updateEvent(sdt, dt); }
@@ -915,7 +932,7 @@ HR.Game = class {
     const run = this.run, P = this.particles;
     r.resolved = true; r.missed = true; r.flash = 0.5;
     if (this.demo) return;
-    run.combo = 0; run.misses++; run.cleanStreak = 0; run.noMissStreak = 0; this.breakFlow();
+    run.combo = 0; run.misses++; run.cleanStreak = 0; run.noMissStreak = 0; this.breakFlow(); this.adapt('miss');
     HR.Store.data.stats.misses++;
     P.text(r.x, r.y - r.r - 22, HR.t('miss'), '#8d97b3', 20);
     HR.Audio.sfx('miss');
@@ -953,7 +970,7 @@ HR.Game = class {
       if (HR.CONFIG.COMBO_MILESTONES.includes(run.combo)) { P.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: '#ffcf4a', size: 30, life: 0.7, type: 'wave' }); this.emit('combo', { n: run.combo }); HR.U.vibrate([10, 20, 10]); }
       if (run.mods.streakShield && run.combo % 8 === 0 && run.shields < this.shieldCap()) { run.shields++; P.text(this.ball.x, this.ball.y - 90, HR.t('perk_shield') + ' +1', '#4cf0ff', 22); this.emit('status', run); }
       HR.U.vibrate(12);
-    } else { run.combo = 0; HR.Audio.sfx('pass', { combo: 0 }); }
+    } else { if (run.combo >= 5) this.adapt('streak'); run.combo = 0; HR.Audio.sfx('pass', { combo: 0 }); }
     if (run.mods.angel) { run.angelStreak++; if (run.angelStreak % run.mods.angel === 0 && run.shields < this.shieldCap()) { run.shields++; P.text(this.ball.x, this.ball.y - 90, HR.t('perk_guardianangel') + ' +1', '#fff3c2', 20); this.emit('status', run); } }
     if (r.coin && !r.coinTaken && (run.mods.magnet || run.magnetT > 0 || run.bholeT > 0 || Math.abs(along) <= r.r * R.coinZone)) {
       r.coinTaken = true; run.coinsTaken++; this.addCoins(E.coinPickup, r.x, r.y - 20); HR.Audio.sfx('coin');
@@ -964,6 +981,7 @@ HR.Game = class {
     const rg = run.mods.regen; if (rg && run.ringsPassed % [0, 12, 8, 5][rg] === 0 && run.shields < this.shieldCap()) { run.shields++; P.text(this.ball.x, this.ball.y - 90, HR.t('perk_regen') + ' +1', '#4cf0ff', 20); this.emit('status', run); }
     P.burst({ x: r.x, y: r.y, n: perfect ? 18 : 8, speed: perfect ? 380 : 220, color: [r.color, '#ffffff'], size: 5, life: 0.6, type: 'spark' });
     if (this.fx === 'water') P.burst({ x: r.x, y: r.y, n: 6, speed: 60, color: '#cfe9ff', size: 5, life: 1.3, type: 'bubble', vy: -80, drag: 0.98 });
+    else if (HR.Render.FX_PASS && HR.Render.FX_PASS[this.fx]) P.burst(Object.assign({ x: r.x, y: r.y }, HR.Render.FX_PASS[this.fx]));
     if (run.level && !r.event) {
       const L = run.level;
       if (L.boss) {
@@ -1015,7 +1033,7 @@ HR.Game = class {
   damage(src, bypass) {
     const run = this.run, R = HR.CONFIG.RUN, P = this.particles;
     if (src) { src.resolved = true; src.hit = true; src.flash = 1; }
-    run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0; run.angelStreak = 0; this.breakFlow();
+    run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0; run.angelStreak = 0; this.breakFlow(); this.adapt('hit');
     if (this.event && src) run.eventHits++;
     if (src && src.type === 'anomaly') { P.text(this.ball.x, this.ball.y - 64, HR.t('anomaly_hit'), '#ff3d2e', 24); this.ringResolved(); }
     if (src && src.event) this.ringResolved(src);
@@ -1034,6 +1052,7 @@ HR.Game = class {
       P.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: sk.color, size: 48, life: 0.7, type: 'wave' });
       P.text(this.ball.x, this.ball.y - 70, HR.t('aegis_broken'), sk.color, 28);
       this.shake = 10; HR.Audio.sfx('shield'); HR.U.vibrate([30, 20, 50]);
+      this.adapt('aegis');
       this.emit('gear', { kind: 'aegis' }); this.emit('status', run);
       return;
     }

@@ -33,7 +33,7 @@
       const on = (id, fn) => { const el = $('#' + id); if (el) el.addEventListener('click', e => { e.stopPropagation(); fn(e); }); };
       on('btn-perk-skip', () => this.choosePerk(null));
       on('btn-perk-reroll', () => this.rerollPerks());
-      on('perk-auto', () => { const s = HR.Store.data.settings; s.autoPerk = !s.autoPerk; HR.Store.save(); HR.Audio.sfx('click'); this.refreshAutoPerk(); });
+      on('perk-auto', () => { const s = HR.Store.data.settings; s.autoPerk = !s.autoPerk; HR.Store.save(); HR.Audio.sfx('click'); this.refreshAutoPerk(); if (s.autoPerk && this.game.state === 'perk') { const id = HR.Perks.autoPick(this.game.run); if (id) { this.choosePerk(id); this.game.begin(); } } });
       on('btn-le-next', () => this.levelEndNext());
       on('btn-le-retry', () => this.levelEndRetry());
       on('btn-le-menu', () => this.afterOver(() => { this.goMenu(); this.open('galaxy'); const id = this.lastSummary && this.lastSummary.levelId; if (id && HR.Singularity && HR.Singularity.isLevel(id)) { this.open('singularity'); return; } const L = id && HR.Campaign.level(id); if (L) { this.open('region', L.ri); if (L.si != null) this.open('system', L.ri + '-' + L.si); } }));
@@ -41,10 +41,13 @@
       HR.Input.onAegis = () => { if (this.current === 'hud') this.game.useAegis(); };
       HR.Input.onJet = () => { if (this.current === 'hud') this.game.useJet(HR.Consumables.count('jet') > 0 ? 'jet' : 'megajet'); };
       game.on('gear', () => this.renderGear(this.game.run));
+      const ctrl = $('#btn-ctrl'); if (ctrl) ctrl.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.cycleControl(); });
+      HR.Input.onControl = () => { if (this.current === 'hud') this.cycleControl(); };
     },
 
     /* ---------- estado do HUD ---------- */
     hudReady(run) {
+      this.refreshControlBtn();
       this.bind('score', run.score); this.bind('runCoins', run.coins);
       $('[data-bind="combo"]').classList.remove('show');
       this.setReadyHint(true);
@@ -212,6 +215,7 @@
         v.classList.toggle('auto', run.autoT > 0 && !run.anomalyActive && !run.jetLeft);
         v.classList.toggle('jet', run.jetLeft > 0);
         v.classList.toggle('star', run.starT > 0);
+        v.classList.toggle('adapt', run.adaptT > 0 && this.game.adaptScale() < 0.85);
         v.classList.toggle('ending', (run.powerEnding || 0) > 0);
         this.hudRaf = requestAnimationFrame(tick);
       };
@@ -257,6 +261,31 @@
       $('#btn-perk-reroll').style.display = HR.Ads.isRewardedReady() ? '' : 'none';
     },
 
+    // v5.1: troca de controle sem sair da partida (botão no HUD, tecla C e seletor na pausa)
+    CONTROLS: [['stick', 'ctrlStick'], ['relative', 'ctrlDrag'], ['absolute', 'ctrlFollow']],
+    setControl(mode, silent) {
+      const d = HR.Store.data; d.settings.control = mode;
+      if (d.stats5) { d.stats5.controlsUsed = d.stats5.controlsUsed || []; if (!d.stats5.controlsUsed.includes(mode)) d.stats5.controlsUsed.push(mode); }
+      HR.Store.save(); HR.Input.reset(); this.updateStick(); this.refreshControlBtn();
+      const c = this.CONTROLS.find(x => x[0] === mode);
+      if (!silent) { HR.Audio.sfx('click'); this.toast(HR.icon(c[1]) + ' ' + HR.t('control') + ': ' + HR.t('control_' + mode)); }
+    },
+    cycleControl() { const cur = this.game.controlMode(), i = this.CONTROLS.findIndex(c => c[0] === cur); this.setControl(this.CONTROLS[(i + 1) % this.CONTROLS.length][0]); },
+    refreshControlBtn() {
+      const b = $('#btn-ctrl'); if (!b) return;
+      const m = this.game.controlMode(), c = this.CONTROLS.find(x => x[0] === m) || this.CONTROLS[0];
+      b.innerHTML = '<span class="ic">' + HR.icon(c[1]) + '</span>';
+      b.setAttribute('data-tip', HR.t('control') + ': ' + HR.t('control_' + m)); b.setAttribute('aria-label', HR.t('control'));
+    },
+    renderPauseControl() {
+      const host = $('#pause-ctrl'); if (!host) return;
+      const m = this.game.controlMode(); host.innerHTML = '';
+      this.CONTROLS.forEach(([mode, ic]) => {
+        const b = HR.U.el('button', 'pc-opt' + (mode === m ? ' active' : ''), HR.icon(ic) + '<span>' + HR.t('control_' + mode) + '</span>'); b.type = 'button';
+        b.addEventListener('click', e => { e.stopPropagation(); this.setControl(mode, true); HR.Audio.sfx('click'); this.renderPauseControl(); });
+        host.appendChild(b);
+      });
+    },
     refreshAutoPerk() {
       const el = $('#perk-auto'); if (!el) return;
       const run = this.game.run, ok = run.perksOffered >= HR.CONFIG.AUTOPERK.afterOffers;

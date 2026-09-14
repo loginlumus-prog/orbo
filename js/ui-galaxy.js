@@ -572,14 +572,15 @@
 
   /* =================== ÁLBUM (coleção) =================== */
   const CAT_ICONS = { flight: 'ring', precision: 'target', wealth: 'coins', galaxy: 'galaxy', power: 'powers', collection: 'ball', dedication: 'calendar', secret: 'eyeOff', singularity: 'light' };
-  const ALB_TABS = ['ach', 'rings', 'items', 'bosses', 'skins', 'trails', 'themes', 'titles'];
-  const ALB_ICONS = { ach: 'trophy', rings: 'ring', items: 'gift', bosses: 'crown', skins: 'ball', trails: 'trail', themes: 'palette', titles: 'rank' };
+  const ALB_TABS = ['ach', 'skins', 'trails', 'themes', 'gear', 'bosses', 'rings', 'items', 'titles'];
+  const ALB_ICONS = { ach: 'trophy', rings: 'ring', items: 'gift', bosses: 'crown', skins: 'ball', trails: 'trail', themes: 'palette', titles: 'rank', gear: 'aegis' };
   function albumCounts() {
     const d = HR.Store.data, C = HR.Campaign, c = HR.Achievements.counts();
     const bosses = HR.REGIONS.filter((R, i) => C.bossBeaten(i)).length;
     const titles = HR.CONFIG.LEVEL_TITLES.filter(([lv]) => d.level >= lv).length + d.titles.length;
-    const a = c.a + d.codex.rings.length + d.codex.items.length + bosses + d.owned.skins.length + d.owned.trails.length + d.owned.themes.length + titles;
-    const b = c.b + Object.keys(HR.CONFIG.RING_TYPES).length + HR.CONFIG.PICKUPS.length + 10 + HR.CONFIG.SKINS.length + HR.CONFIG.TRAILS.length + HR.CONFIG.THEMES.length + HR.CONFIG.LEVEL_TITLES.length + HR.TITLES.length;
+    const gearA = ['aegis', 'jet'].reduce((n, k) => n + HR.Gear.list(k).filter(it => HR.Gear.owned(k, it.id)).length, 0), gearB = HR.GEAR.aegisSkins.length + HR.GEAR.jetSkins.length;
+    const a = gearA + c.a + d.codex.rings.length + d.codex.items.length + bosses + d.owned.skins.length + d.owned.trails.length + d.owned.themes.length + titles;
+    const b = gearB + c.b + Object.keys(HR.CONFIG.RING_TYPES).length + HR.CONFIG.PICKUPS.length + 10 + HR.CONFIG.SKINS.length + HR.CONFIG.TRAILS.length + HR.CONFIG.THEMES.length + HR.CONFIG.LEVEL_TITLES.length + HR.TITLES.length;
     return { a, b };
   }
   function albCard(o) {
@@ -634,6 +635,12 @@
         if (node && node.classList && node.classList.contains('shop-swatch')) { node.style.width = '56px'; node.style.height = '56px'; node.style.borderRadius = '50%'; }
         add({ on, color: on ? (eq ? '#35e29a' : '#4cf0ff') : '#9aa6c9', node, name: HR.t(pre + item.id), nameHidden: HR.t(pre + item.id), desc: HR.t(fl + item.id), descHidden: item.cur === 'pack' ? HR.t('prod_starter_pack') : (item.price === 0 ? HR.t('free') : (item.cur === 'gems' ? item.price + ' ' + HR.t('tab_gems').toLowerCase() : item.price + ' ' + HR.t('coins_earned').toLowerCase()) + ' · ' + HR.t('locked_lvl', { n: item.lvl })), tag: eq ? HR.t('equipped') : (on ? HR.t('owned') : HR.t('alb_unknown_tag')) });
       });
+    }
+    else if (tab === 'gear') {
+      ['aegis', 'jet'].forEach(kind => HR.Gear.list(kind).forEach(it => {
+        const on = HR.Gear.owned(kind, it.id), node = HR.UI.gearPreview ? HR.UI.gearPreview(kind, it, 60) : null, nm = HR.t((kind === 'jet' ? 'jetskin_' : 'aegisskin_') + it.id);
+        add({ on, color: on ? (HR.Gear.current(kind).id === it.id ? '#35e29a' : '#4cf0ff') : '#9aa6c9', node, html: node ? '' : HR.icon(kind), name: nm, nameHidden: nm, desc: HR.t(kind === 'jet' ? 'gear_jet_skins' : 'gear_aegis_skins') + ' · ' + HR.t('rarity_' + it.rar), descHidden: HR.t('rarity_' + it.rar) + (it.price ? ' · ' + HR.U.fmt(it.price) + ' ' + HR.t('coins_earned').toLowerCase() : '') });
+      }));
     }
     else if (tab === 'titles') {
       T.LEVEL_TITLES.forEach(([lv, key]) => { const on = d.level >= lv; add({ on, color: '#ffcf4a', html: HR.icon('award'), name: HR.t(key), nameHidden: HR.t(key), desc: HR.t('alb_title_level', { n: lv }), descHidden: HR.t('alb_title_level', { n: lv }), tag: d.title == null && on && HR.Progress.titleKey(d.level) === key ? HR.t('equipped') : undefined }); });

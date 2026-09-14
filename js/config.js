@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '5.0.0',
+  VERSION: '5.1.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -98,7 +98,9 @@ HR.CONFIG = {
   SPEED: { base: 245, span: 575, pow: 1.15, rampBase: 0.06, rampSpan: 0.22, flowBase: 0.05, flowSpan: 0.15, bossMul: 1.03, galaxyBossMul: 1.06, tbStart: 1.40, tbSpan: 0.62, tbMin: 0.72, endlessFlowBase: 0.05, endlessFlowSpan: 0.15 },
   // Núcleo da bola: 30 níveis comprados com moedas; bônus por nível e marcos
   CORE: { maxLevel: 30, cost(n) { return 120 + 16 * n * n + 50 * n; }, coinMul: 0.02, forgive: 0.008, perfect: 0.005, xp: 0.01, shieldAt: [5, 15, 25], startShieldAt: 10, lifeAt: 20, pickupAt: 30 },
-  AUTOPERK: { afterOffers: 3 },
+  AUTOPERK: { afterOffers: 0 },
+  // câmera lenta de adaptação (v5.1): escala mínima do tempo e duração (s) da volta à velocidade normal
+  ADAPT: { aegis: { min: 0.3, dur: 1.2 }, hit: { min: 0.42, dur: 1.0 }, miss: { min: 0.5, dur: 0.9 }, streak: { min: 0.58, dur: 0.8 }, perk: { min: 0.35, dur: 1.3 }, autoperk: { min: 0.62, dur: 0.7 }, turn: { min: 0.35, dur: 1.4 } },
   // Eventos (v4): mudam a dinâmica no meio da partida — ver docs/PLANO_V4.md §5
   EVENTS: {
     asteroids: { dur: 9,  color: '#ff9f43', icon: 'skull', coins: 15, score: 3, every: 0.2 },

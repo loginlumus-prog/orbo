@@ -60,7 +60,17 @@ HR.UI = {
     game.on('levelend', s => this.onLevelEnd(s));
     if (this.hudInit) this.hudInit(game);
 
-    HR.Input.onTap = () => { if (this.game.state === 'ready' && this.current === 'hud' && !this.isModalOpen()) this.game.begin(); };
+    // toque/Espaço: começa a corrida; no teclado também continua da pausa, joga de novo e segue para a próxima fase
+    HR.Input.onTap = e => {
+      if (this.isModalOpen()) return;
+      const kb = !!(e && e.type === 'keydown');
+      if (this.current === 'hud') { if (this.game.state === 'ready') this.game.begin(); else if (kb && this.game.state === 'paused') this.resume(); return; }
+      if (!kb || Date.now() - (this.baseAt || 0) < 700) return;
+      const vis = el => el && el.offsetParent !== null && el.style.display !== 'none';
+      if (this.current === 'over') { const b = $('#btn-again'); if (vis(b)) b.click(); }
+      else if (this.current === 'levelend') { const n = $('#btn-le-next'), r = $('#btn-le-retry'); if (vis(n)) n.click(); else if (vis(r)) r.click(); }
+      else if (this.current === 'menu' && !this.stack.length) { const p = $('#btn-play'); if (vis(p)) p.click(); }
+    };
     HR.Input.onEscape = () => { if (this.current === 'hud' && ['playing', 'ready', 'transition'].includes(this.game.state)) this.pause(); };
 
     if (window.ResizeObserver) {
@@ -86,7 +96,7 @@ HR.UI = {
   hideScreen(id) { const el = $('#screen-' + id); if (el) el.classList.remove('visible'); },
   setBase(id) {
     ['splash', 'menu', 'hud', 'over', 'levelend', 'pause', 'revive', 'tutorial'].forEach(s => this.hideScreen(s));
-    this.closePanels(); this.showScreen(id); this.current = id;
+    this.closePanels(); this.showScreen(id); this.current = id; this.baseAt = Date.now();
     if (id !== 'hud' && this.stopHud) this.stopHud();
   },
   closePanels() { this.PANELS.forEach(s => this.hideScreen(s)); this.stack = []; this.stopPreviews(); },
@@ -320,6 +330,7 @@ HR.UI = {
     $('#btn-pause-music').style.opacity = s.music ? 1 : 0.4;
     const auto = $('#pause-auto-state'); if (auto) auto.classList.toggle('on', !!s.autoPerk);
     const ab = $('#btn-pause-auto'); if (ab) ab.style.display = this.game.run.mode === 'practice' ? 'none' : '';
+    if (this.renderPauseControl) this.renderPauseControl();
   },
   resume() { this.hideScreen('pause'); this.game.resume(); if (this.game.state === 'ready') this.hudReady(this.game.run); },
   quitToMenu() { this.hideScreen('pause'); this.abandon = true; this.game.finishRun(false); },
@@ -577,6 +588,7 @@ HR.UI = {
     row('compass', HR.t('control'), HR.t('control_d'), seg([{ v: 'stick', l: HR.t('control_stick') }, { v: 'relative', l: HR.t('control_relative') }, { v: 'absolute', l: HR.t('control_absolute') }], curControl, v => { s.control = v; HR.Store.save(); })).classList.add('setting-stack');
     row('target', HR.t('sensitivity'), '', slider('sensitivity', 0.5, 2, 0.1));
     row('sparkle', HR.t('perk_auto'), HR.t('perk_auto_d'), toggle('autoPerk'));
+    row('hourglass', HR.t('adapt_slowmo'), HR.t('adapt_slowmo_d'), toggle('adaptSlowmo'));
     body.appendChild(HR.U.el('div', 'section-title', HR.t('profile')));
     row('user', HR.t('language'), '', seg([{ v: 'pt', l: 'PT' }, { v: 'en', l: 'EN' }, { v: 'es', l: 'ES' }], HR.lang, v => { s.lang = v; HR.Store.save(); HR.setLang(v); this.renderSettings(); this.refreshMenu(); }));
     if (HR.Online) {

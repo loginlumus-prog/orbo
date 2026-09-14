@@ -1,6 +1,6 @@
 # ORBO
 
-Jogo arcade hiper-casual: uma bola flutuante atravessa arcos de luz e cruza **10 galáxias reais** — cada uma com **10 sistemas** de **10 fases** (1.000 fases, 100 chefes) — até **TON 618**, onde a **Singularidade** guarda **11 camadas** com um Arconte cada: passagem com Ecos da história, conversa (a resposta muda a dificuldade) e a Prova. Velocidade que cresce fase a fase, fluxo e parallax, eventos, biomas, **Égide** (proteção consumível com recarga) e **Jato** (arranque no início), 17 habilidades, 37 perks, **138 bolas** em 15 coleções (planetas, estrelas em forma de estrela, buracos negros, nebulosas…), 23 temas, 125 modelos de missão, 151 conquistas, rankings **Jornada %** e **Infinito**, temporadas. HTML5 + Canvas + JavaScript puro, pronto para web/PWA e Android/iOS via Capacitor, com anúncios (AdMob) e compras (RevenueCat). Pago é só cosmético: tudo que muda a jogabilidade se compra com moedas do jogo.
+Jogo arcade hiper-casual: uma bola flutuante atravessa arcos de luz e cruza **10 galáxias reais** — cada uma com **10 sistemas** de **10 fases** (1.000 fases, 100 chefes) — até **TON 618**, onde a **Singularidade** guarda **11 camadas** com um Arconte cada: passagem com Ecos da história, conversa (a resposta muda a dificuldade) e a Prova. Velocidade que cresce fase a fase, fluxo e parallax, eventos e efeitos de fundo por galáxia, **Égide** (24 visuais) e **Jato** (17 chamas), 17 habilidades, 37 perks, **138 bolas** em 15 coleções, 39 rastros, 35 temas com cenários (cidade, montanhas, deserto, praia, selva, base lunar…), 125 modelos de missão, **198 troféus** na Sala de Troféus, rankings **Jornada %** e **Infinito**, temporadas. HTML5 + Canvas + JavaScript puro, pronto para web/PWA e Android/iOS via Capacitor, com anúncios (AdMob) e compras (RevenueCat). Pago é só cosmético: tudo que muda a jogabilidade se compra com moedas do jogo.
 
 ## Jogar online
 
@@ -18,7 +18,8 @@ e abra http://localhost:8090.
 
 ## Documentos
 
-- [docs/PLANO_V5.md](docs/PLANO_V5.md) — **versão atual (v5)**: velocidade sentida, Galáxia 10×10×10, Singularidade dos 11 Arcontes, ORBO Glyphs e dicas, 138 bolas, Égide e Jato, economia sem pagar para ganhar, rankings
+- [docs/PLANO_V5_1.md](docs/PLANO_V5_1.md) — **versão atual (v5.1)**: rastros, temas com cenário, efeitos por galáxia, Égide/Jato, preços, troca de controle, câmera lenta de adaptação, Sala de Troféus
+- [docs/PLANO_V5.md](docs/PLANO_V5.md) — v5: velocidade sentida, Galáxia 10×10×10, Singularidade dos 11 Arcontes, ORBO Glyphs e dicas, 138 bolas, Égide e Jato, economia sem pagar para ganhar, rankings
 - [docs/BACKEND_RANKING.md](docs/BACKEND_RANKING.md) — como ligar o ranking online (Supabase: SQL, regras, chave)
 - [docs/PLANO_V4.md](docs/PLANO_V4.md) — v4: fluxo e parallax, mapa TON 618, Portal/Núcleo/contratos, eventos, biomas, temporadas
 - [docs/PLANO_V3.md](docs/PLANO_V3.md) — v3/v3.1: marca ORBO, galáxia, música, sistema visual, arquitetura

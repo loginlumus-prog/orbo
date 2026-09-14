@@ -44,9 +44,14 @@ HR.Input = {
       else if (e.code === 'KeyE') { if (this.onAbility) this.onAbility(1); }
       else if (e.code === 'KeyF') { if (this.onAegis) this.onAegis(); }
       else if (e.code === 'KeyJ') { if (this.onJet) this.onJet(); }
-      else if (e.code === 'Space' || e.code === 'Enter') { if (this.onTap && !e.target.closest('button,input')) this.onTap(e); }
+      // Espaço é a tecla do jogo (começa, joga de novo, próxima fase): nunca aciona o botão que ficou com foco
+      else if (e.code === 'Space') { if (e.target.closest && e.target.closest('input,textarea,select')) return; e.preventDefault(); const ae = document.activeElement; if (ae && ae !== document.body && ae.blur) ae.blur(); if (this.onTap) this.onTap(e); }
+      else if (e.code === 'Enter') { if (this.onTap && !e.target.closest('button,input,textarea,select')) this.onTap(e); }
+      else if (e.code === 'KeyC') { if (this.onControl) this.onControl(); }
       else if (e.code === 'Escape') { if (this.onEscape) this.onEscape(); }
     });
+    // clique de mouse/toque não deixa o botão com foco (evita o Espaço repetir o último clique e mostrar a dica)
+    document.addEventListener('click', e => { const b = e.detail > 0 && e.target.closest && e.target.closest('button'); if (b) b.blur(); }, true);
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowUp' || e.code === 'KeyW') this.keys.up = false;
       else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.keys.down = false;

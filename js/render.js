@@ -610,14 +610,14 @@ HR.Render.Background = class {
       }
     } else if (fx === 'garden') {
       O.forEach(o => {
-        const x = this.wrap(o.x * W + sx * 0.06 + Math.sin(t * 0.8 + o.p) * 18, W), y = this.wrap(o.y * H - t * o.v * 16 + sy * 0.06, H);
+        const x = this.wrap(o.x * W + sx * 0.16 * o.v + Math.sin(t * 0.8 + o.p) * 18, W), y = this.wrap(o.y * H - t * o.v * 16 + sy * 0.16 * o.v, H);
         ctx.save(); ctx.translate(x, y); ctx.rotate(o.a + t * 0.6 * o.v);
         ctx.fillStyle = o.s > 1 ? 'rgba(170,255,140,0.28)' : 'rgba(255,240,170,0.35)';
         ctx.beginPath(); ctx.ellipse(0, 0, 2.2 + o.s * 3.2, 1.2 + o.s * 1.2, 0, 0, 6.283); ctx.fill(); ctx.restore();
       });
     } else if (fx === 'mist') {
       O.forEach((o, i) => {
-        const x = this.wrap(o.x * W * 1.6 + t * o.v * 12 + sx * 0.03, W * 1.6) - W * 0.3, y = o.y * H;
+        const x = this.wrap(o.x * W * 1.6 + sx * 0.05 * o.v, W * 1.6) - W * 0.3, y = this.wrap(o.y * H * 1.3 + sy * 0.05 * o.v, H * 1.3) - H * 0.15;
         ctx.save(); ctx.translate(x, y); ctx.scale(1, 0.28);
         const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 240 + i * 40); g.addColorStop(0, 'rgba(200,205,255,0.10)'); g.addColorStop(1, 'rgba(200,205,255,0)');
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 240 + i * 40, 0, 6.283); ctx.fill(); ctx.restore();
@@ -633,7 +633,7 @@ HR.Render.Background = class {
     } else if (fx === 'storm') {
       ctx.strokeStyle = 'rgba(210,225,255,0.16)'; ctx.lineWidth = 1.2;
       O.forEach(o => {
-        const x = this.wrap(o.x * W + t * o.v * 60 + sx * 0.1, W), y = this.wrap(o.y * H + t * o.v * 460, H);
+        const x = this.wrap(o.x * W + sx * 0.3 * o.v, W), y = this.wrap(o.y * H + t * o.v * 460 + sy * 0.3 * o.v, H);
         ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 16 + o.s * 6); ctx.stroke();
       });
       const cyc = 6.5, ph = (t + 2) % cyc, k = ph / 0.14;
@@ -683,11 +683,11 @@ HR.Render.Background = class {
       for (let k = 0; k < 12; k++) { const f = (k + (t * 0.9) % 1) / 12, y = hy + f * f * (H - hy); ctx.strokeStyle = 'rgba(76,240,255,' + (0.06 + f * 0.26).toFixed(3) + ')'; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
     } else if (fx === 'dust') {
       const hz = ctx.createLinearGradient(0, H * 0.45, 0, H); hz.addColorStop(0, 'rgba(255,120,60,0)'); hz.addColorStop(1, 'rgba(255,120,60,0.14)'); ctx.fillStyle = hz; ctx.fillRect(0, 0, W, H);
-      O.forEach(o => { const x = this.wrap(o.x * W - t * o.v * 150 + sx * 0.1, W + 40) - 20, y = this.wrap(o.y * H + Math.sin(t * 0.7 + o.p) * 22 + sy * 0.1, H); ctx.strokeStyle = 'rgba(255,175,125,' + (0.08 + o.s * 0.1).toFixed(3) + ')'; ctx.lineWidth = 0.8 + o.s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 8 + o.s * 16, y - 2); ctx.stroke(); });
+      O.forEach(o => { const x = this.wrap(o.x * W + sx * 0.4 * o.v, W + 40) - 20, y = this.wrap(o.y * H + Math.sin(t * 0.7 + o.p) * 22 + sy * 0.4 * o.v, H), dd = this.dir || { x: -1, y: 0 }, dl = 8 + o.s * 16; ctx.strokeStyle = 'rgba(255,175,125,' + (0.08 + o.s * 0.1).toFixed(3) + ')'; ctx.lineWidth = 0.8 + o.s; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - dd.x * dl, y - dd.y * dl); ctx.stroke(); });
     } else if (fx === 'sakura') {
-      O.forEach(o => { const x = this.wrap(o.x * W + t * 18 * o.v + Math.sin(t + o.p) * 24 + sx * 0.06, W), y = this.wrap(o.y * H + t * 34 * o.v + sy * 0.06, H); ctx.save(); ctx.translate(x, y); ctx.rotate(t * 1.4 * o.v + o.a); ctx.fillStyle = o.s > 1 ? 'rgba(255,183,213,0.55)' : 'rgba(255,140,190,0.45)'; ctx.beginPath(); ctx.ellipse(0, 0, 3 + o.s * 3, 1.6 + o.s * 1.4, 0, 0, 6.283); ctx.fill(); ctx.restore(); });
+      O.forEach(o => { const x = this.wrap(o.x * W + Math.sin(t + o.p) * 24 + sx * 0.18 * o.v, W), y = this.wrap(o.y * H + t * 34 * o.v + sy * 0.18 * o.v, H); ctx.save(); ctx.translate(x, y); ctx.rotate(t * 1.4 * o.v + o.a); ctx.fillStyle = o.s > 1 ? 'rgba(255,183,213,0.55)' : 'rgba(255,140,190,0.45)'; ctx.beginPath(); ctx.ellipse(0, 0, 3 + o.s * 3, 1.6 + o.s * 1.4, 0, 0, 6.283); ctx.fill(); ctx.restore(); });
     } else if (fx === 'snow') {
-      O.forEach(o => { const x = this.wrap(o.x * W + Math.sin(t * 0.8 + o.p) * 20 + sx * 0.08, W), y = this.wrap(o.y * H + t * (30 + o.v * 40) + sy * 0.08, H); ctx.fillStyle = 'rgba(255,255,255,' + (0.25 + o.s * 0.3).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(x, y, 0.8 + o.s * 1.8, 0, 6.283); ctx.fill(); });
+      O.forEach(o => { const x = this.wrap(o.x * W + Math.sin(t * 0.8 + o.p) * 20 + sx * 0.2 * o.v, W), y = this.wrap(o.y * H + t * (30 + o.v * 40) + sy * 0.2 * o.v, H); ctx.fillStyle = 'rgba(255,255,255,' + (0.25 + o.s * 0.3).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(x, y, 0.8 + o.s * 1.8, 0, 6.283); ctx.fill(); });
     } else if (fx === 'cosmos') {
       ctx.save(); ctx.translate(W / 2, H / 2); ctx.rotate(-0.55);
       const band = ctx.createLinearGradient(0, -140, 0, 140); band.addColorStop(0, 'rgba(160,140,255,0)'); band.addColorStop(0.5, 'rgba(210,190,255,0.13)'); band.addColorStop(1, 'rgba(160,140,255,0)');
@@ -762,7 +762,8 @@ HR.Render.Background = class {
         ctx.stroke();
         ctx.strokeStyle = 'rgba(220,245,255,0.09)'; ctx.lineWidth = 2; ctx.stroke();
       }
-    } else if (fx && fx !== 'ember') this.drawBiome(ctx, t, fx, sx, sy);
+    } else if (fx && this.drawFx) this.drawFx(ctx, t, fx, 1, false);
+    else if (fx && fx !== 'ember') this.drawBiome(ctx, t, fx, sx, sy);
     else if (fx === 'ember') {
       if (!this.embers) { this.embers = []; for (let i = 0; i < 44; i++) this.embers.push({ x: Math.random(), y: Math.random(), s: U.rand(1, 2.6), v: U.rand(0.02, 0.06), p: U.rand(0, 6.28) }); }
       this.embers.forEach(e => {
@@ -772,6 +773,7 @@ HR.Render.Background = class {
       });
       ctx.globalAlpha = 1;
     }
+    if (this.fx2 && this.drawFx) this.drawFx(ctx, t, this.fx2, 0.55, true);
     const kind = th.shapes;
     const sc = this.scroll;
     if (kind === 'orbs' || kind === 'nebula') {
@@ -824,6 +826,7 @@ HR.Render.Background = class {
       });
       ctx.globalAlpha = 1;
     }
+    if (this.drawScene) this.drawScene(ctx, t);
     this.drawFlowLayers(ctx, t);
     if (this.season && HR.Seasons) HR.Seasons.sprinkle(ctx, W, H, t, this.season.sprinkle);
     // vinheta
