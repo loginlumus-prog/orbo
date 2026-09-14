@@ -768,6 +768,7 @@ HR.Game = class {
     const B = HR.CONFIG.BALL, b = this.ball, st = HR.Store.data.settings, I = HR.Input, run = this.run;
     const U = this.uAxis(), V = this.vAxis();
     const canControl = this.state === 'playing' || this.state === 'ready' || this.state === 'transition';
+    let direct = false;
     if (run.autoT > 0 && this.state === 'playing' && !run.anomalyActive) {
       I.consumeDelta2();
       const next = this.rings.find(r => !r.resolved && r.x > b.x - 5);
@@ -781,17 +782,18 @@ HR.Game = class {
           b.tx = px * U.x + py * U.y; b.ty = px * V.x + py * V.y;
         }
       } else if (mode === 'stick') {
+        // v5.3: analógico direto: a inclinação vira a velocidade da bola na hora; ao soltar, para na hora
         const S = I.stick, m = Math.hypot(S.x, S.y);
-        let vt = 0;
+        let wu = 0, wv = 0;
         if (S.active && m > B.stickDead) {
-          vt = Math.pow(Math.min(1, (m - B.stickDead) / (1 - B.stickDead)), B.stickCurve) * B.stickSpeed * (st.sensitivity || 1);
-          const k = vt * dt / m;
-          b.tx += (S.x * U.x + S.y * U.y) * k; b.ty += (S.x * V.x + S.y * V.y) * k;
+          const vt = Math.pow(Math.min(1, (m - B.stickDead) / (1 - B.stickDead)), B.stickCurve) * B.stickSpeed * (st.sensitivity || 1);
+          wu = (S.x * U.x + S.y * U.y) / m * vt; wv = (S.x * V.x + S.y * V.y) / m * vt;
         }
-        if (I.keys.up || I.keys.down || I.keys.left || I.keys.right) vt = Math.max(vt, B.keySpeed);
-        // o alvo nunca foge da bola mais que o necessário: ao soltar, a bola para sem deslizar
-        const lead = B.stickLead + vt * B.damping / B.spring, lx = b.tx - b.x, ly = b.ty - b.y, ld = Math.hypot(lx, ly);
-        if (ld > lead) { b.tx = b.x + lx * lead / ld; b.ty = b.y + ly * lead / ld; }
+        const skx = (I.keys.right ? 1 : 0) - (I.keys.left ? 1 : 0), sky = (I.keys.down ? 1 : 0) - (I.keys.up ? 1 : 0);
+        if (skx || sky) { wu += (skx * U.x + sky * U.y) * B.keySpeed; wv += (skx * V.x + sky * V.y) * B.keySpeed; }
+        const resp = 1 - Math.exp(-B.stickResponse * dt);
+        b.vx += (wu - b.vx) * resp; b.vy += (wv - b.vy) * resp;
+        direct = true;
       } else {
         const g = (st.sensitivity || 1) * 1.4 / this.scale;
         b.tx += (d.dx * U.x + d.dy * U.y) * g;
@@ -804,13 +806,17 @@ HR.Game = class {
     b.ty = HR.U.clamp(b.ty, b.r, this.Lv - b.r);
     b.tx = this.clampU(b.tx);
     const K = B.spring, C = B.damping;
-    b.vx += ((b.tx - b.x) * K - b.vx * C) * dt;
-    b.vy += ((b.ty - b.y) * K - b.vy * C) * dt;
+    if (!direct) {
+      b.vx += ((b.tx - b.x) * K - b.vx * C) * dt;
+      b.vy += ((b.ty - b.y) * K - b.vy * C) * dt;
+    }
     const sp = Math.hypot(b.vx, b.vy);
     if (sp > B.maxVy) { b.vx *= B.maxVy / sp; b.vy *= B.maxVy / sp; }
     b.x += b.vx * dt; b.y += b.vy * dt;
-    if (b.y < b.r) { b.y = b.r; b.vy *= -0.3; } else if (b.y > this.Lv - b.r) { b.y = this.Lv - b.r; b.vy *= -0.3; }
-    const cu = this.clampU(b.x); if (cu !== b.x) { b.x = cu; b.vx *= -0.3; }
+    if (b.y < b.r) { b.y = b.r; b.vy *= direct ? 0 : -0.3; } else if (b.y > this.Lv - b.r) { b.y = this.Lv - b.r; b.vy *= direct ? 0 : -0.3; }
+    const cu = this.clampU(b.x); if (cu !== b.x) { b.x = cu; b.vx *= direct ? 0 : -0.3; }
+    // no analógico direto o alvo acompanha a bola (piloto automático ou outro controle começam de onde ela está)
+    if (direct) { b.tx = b.x; b.ty = b.y; }
     b.trail.push({ x: b.x, y: b.y, t: this.time });
     const heat = Math.min(1, run.combo / 20), maxLen = 22 + Math.round(heat * 16), maxAge = 0.4 + heat * 0.25;
     while (b.trail.length > maxLen || (b.trail.length && this.time - b.trail[0].t > maxAge)) b.trail.shift();
@@ -1248,6 +1254,7 @@ HR.Game = class {
       ctx.save(); ctx.translate(b.x, b.y + Math.sin(t * 3) * 2); ctx.rotate(-rot);
       HR.Render.drawBall(ctx, 0, 0, this.ballR(), this.skin, t, { vy: spd, sqAxis: sqAxisNow, alpha: b.alpha * (blink ? 0.45 : 1) * (ghost ? 0.5 : 1), shield: run.shields > 0, shields: run.shields, heat: run.combo >= 5 ? heat : 0, star: run.starT > 0 ? run.starT : 0, ending: run.powerEnding || 0 });
       ctx.restore();
+      if (this.drawPowerTimers) this.drawPowerTimers(ctx, t, rot);
       if (run.aegisT > 0 && HR.Render.drawAegis) HR.Render.drawAegis(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, HR.Gear.current('aegis'), t, run.aegisT);
       if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) { ctx.strokeStyle = 'rgba(162,155,254,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
     }

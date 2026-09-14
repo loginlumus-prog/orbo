@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '5.2.0',
+  VERSION: '5.3.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -27,9 +27,10 @@ HR.CONFIG = {
     maxVy: 2600,      // velocidade máxima (px/s)
     keySpeed: 1000,   // velocidade com teclado (px/s)
     stickSpeed: 1150, // analógico no máximo (px/s)
-    stickDead: 0.12,  // zona morta do analógico
-    stickCurve: 1.35, // curva de resposta (1 = linear)
-    stickLead: 40     // folga do alvo à frente da bola ao soltar
+    stickDead: 0.07,  // zona morta do analógico
+    stickCurve: 1.12, // curva de resposta (1 = linear)
+    stickLead: 40,    // (v5.1) folga do alvo; o analógico direto da v5.3 não usa
+    stickResponse: 32 // analógico direto: quão rápido a bola chega à velocidade pedida (1/s; 32 ≈ 90% em 70 ms)
   },
 
   RUN: {
@@ -100,7 +101,7 @@ HR.CONFIG = {
   CORE: { maxLevel: 30, cost(n) { return 120 + 16 * n * n + 50 * n; }, coinMul: 0.02, forgive: 0.008, perfect: 0.005, xp: 0.01, shieldAt: [5, 15, 25], startShieldAt: 10, lifeAt: 20, pickupAt: 30 },
   AUTOPERK: { afterOffers: 0 },
   // câmera lenta de adaptação (v5.1): escala mínima do tempo e duração (s) da volta à velocidade normal
-  ADAPT: { aegis: { min: 0.3, dur: 1.2 }, hit: { min: 0.42, dur: 1.0 }, miss: { min: 0.5, dur: 0.9 }, streak: { min: 0.58, dur: 0.8 }, perk: { min: 0.35, dur: 1.3 }, autoperk: { min: 0.62, dur: 0.7 }, turn: { min: 0.35, dur: 1.4 } },
+  ADAPT: { powerEnd: { min: 0.5, dur: 1.1 }, aegis: { min: 0.3, dur: 1.2 }, hit: { min: 0.42, dur: 1.0 }, miss: { min: 0.5, dur: 0.9 }, streak: { min: 0.58, dur: 0.8 }, perk: { min: 0.35, dur: 1.3 }, autoperk: { min: 0.62, dur: 0.7 }, turn: { min: 0.35, dur: 1.4 } },
   // Eventos (v4): mudam a dinâmica no meio da partida — ver docs/PLANO_V4.md §5
   EVENTS: {
     asteroids: { dur: 9,  color: '#ff9f43', icon: 'skull', coins: 15, score: 3, every: 0.2 },
