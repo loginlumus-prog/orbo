@@ -80,7 +80,7 @@ HR.Game = class {
     const cw = this.canvas.clientWidth, ch = this.canvas.clientHeight;
     if (!cw || !ch) return;
     this.cw = cw; this.ch = ch;
-    this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     this.canvas.width = Math.round(cw * this.dpr); this.canvas.height = Math.round(ch * this.dpr);
     this.scale = ch / this.H; this.W = cw / this.scale;
     this.ctx.setTransform(this.scale * this.dpr, 0, 0, this.scale * this.dpr, 0, 0);
@@ -661,12 +661,20 @@ HR.Game = class {
     }
     if (run.invuln > 0) run.invuln -= sdt;
     for (const r of this.rings) { if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 3); if (r.shatterT) r.shatterT += dt; }
+    // arco que sai da tela sem ter sido resolvido (ex.: passou durante a animação de morte) conta como erro
+    if (!this.demo) for (const r of this.rings) if (!r.resolved && r.x <= -r.r * 2 - 60) { r.resolved = true; r.missed = true; this.ringResolved(r); }
     this.rings = this.rings.filter(r => r.x > -r.r * 2 - 60 && !(r.shatterT > 0.55));
     this.obstacles = this.obstacles.filter(o => o.x > -80 && !o.dead);
     this.pickups = this.pickups.filter(p => p.x > -60 && !p.taken);
     if (s === 'playing' && this.pendingDir && !this.rings.length) { this.startTransition(this.pendingDir); return; }
     if (s === 'playing' && this.pendingEvent && !this.pendingDir && this.rings.every(r => r.resolved)) { this.startEvent(this.pendingEvent); return; }
     if (s === 'playing' || s === 'ready') this.fill();
+    // rede de segurança: fase sem arcos pendentes que não terminou é encerrada (nenhuma fase fica presa)
+    const Lw = run.level;
+    if (s === 'playing' && Lw && !run.levelDone && !this.event && !this.pendingEvent && !this.pendingDir && !this.trans && run.ringsSpawned >= Lw.rings && this.rings.every(r => r.resolved)) {
+      run.stuckT = (run.stuckT || 0) + dt;
+      if (run.stuckT > 1.5) { run.ringsResolved = Math.max(run.ringsResolved, Lw.rings - 1); this.ringResolved(); HR.Analytics.log('level_watchdog', { id: Lw.id }); }
+    } else run.stuckT = 0;
     if (this.perkTimer > 0 && s === 'playing') { this.perkTimer -= dt; if (this.perkTimer <= 0) this.openPerks(); }
     if (this.levelEndTimer > 0 && s === 'playing') { this.levelEndTimer -= dt; if (this.levelEndTimer <= 0) this.finishRun(this.levelSuccess); }
     this.particles.update(dt);
@@ -919,6 +927,8 @@ HR.Game = class {
   }
   ringResolved(r) {
     const run = this.run, L = run.level;
+    // cada arco conta uma única vez (passou, errou, bateu ou saiu da tela)
+    if (r) { if (r.counted) return; r.counted = true; }
     if (r && r.event) { this.onEventRing(r); return; }
     run.ringsResolved++;
     if (L && L.events && !this.event && !this.pendingEvent) { for (let i = 0; i < L.events.length; i++) { const ev = L.events[i]; if (!run.eventsFired[i] && run.ringsResolved >= ev.at && run.ringsResolved < L.rings - 2) { if (this.queueEvent(ev.id)) run.eventsFired[i] = true; break; } } }
@@ -1033,6 +1043,8 @@ HR.Game = class {
   damage(src, bypass) {
     const run = this.run, R = HR.CONFIG.RUN, P = this.particles;
     if (src) { src.resolved = true; src.hit = true; src.flash = 1; }
+    // arco normal batido também conta para o fim da fase (antes a fase ficava presa depois de uma batida)
+    if (src && !src.event && src.type !== 'anomaly' && this.rings.includes(src)) this.ringResolved(src);
     run.combo = 0; run.hits++; run.cleanStreak = 0; run.noMissStreak = 0; run.angelStreak = 0; this.breakFlow(); this.adapt('hit');
     if (this.event && src) run.eventHits++;
     if (src && src.type === 'anomaly') { P.text(this.ball.x, this.ball.y - 64, HR.t('anomaly_hit'), '#ff3d2e', 24); this.ringResolved(); }
@@ -1255,6 +1267,7 @@ HR.Game = class {
   frame_(ts) {
     const dt = Math.min(0.05, Math.max(0, (ts - (this.last || ts)) / 1000));
     this.last = ts;
+    if (HR.Perf) HR.Perf.sample(dt, this);
     if (this.canvas.clientWidth !== this.cw || this.canvas.clientHeight !== this.ch) { this.resize(); if (HR.UI && HR.UI.layoutShowcase) HR.UI.layoutShowcase(); }
     try { this.update(dt); this.render(); }
     catch (e) { console.error('[game loop]', e); }

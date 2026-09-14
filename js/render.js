@@ -773,7 +773,7 @@ HR.Render.Background = class {
       });
       ctx.globalAlpha = 1;
     }
-    if (this.fx2 && this.drawFx) this.drawFx(ctx, t, this.fx2, 0.55, true);
+    if (this.fx2 && this.drawFx && (!HR.Perf || HR.Perf.fx2())) this.drawFx(ctx, t, this.fx2, 0.55, true);
     const kind = th.shapes;
     const sc = this.scroll;
     if (kind === 'orbs' || kind === 'nebula') {
@@ -842,7 +842,7 @@ HR.Render.Particles = class {
   clear() { this.list = []; }
   burst(o) {
     const U = RU();
-    const n = o.n || 12;
+    const n = Math.min(o.n || 12, Math.max(0, (HR.Perf ? HR.Perf.particleCap() : 900) - this.list.length));
     for (let i = 0; i < n; i++) {
       const a = (o.angle == null ? Math.random() * Math.PI * 2 : o.angle + U.rand(-(o.spread || 0.5), o.spread || 0.5));
       const sp = U.rand(o.speed * 0.4, o.speed);

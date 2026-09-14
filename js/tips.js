@@ -64,7 +64,7 @@ window.HR = window.HR || {};
     if (el && el.hasAttribute('data-tip-tap')) { e.stopPropagation(); if (cur === el) hide(); else show(el, 2600); }
   }, true);
   document.addEventListener('contextmenu', e => { if (find(e)) e.preventDefault(); });
-  document.addEventListener('focusin', e => { const el = find(e); if (el && e.target.matches && e.target.matches(':focus-visible')) show(el); });
+  document.addEventListener('focusin', e => { const el = find(e); let fv = false; try { fv = !!(e.target.matches && e.target.matches(':focus-visible')); } catch (_) { fv = false; } if (el && fv) show(el); });
   document.addEventListener('focusout', () => hide());
   window.addEventListener('scroll', () => hide(), true);
   window.addEventListener('resize', () => hide());

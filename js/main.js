@@ -13,6 +13,7 @@
 
   async function boot() {
     HR.Store.load();
+    if (HR.Perf) HR.Perf.init();
     if (HR.Campaign && HR.Campaign.backfill) HR.Campaign.backfill();
     const s = HR.Store.data.settings;
     HR.setLang(s.lang || HR.detectLang());

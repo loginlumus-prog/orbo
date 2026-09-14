@@ -38,3 +38,10 @@ Implementado e verificado no navegador (console limpo):
 Ajustes pedidos depois (2026-09-14):
 - Menu: órbita em dois arcos (4 botões de cada lado) distribuídos pela altura da tela, botões menores em telas baixas e nomes em etiquetas que ficam sempre por cima (`HR.UI.layoutOrbit`).
 - Mapa da Galáxia: TON 618 com lente de bordas suaves (sem cortes), matéria espiralando no plano do disco (no lugar dos traços retos), galáxia-mãe girando devagar, nebulosas que derivam e respiram, poeira orbitando, estrelas cadentes e brilho pulsando nas galáxias abertas; fundo um pouco mais claro.
+
+## Revisão geral (2026-09-14)
+
+- **Fase presa depois de bater (corrigido):** um arco normal batido era marcado como resolvido mas não contava para o fim da fase; com escudo, Égide, vida ou continuar, a fase nunca terminava. Agora todo arco conta uma única vez (`ringResolved` com `r.counted`), arcos que saem da tela sem resolução (ex.: durante a animação de morte) contam como erro, e uma rede de segurança encerra a fase se não houver arco pendente (`level_watchdog` no Analytics).
+- **Teste automático:** robô jogando com erros, batidas, mortes, continuações e recusas em 39 partidas (fases normais, chefes de sistema e de galáxia, passagens e Provas da Singularidade, Infinito, Treino, perfil novo): todas terminaram, rede de segurança nunca precisou agir, console limpo.
+- **Rodar liso em qualquer aparelho:** qualidade gráfica automática (`js/perf.js`): começa pela memória/núcleos do aparelho, baixa a resolução e desliga o segundo efeito se a partida travar; opção Auto/Alta/Leve nos Ajustes; teto de partículas por nível.
+- **Compatibilidade:** `:focus-visible` protegido em navegadores antigos; fundos simples onde `color-mix()` não existe; nenhum recurso de JavaScript recente sem proteção.
