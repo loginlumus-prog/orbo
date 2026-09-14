@@ -247,7 +247,25 @@ HR.UI = {
     const rad = HR.U.clamp(R * 0.37, 30, 56);
     scene.style.setProperty('--R', R.toFixed(0) + 'px');
     scene.style.setProperty('--ball-d', (rad * 2).toFixed(0) + 'px');
+    this.layoutOrbit(scene, sr);
     this.game.setShowcase((sr.left + sr.width / 2 - cr.left) / this.game.scale, (sr.top + sr.height / 2 - cr.top) / this.game.scale, rad / this.game.scale);
+  },
+  // v5.1: 4 botões de cada lado, distribuídos de cima a baixo num arco (elipse); tamanho se adapta à altura
+  layoutOrbit(scene, sr) {
+    const btns = HR.U.$$('.orbit-btn', scene); if (!btns.length) return;
+    const left = [], right = [], sin = o => Math.sin(o.a * Math.PI / 180);
+    btns.forEach(b => { const a = parseFloat(b.style.getPropertyValue('--a')) || 0, n = ((a % 360) + 360) % 360; (n > 90 && n < 270 ? left : right).push({ b, a: n }); });
+    left.sort((p, q) => sin(p) - sin(q)); right.sort((p, q) => sin(p) - sin(q));
+    const rows = Math.max(left.length, right.length), step = Math.min(96, (sr.height - 14) / rows);
+    const size = step >= 84 ? 62 : step >= 70 ? 54 : 46;
+    const Ry = step * rows / 2 + step * 0.25, Rx = Math.min(sr.width / 2 - size / 2 - 12, 190);
+    scene.classList.add('orbit2'); scene.classList.toggle('orbit-compact', step < 70);
+    scene.style.setProperty('--Rx', Rx.toFixed(0) + 'px'); scene.style.setProperty('--Ry', Ry.toFixed(0) + 'px'); scene.style.setProperty('--ob', size + 'px');
+    const place = (list, sign) => list.forEach((o, i) => {
+      const y = (i - (list.length - 1) / 2) * step, k = Math.sqrt(Math.max(0, 1 - (y / Ry) * (y / Ry)));
+      o.b.style.setProperty('--x', (sign * Rx * k).toFixed(1) + 'px'); o.b.style.setProperty('--y', (y - 8).toFixed(1) + 'px');
+    });
+    place(left, -1); place(right, 1);
   },
   showcaseList() { return HR.CONFIG.SKINS.filter(s => (!['pack', 'iap', 'reward', 'archon'].includes(s.cur) && !s.season) || HR.Unlocks.owned('skins', s.id)); },
   cycleSkin(dir) {

@@ -36,18 +36,12 @@
     const U = HR.U, cx = geo.cx, cy = geo.cy;
     let seed = 777; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
     const g = ctx.createRadialGradient(cx, cy, 20, cx, cy, Math.max(W, H) * 0.9);
-    g.addColorStop(0, '#1a2258'); g.addColorStop(0.35, '#0d1335'); g.addColorStop(1, '#03050d');
+    g.addColorStop(0, '#222c6e'); g.addColorStop(0.35, '#111942'); g.addColorStop(1, '#050814');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     // poeira quente em volta do centro (elíptica) e dois filamentos espirais bem discretos
     ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.72);
     const dg = ctx.createRadialGradient(0, 0, 30, 0, 0, 330); dg.addColorStop(0, 'rgba(255,220,170,0.18)'); dg.addColorStop(0.45, 'rgba(255,150,120,0.07)'); dg.addColorStop(1, 'rgba(120,90,200,0)');
     ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(0, 0, 330, 0, 6.283); ctx.fill(); ctx.restore();
-    ctx.lineCap = 'round';
-    for (let m = 0; m < 2; m++) {
-      ctx.strokeStyle = 'rgba(180,200,255,0.05)'; ctx.lineWidth = 42; ctx.beginPath();
-      for (let k = 0; k <= 40; k++) { const f = k / 40, rr = 70 + f * Math.max(W, H) * 0.75, an = m * Math.PI + f * 2.4 + 0.6; const x = cx + Math.cos(an) * rr, y = cy + Math.sin(an) * rr * 0.72; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
-      ctx.stroke();
-    }
     // nebulosa na cor de cada galáxia (em volta do nó)
     geo.pts.forEach((p, i) => {
       const col = HR.REGIONS[i].accent;
@@ -64,7 +58,7 @@
       if (big) { ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke(); }
     }
     ctx.globalAlpha = 1;
-    const vg = ctx.createRadialGradient(cx, cy, H * 0.3, cx, cy, H * 0.85); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+    const vg = ctx.createRadialGradient(cx, cy, H * 0.3, cx, cy, H * 0.85); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.36)');
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     return { W, H, cv };
   }
@@ -92,7 +86,8 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (!gxStatic || gxStatic.W !== W || gxStatic.H !== H) gxStatic = buildStatic(W, H, geo);
     ctx.drawImage(gxStatic.cv, 0, 0, W, H);
-    if (!gxTw || gxTw.W !== W || gxTw.H !== H) { gxTw = { W, H, list: [] }; for (let i = 0; i < 70; i++) gxTw.list.push({ x: Math.random() * W, y: Math.random() * H, s: U.rand(0.6, 1.6), p: U.rand(0, 6.28), v: U.rand(0.6, 1.6) }); }
+    if (!gxTw || gxTw.W !== W || gxTw.H !== H) { gxTw = { W, H, list: [] }; for (let i = 0; i < 130; i++) gxTw.list.push({ x: Math.random() * W, y: Math.random() * H, s: U.rand(0.6, 1.6), p: U.rand(0, 6.28), v: U.rand(0.6, 1.6) }); }
+    drawAlive(ctx, geo, W, H, t);
     ctx.fillStyle = '#fff';
     gxTw.list.forEach(st => { ctx.globalAlpha = 0.3 + 0.55 * (0.5 + 0.5 * Math.sin(t * st.v + st.p)); ctx.beginPath(); ctx.arc(st.x, st.y, st.s, 0, 6.283); ctx.fill(); });
     ctx.globalAlpha = 1;
@@ -115,28 +110,95 @@
     geo.pts.forEach((p, i) => { const st = C.regionState(i); drawMiniGalaxy(ctx, p.x, p.y, 17, HR.REGIONS[i].accent, t, i, st === 'locked' ? 'locked' : (i === cur ? 'current' : st)); });
     drawBlackHole(ctx, geo, W, H, t, dpr, gxStatic.cv);
   }
+  // mapa vivo (v5.1): nebulosas que respiram e derivam, a galáxia-mãe de TON 618 girando devagar,
+  // poeira orbitando o centro, estrelas cadentes e brilho que respira nas galáxias abertas
+  let gxArms = null;
+  function buildArms(W, H) {
+    const R = Math.max(W, H) * 0.62, S = Math.ceil(R * 2), cv = document.createElement('canvas');
+    cv.width = S; cv.height = S;
+    const ctx = cv.getContext('2d'); ctx.translate(S / 2, S / 2);
+    let seed = 4242; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let arm = 0; arm < 2; arm++) {
+      // braço de poeira suave: nasce no brilho do centro e some para fora (sem ponta cortada)
+      for (let k = 0; k < 90; k++) {
+        const f = k / 90, rr = 34 + f * R * 0.92, an = arm * Math.PI + f * 4.2, w = 26 + f * 70, a = 0.09 * Math.sin(Math.min(1, f * 3) * Math.PI / 2) * (1 - f);
+        const x = Math.cos(an) * rr, y = Math.sin(an) * rr, g = ctx.createRadialGradient(x, y, 0, x, y, w);
+        g.addColorStop(0, 'rgba(190,200,255,' + a.toFixed(3) + ')'); g.addColorStop(1, 'rgba(190,200,255,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, w, 0, 6.283); ctx.fill();
+      }
+      // estrelas jovens ao longo do braço
+      for (let k = 0; k < 140; k++) {
+        const f = rnd(), rr = 40 + f * R * 0.9, an = arm * Math.PI + f * 4.2 + (rnd() - 0.5) * 0.5;
+        ctx.globalAlpha = (0.25 + rnd() * 0.5) * (1 - f * 0.7); ctx.fillStyle = rnd() < 0.3 ? '#ffd9b0' : rnd() < 0.5 ? '#bcd4ff' : '#ffffff';
+        ctx.beginPath(); ctx.arc(Math.cos(an) * rr + (rnd() - 0.5) * 16, Math.sin(an) * rr + (rnd() - 0.5) * 16, 0.5 + rnd() * 1.1, 0, 6.283); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    return { W, H, cv, S };
+  }
+  function drawAlive(ctx, geo, W, H, t) {
+    const U = HR.U, cx = geo.cx, cy = geo.cy, M = Math.max(W, H);
+    if (!gxArms || gxArms.W !== W || gxArms.H !== H) gxArms = buildArms(W, H);
+    if (!gxTw.neb) { const cols = ['#5b6cff', '#ff5ecf', '#4cf0ff', '#a29bfe', '#ff9f43', '#35e29a']; gxTw.neb = cols.map(c => ({ x: 0.1 + Math.random() * 0.8, y: 0.1 + Math.random() * 0.8, r: 0.22 + Math.random() * 0.2, c, p: Math.random() * 6.28, v: 0.05 + Math.random() * 0.08 })); }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    gxTw.neb.forEach(n => {
+      const x = (n.x + Math.sin(t * n.v + n.p) * 0.04) * W, y = (n.y + Math.cos(t * n.v * 0.8 + n.p) * 0.03) * H, r = n.r * M * (1 + 0.06 * Math.sin(t * 0.4 + n.p)), a = 0.05 + 0.025 * Math.sin(t * 0.5 + n.p * 2);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, U.rgba(n.c, a)); g.addColorStop(1, U.rgba(n.c, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    });
+    ctx.restore();
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.72); ctx.rotate(t * 0.018); ctx.drawImage(gxArms.cv, -gxArms.S / 2, -gxArms.S / 2); ctx.restore();
+    if (!gxTw.dust) { gxTw.dust = []; for (let i = 0; i < 90; i++) gxTw.dust.push({ r: 60 + Math.pow(Math.random(), 0.8) * M * 0.55, a: Math.random() * 6.28, v: 0.6 + Math.random() * 0.8, s: 0.5 + Math.random() * 1.2, c: Math.random() }); }
+    gxTw.dust.forEach(d => {
+      const an = d.a + t * d.v * 9 / d.r, x = cx + Math.cos(an) * d.r, y = cy + Math.sin(an) * d.r * 0.72;
+      if (x < -4 || x > W + 4 || y < -4 || y > H + 4) return;
+      ctx.globalAlpha = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2 * d.v + d.a * 5)); ctx.fillStyle = d.c < 0.3 ? '#ffd9b0' : d.c < 0.55 ? '#bcd4ff' : '#ffffff';
+      ctx.beginPath(); ctx.arc(x, y, d.s, 0, 6.283); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    for (let i = 0; i < 2; i++) {
+      const per = 5.5 + i * 2.3, tt = t + i * 3.1, k = (tt % per) / 0.9; if (k >= 1) continue;
+      const sd = Math.floor(tt / per) * 13 + i, h1 = Math.abs(Math.sin(sd * 12.9898) * 43758.5453) % 1, h2 = Math.abs(Math.sin(sd * 78.233) * 12543.21) % 1;
+      const L = 90, dx = -0.8, dy = 0.6, x = W * (0.15 + h1 * 0.7) + dx * k * 160, y = H * (0.05 + h2 * 0.4) + dy * k * 160;
+      const g = ctx.createLinearGradient(x, y, x - dx * L, y - dy * L); g.addColorStop(0, 'rgba(255,255,255,' + (0.8 * (1 - k)).toFixed(3) + ')'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = g; ctx.lineWidth = 1.6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - dx * L, y - dy * L); ctx.stroke();
+    }
+    geo.pts.forEach((p, i) => {
+      if (HR.Campaign.regionState(i) === 'locked') return;
+      const col = HR.REGIONS[i].accent, r = 70 + 10 * Math.sin(t * 0.9 + i), g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+      g.addColorStop(0, U.rgba(col, 0.1 + 0.05 * Math.sin(t * 1.3 + i))); g.addColorStop(1, U.rgba(col, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.283); ctx.fill();
+    });
+  }
   // TON 618: lente gravitacional (a própria imagem redesenhada em coroas com zoom e giro), disco de acreção em dois
   // planos com Doppler (lado que vem até nós mais claro), anel de fótons, sombra com borda azulada, partículas caindo.
   function drawBlackHole(ctx, geo, W, H, t, dpr, img) {
     const U = HR.U, cx = geo.cx, cy = geo.cy;
-    const lens = [[30, 48, 1.28, 0.06], [48, 68, 1.15, -0.04], [68, 92, 1.07, 0.02]];
-    lens.forEach(([r0, r1, z, rot], i) => {
-      ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r1, 0, 6.283); ctx.arc(cx, cy, r0, 0, 6.283, true); ctx.clip();
-      ctx.translate(cx, cy); ctx.rotate(t * rot + i * 0.4); ctx.scale(z, z); ctx.translate(-cx, -cy);
-      ctx.drawImage(img, 0, 0, W * dpr, H * dpr, 0, 0, W, H);
-      ctx.restore();
-    });
+    const LR = 100, ls = Math.ceil(LR * 2 * dpr);
+    const lens = gxTw.lens || (gxTw.lens = document.createElement('canvas'));
+    if (lens.width !== ls) { lens.width = ls; lens.height = ls; }
+    const lc = lens.getContext('2d');
+    lc.setTransform(1, 0, 0, 1, 0, 0); lc.globalCompositeOperation = 'source-over'; lc.clearRect(0, 0, ls, ls);
+    lc.setTransform(dpr, 0, 0, dpr, 0, 0); lc.translate(LR, LR); lc.rotate(t * 0.05); lc.scale(1.22, 1.22);
+    lc.drawImage(img, 0, 0, W * dpr, H * dpr, -cx, -cy, W, H);
+    lc.setTransform(1, 0, 0, 1, 0, 0); lc.globalCompositeOperation = 'destination-in';
+    const lm = lc.createRadialGradient(ls / 2, ls / 2, 0, ls / 2, ls / 2, ls / 2);
+    lm.addColorStop(0, 'rgba(0,0,0,0)'); lm.addColorStop(0.26, 'rgba(0,0,0,0)'); lm.addColorStop(0.42, 'rgba(0,0,0,0.85)'); lm.addColorStop(0.68, 'rgba(0,0,0,0.45)'); lm.addColorStop(1, 'rgba(0,0,0,0)');
+    lc.fillStyle = lm; lc.fillRect(0, 0, ls, ls); lc.globalCompositeOperation = 'source-over';
+    ctx.drawImage(lens, cx - LR, cy - LR, LR * 2, LR * 2);
     const glow = ctx.createRadialGradient(cx, cy, 20, cx, cy, 110);
     const pulse = 0.5 + 0.5 * Math.sin(t * 1.3);
     glow.addColorStop(0, 'rgba(255,225,170,' + (0.34 + pulse * 0.1).toFixed(3) + ')'); glow.addColorStop(0.5, 'rgba(255,150,90,0.11)'); glow.addColorStop(1, 'rgba(255,150,90,0)');
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, 110, 0, 6.283); ctx.fill();
-    if (!gxTw.fall) { gxTw.fall = []; for (let i = 0; i < 26; i++) gxTw.fall.push({ a: U.rand(0, 6.28), p: U.rand(0, 1), v: U.rand(0.5, 1.2) }); }
+    if (!gxTw.fall) { gxTw.fall = []; for (let i = 0; i < 34; i++) gxTw.fall.push({ a: U.rand(0, 6.28), p: U.rand(0, 1), v: U.rand(0.5, 1.2), w: U.rand(0.6, 1.4) }); }
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.32); ctx.lineCap = 'round';
     gxTw.fall.forEach(f => {
-      const k = (t * 0.09 * f.v + f.p) % 1, rr = 118 - k * 90, an = f.a + k * 3.2 + t * 0.3;
-      const x = cx + Math.cos(an) * rr, y = cy + Math.sin(an) * rr * 0.9, fade = Math.min(1, (rr - 28) / 12);
-      ctx.strokeStyle = 'rgba(255,235,200,' + (0.15 + k * 0.55 * fade).toFixed(3) + ')'; ctx.lineWidth = 1 + k;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx + Math.cos(an - 0.12) * (rr + 4), cy + Math.sin(an - 0.12) * (rr + 4) * 0.9); ctx.stroke();
+      const k = (t * 0.07 * f.v + f.p) % 1, rr = 150 - k * 118, an = f.a + k * 5 + t * 0.25, fade = Math.min(1, (rr - 30) / 16) * Math.sin(k * Math.PI);
+      if (fade <= 0) return;
+      ctx.strokeStyle = 'rgba(255,' + Math.round(210 - k * 60) + ',' + Math.round(160 - k * 80) + ',' + (0.5 * fade).toFixed(3) + ')'; ctx.lineWidth = f.w * (0.6 + k * 1.4);
+      ctx.beginPath(); ctx.ellipse(0, 0, rr, rr * 0.34, 0, an, an + 0.18 + k * 0.25); ctx.stroke();
     });
+    ctx.restore();
     const tilt = -0.32, RX = 66, RY = 20;
     const disc = (front) => {
       ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt);

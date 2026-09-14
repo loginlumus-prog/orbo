@@ -109,3 +109,12 @@
 .tp-reward .i { width: 13px; height: 13px; }
 @keyframes tp-in { from { transform: translateY(-30px) scale(0.92); opacity: 0; } }
 @keyframes tp-out { to { transform: translateY(-20px); opacity: 0; } }
+
+/* ---------- menu: órbita em dois arcos (nomes sempre visíveis) ---------- */
+.scene.orbit2 .orbit-btn { left: calc(50% + var(--x, 0px)); top: calc(50% + var(--y, 0px)); width: var(--ob); height: var(--ob); margin: calc(var(--ob) / -2) 0 0 calc(var(--ob) / -2); transform: none; }
+.scene.orbit2 .orbit-line { width: calc(var(--Rx) * 2); height: calc(var(--Ry) * 2); }
+.scene.orbit2 .ob-circle .ic { width: calc(var(--ob) * 0.42); height: calc(var(--ob) * 0.42); }
+.scene.orbit2 .ob-label { z-index: 5; margin-top: 5px; padding: 2px 8px 3px; border-radius: 99px; color: #c9d3ee; text-shadow: none; background: rgba(6,10,26,0.74); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.35); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.scene.orbit2 .orbit-btn.glow .ob-label { color: var(--gold); box-shadow: inset 0 0 0 1px rgba(255,207,74,0.45), 0 2px 8px rgba(0,0,0,0.35); }
+.scene.orbit2 .orbit-btn .badge { z-index: 6; }
+.scene.orbit-compact .ob-label { margin-top: 3px; padding: 1px 6px 2px; font-size: 8px; letter-spacing: 0.6px; }

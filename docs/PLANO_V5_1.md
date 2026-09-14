@@ -34,3 +34,7 @@ Implementado e verificado no navegador (console limpo):
 - Escolha automática: `AUTOPERK.afterOffers = 0` (todos os poderes na hora).
 - Conquistas: 198 troféus (44 novos em Compras, Chefes e Feitos), Sala de Troféus com medalhas bronze → diamante (`js/ui-trophies.js`), aviso de troféu, botões Conquistas e Coleção no menu, aba Itens na coleção.
 - Estrelas ganhas sólidas; Espaço começa, continua, joga de novo e segue para a próxima fase.
+
+Ajustes pedidos depois (2026-09-14):
+- Menu: órbita em dois arcos (4 botões de cada lado) distribuídos pela altura da tela, botões menores em telas baixas e nomes em etiquetas que ficam sempre por cima (`HR.UI.layoutOrbit`).
+- Mapa da Galáxia: TON 618 com lente de bordas suaves (sem cortes), matéria espiralando no plano do disco (no lugar dos traços retos), galáxia-mãe girando devagar, nebulosas que derivam e respiram, poeira orbitando, estrelas cadentes e brilho pulsando nas galáxias abertas; fundo um pouco mais claro.
