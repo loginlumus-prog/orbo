@@ -13,8 +13,24 @@
     const hud = $('#screen-hud'); if (!hud) return null;
     call = HR.U.el('div', 'pw-call', '<span class="pc-ic"></span><span class="pc-main"><b></b><small></small></span><span class="pc-sec"></span>');
     hud.appendChild(call);
+    placeCall(call);
     return call;
   }
+  // o aviso fica logo abaixo dos círculos de tempo (nunca por cima deles)
+  function placeCall(el) {
+    const host = $('#hud-powers'); if (!el || !host) return;
+    el.style.top = '';
+    const base = parseFloat(getComputedStyle(el).top) || 0;
+    if (host.childElementCount) el.style.top = Math.max(base, host.offsetTop + host.offsetHeight + 12) + 'px';
+  }
+
+  // avisos rápidos durante a partida vão para o canto direito (não cobrem pontuação nem fase)
+  const origToast = HR.UI.toast;
+  HR.UI.toast = function () {
+    const th = document.getElementById('toast-host');
+    if (th) th.classList.toggle('ingame', this.current === 'hud');
+    return origToast.apply(this, arguments);
+  };
 
   function powerCall(info) {
     const d = info && info.def; if (!d) return;
@@ -62,11 +78,13 @@
         el.innerHTML = '<span class="hp-ic">' + HR.icon(p[1]) + '</span><span class="hp-name">' + HR.t(p[3]) + '</span><i class="hp-bar"><span></span></i><b class="hp-sec"></b>';
         host.appendChild(el); this.powerMax[p[0]] = run[p[0]];
       });
+      if (call) placeCall(call);
     }
     active.forEach(p => {
       const el = host.querySelector('[data-k="' + p[0] + '"]'); if (!el) return;
       const v = run[p[0]], mx = Math.max(this.powerMax[p[0]] || 0, v); this.powerMax[p[0]] = mx;
       el.querySelector('.hp-bar span').style.width = (v / mx * 100).toFixed(0) + '%';
+      el.style.setProperty('--p', (v / mx).toFixed(3));
       const se = el.querySelector('.hp-sec'), txt = String(Math.ceil(v)); if (se.textContent !== txt) se.textContent = txt;
       el.classList.toggle('ending', p[0] === 'jetLeft' ? v <= 2 : v < 2.5);
     });
