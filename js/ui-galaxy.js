@@ -236,22 +236,22 @@
       const isCur = i === cur && st !== 'locked';
       const gate = st === 'locked' && C.isRegionUnlocked(i - 1) ? C.gate(i) : null;
       const tipD = st === 'locked' ? (gate ? HR.t('portal') + ' ' + gate.open + '/5' : HR.t('locked')) : HR.t('galaxy_progress', { a: C.levelsClearedIn(i), b: 100, c: sys, d: 10 }) + ' · ' + HR.t('stars_of', { a: stars, b: 300 });
-      h += '<button type="button" class="gx-node is-' + st + (isCur ? ' is-current' : '') + (LABEL_TOP[i] ? ' lbl-top' : '') + '" data-region="' + i + '" style="left:' + p.x + 'px;top:' + p.y + 'px;' + accentVars(R.accent) + '" aria-label="' + esc(galName(R)) + '"' + HR.tip(galName(R) + ' · ' + HR.t('gal_' + R.gal + '_c'), tipD) + ' data-tip-c="' + R.accent + '">';
+      h += '<button type="button" class="gx-node is-' + st + (isCur ? ' is-current' : '') + (LABEL_TOP[i] ? ' lbl-top' : '') + '" data-region="' + i + '" style="left:' + p.x + 'px;top:' + p.y + 'px;' + accentVars(R.accent) + '" aria-label="' + esc(galName(R)) + '"' + HR.tip(galName(R), regionName(R) + ' · ' + HR.t('gal_' + R.gal + '_c') + ' · ' + tipD) + ' data-tip-c="' + R.accent + '">';
       h += '<span class="gx-badge">' + (st === 'locked' ? HR.icon('lock') : st === 'done' ? HR.icon('check') : '<b>' + (i + 1) + '</b>') + '</span>';
-      h += '<span class="gx-name"><b>' + esc(galName(R)) + '</b><small>' + esc(regionName(R)) + (st !== 'locked' ? ' · <em>' + sys + '/10</em>' : gate ? ' · <em class="gx-portal">' + esc(HR.t('portal')) + ' ' + gate.open + '/5</em>' : '') + '</small></span>';
+      h += '<span class="gx-name"><b>' + esc(galName(R)) + '</b>' + (st !== 'locked' ? '<small class="gx-mini">' + HR.icon('system') + '<em>' + sys + '/10</em></small>' : gate ? '<small class="gx-mini"><em class="gx-portal">' + HR.icon('warp') + gate.open + '/5</em></small>' : '') + '</span>';
       h += '</button>';
     });
     const open = C.singularityOpen(), passed = HR.Singularity ? HR.Singularity.passedCount() : 0;
-    h += '<button type="button" class="gx-core' + (open ? ' is-open' : '') + '" id="gx-core" style="left:' + geo.cx.toFixed(0) + 'px;top:' + geo.cy.toFixed(0) + 'px" aria-label="' + esc(HR.t('bh_name')) + '"' + HR.tip(HR.t('bh_name'), HR.t(open ? 'sg_layers_n' : 'singularity_hint', { n: passed })) + ' data-tip-c="#ffcf4a"><span class="gx-core-hit"></span><span class="gx-name"><b>' + esc(HR.t('bh_name')) + '</b><small>' + esc(HR.t('bh_sub')) + ' · ' + (open ? passed + '/11' : HR.icon('lock')) + '</small></span></button>';
+    h += '<button type="button" class="gx-core' + (open ? ' is-open' : '') + '" id="gx-core" style="left:' + geo.cx.toFixed(0) + 'px;top:' + geo.cy.toFixed(0) + 'px" aria-label="' + esc(HR.t('bh_name')) + '"' + HR.tip(HR.t('bh_name'), HR.t(open ? 'sg_layers_n' : 'singularity_hint', { n: passed })) + ' data-tip-c="#ffcf4a"><span class="gx-core-hit"></span><span class="gx-name"><b>' + esc(HR.t('bh_name')) + '</b><small class="gx-mini">' + (open ? HR.icon('layers') + '<em>' + passed + '/11</em>' : HR.icon('lock')) + '</small></span></button>';
     host.innerHTML = h;
     const foot = $('#galaxy-foot');
     const level = C.currentLevel(), done = C.levelsCleared();
     const complete = C.singularityMastered();
     const nextRi = C.nextPortal(), gate = nextRi != null ? C.gate(nextRi) : null;
-    const portalTxt = gate ? ' · ' + esc(HR.t('portal')) + ' ' + gate.open + '/5' : '';
+    const portalTxt = gate ? '<i class="gk-sep"></i>' + HR.icon('warp', 'gk-portal') + ' ' + gate.open + '/5' : '';
     const regionDone = C.regionCleared(level.ri) && gate != null;
     foot.innerHTML = '<div class="gx-foot-card" style="' + accentVars(HR.REGIONS[level.ri].accent) + '">' +
-      '<div class="gx-foot-main"><span class="kicker gx-kicker">' + HR.U.fmt(done) + '/1.000 ' + esc(HR.t('levels')) + ' · ' + HR.U.fmt(C.totalStars()) + ' ' + HR.icon('star', '', true) + portalTxt + '</span><b>' + esc(complete ? HR.t('camp_complete') : regionDone ? HR.t('portal') + ': ' + galName(HR.REGIONS[nextRi]) + ' ' + gate.open + '/5' : HR.t('continue_campaign', { n: level.id }) + ' · ' + galName(HR.REGIONS[level.ri])) + '</b></div>' +
+      '<div class="gx-foot-main"><span class="kicker gx-kicker"' + HR.tip(HR.t('levels') + ' · ' + HR.t('stars'), HR.U.fmt(done) + ' / ' + HR.U.fmt(1000) + ' · ' + HR.U.fmt(C.totalStars()) + ' / ' + HR.U.fmt(3000)) + '>' + HR.icon('flag', 'gk-flag') + ' ' + HR.U.fmt(done) + '<i class="gk-sep"></i>' + HR.icon('star', '', true) + ' ' + HR.U.fmt(C.totalStars()) + portalTxt + '</span><b>' + esc(complete ? HR.t('camp_complete') : regionDone ? HR.t('portal') + ': ' + galName(HR.REGIONS[nextRi]) + ' ' + gate.open + '/5' : HR.t('continue_campaign', { n: level.id }) + ' · ' + galName(HR.REGIONS[level.ri])) + '</b></div>' +
       '<button type="button" class="btn btn-play small-btn" id="gx-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t(complete ? 'levels' : 'play_mode')) + '</span></button></div>';
     if (!body.dataset.bound) {
       body.dataset.bound = '1';

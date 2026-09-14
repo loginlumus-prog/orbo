@@ -179,9 +179,9 @@
     if (col === 'all') body.appendChild(featured(type, list));
     const seasonal = list.filter(i => i.season && HR.Seasons.isActive(i.season));
     if (seasonal.length) { const S = HR.Seasons.current(); body.appendChild(HR.U.el('div', 'shop-season', '<span class="shop-season-ic">' + HR.icon('calendar') + '</span><span class="shop-season-txt"><b>' + HR.t('season_' + S.id) + '</b><small>' + HR.t('season_shop_note', { d: HR.Seasons.endLabel() }) + '</small></span>')); }
-    const grid = HR.U.el('div', 'shop-grid');
-    list.forEach(item => grid.appendChild(card(type, item)));
-    body.appendChild(grid);
+    // v5.2: itens da estação primeiro; o resto em seções por raridade (mais barato → mais caro), exclusivos no fim
+    if (seasonal.length) { const sg = HR.U.el('div', 'shop-grid shop-grid-season'); seasonal.forEach(item => sg.appendChild(card(type, item))); body.appendChild(sg); }
+    HR.UI.shopSections(body, list.filter(i => !seasonal.includes(i)), { rar: i => rarity(type, i.id), owned: i => HR.Unlocks.owned(type, i.id), special: i => ['iap', 'pack', 'reward', 'archon'].includes(i.cur), price: i => (!i.cur || i.cur === 'coins') ? (i.price || 0) : 0, lvl: i => i.lvl || 1, card: i => card(type, i), rerender: renderShop });
   }
 
   /* ---------------- detalhe ---------------- */
@@ -269,8 +269,7 @@
     });
     const skinSection = (kind, titleKey) => {
       body.appendChild(HR.U.el('div', 'shop-section', HR.icon(kind) + ' ' + HR.t(titleKey)));
-      const grid = HR.U.el('div', 'shop-grid');
-      HR.Gear.list(kind).forEach(it => {
+      const mk = it => {
         const owned = HR.Gear.owned(kind, it.id), eq = HR.Gear.current(kind).id === it.id, rar = it.rar, name = HR.t((kind === 'jet' ? 'jetskin_' : 'aegisskin_') + it.id);
         const card = HR.U.el('div', 'shop-card rar-' + rar + (eq ? ' equipped' : '')); card.style.setProperty('--rc', rarColor(rar));
         const cv = makeCanvas(120); cv.className = 'shop-preview'; addPreview(cv, kind, it, {}); card.appendChild(cv);
@@ -289,9 +288,9 @@
           bg.addEventListener('click', async e => { e.stopPropagation(); const ok = await HR.UI.confirm(HR.t('confirm_buy_title'), HR.t('confirm_buy_text', { item: name, price: '<i class="ic-gem"></i> ' + it.gems })); if (ok && HR.Gear.buy(kind, it.id, 'gems')) { HR.UI.toast(HR.icon('check') + ' ' + name, 'good'); renderShop(); } });
           row.appendChild(bc); row.appendChild(bg); card.appendChild(row);
         }
-        grid.appendChild(card);
-      });
-      body.appendChild(grid);
+        return card;
+      };
+      HR.UI.shopSections(body, HR.Gear.list(kind), { filter: false, rar: it => it.rar, owned: it => HR.Gear.owned(kind, it.id), special: () => false, price: it => it.price || 0, lvl: () => 1, card: mk, rerender: renderShop });
     };
     skinSection('aegis', 'gear_aegis_skins');
     skinSection('jet', 'gear_jet_skins');

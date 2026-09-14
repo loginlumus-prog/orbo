@@ -1,0 +1,151 @@
+/* =====================================================================
+   ORBO v5.2: menu vivo (botões coloridos com glifos animados, anel com lua,
+   cometas na órbita, poeira de estrelas), recordes em ícones, mapa com menos
+   texto e loja em seções por raridade.
+   ===================================================================== */
+
+/* o selo de aviso (z-index alto) fica preso à cena e não aparece por cima dos painéis */
+.scene { isolation: isolate; }
+/* descrição do modo vai para a dica dos botões de modo */
+.mode-desc { display: none; }
+
+/* ---------- botões da órbita ---------- */
+.scene .ob-circle {
+  color: #fff;
+  background: radial-gradient(100% 100% at 30% 16%, rgba(255,255,255,0.3), rgba(255,255,255,0) 42%), radial-gradient(120% 90% at 50% 118%, var(--oc-glow, rgba(76,240,255,0.5)), rgba(0,0,0,0) 62%), linear-gradient(180deg, var(--oc-top, #1c2648), var(--oc-bot, #090d1e));
+  box-shadow: 0 4px 0 var(--oc-sh, rgba(0,0,0,0.5)), 0 0 20px var(--oc-halo, transparent), inset 0 0 0 1.5px var(--oc-rim, var(--stroke)), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.scene .ob-circle::before { background: linear-gradient(125deg, rgba(255,255,255,0.2), rgba(255,255,255,0) 50%); }
+.scene .orbit-btn:active .ob-circle { box-shadow: 0 1px 0 var(--oc-sh, rgba(0,0,0,0.5)), 0 0 14px var(--oc-halo, transparent), inset 0 0 0 1.5px var(--oc-rim, var(--stroke)); }
+.scene .orbit-btn.glow .ob-circle { color: #fff; box-shadow: 0 4px 0 var(--oc-sh, #6b4200), 0 0 28px rgba(255,207,74,0.6), inset 0 0 0 2px #ffd23f, inset 0 1px 0 rgba(255,255,255,0.35); }
+.scene .ob-circle .ic { z-index: 1; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.35)); }
+.scene.orbit2 .orbit-btn .ob-label { color: #eef2ff; box-shadow: inset 0 0 0 1px var(--oc-rim2, rgba(255,255,255,0.08)), 0 2px 8px rgba(0,0,0,0.35); }
+.scene.orbit2 .orbit-btn.glow .ob-label { color: var(--gold); box-shadow: inset 0 0 0 1px rgba(255,207,74,0.5), 0 2px 8px rgba(0,0,0,0.35); }
+
+/* anel orbital com lua em volta de cada botão */
+.ob-ring { position: absolute; left: -6px; top: -6px; width: calc(100% + 12px); height: calc(100% + 12px); overflow: visible; pointer-events: none; z-index: 0; animation: ob-spin var(--os, 10s) linear infinite; }
+.scene.orbit-compact .ob-ring { left: -4px; top: -4px; width: calc(100% + 8px); height: calc(100% + 8px); }
+.ob-ring .t { fill: none; stroke: var(--oc-rim2, rgba(255,255,255,0.15)); stroke-width: 1.2; }
+.ob-ring .a { fill: none; stroke: var(--oc, #fff); stroke-width: 2.4; stroke-linecap: round; }
+.ob-ring .m { fill: var(--ol, #fff); }
+.orbit-btn.rev .ob-ring { animation-direction: reverse; }
+@keyframes ob-spin { to { transform: rotate(360deg); } }
+
+/* glifos */
+.og { width: 100%; height: 100%; overflow: visible; }
+.og .b { fill: var(--ol, #fff); fill-opacity: 0.42; }
+.og .w { fill: #fff; stroke: none; }
+.og .gd { stroke: #ffd23f; }
+.og-spark, .og-twinkle, .og-pop, .og-rise, .og-wave, .og-zap, .og-tw { transform-box: fill-box; transform-origin: center; }
+.og-bob, .og-rot, .og-pulse, .og-lid, .og-spin, .og-float, .og-shine { transform-box: view-box; }
+
+.og-bob { animation: og-bob 3s ease-in-out infinite; }
+.og-twinkle { animation: og-twinkle 3.4s ease-in-out infinite; }
+.og-spark { opacity: 0; animation: og-spark 3.4s ease-in-out infinite; }
+.og-spark.s2 { animation-delay: 0.55s; }
+.og-wave { transform-origin: 0% 50%; animation: og-wave 2.6s ease-in-out infinite; }
+.og-lid { transform-origin: 12px 11px; animation: og-lid 3.2s ease-in-out infinite; }
+.orbit-btn.glow .og-lid { animation-duration: 1.7s; }
+.og-pop { animation: og-pop 3.2s ease-in-out infinite; }
+.og-pop.p2 { animation-delay: 0.3s; }
+.og-pop.p3 { animation-delay: 0.6s; }
+.og-spin { transform-origin: 16.6px 16.6px; animation: ob-spin 8s linear infinite; }
+.og-rise { transform-origin: 50% 100%; animation: og-rise 3.6s ease-out infinite; }
+.og-rise.p2 { animation-delay: 0.15s; }
+.og-rise.p3 { animation-delay: 0.3s; }
+.og-float { transform-origin: 12px 5.6px; animation: og-float 3s ease-in-out infinite; }
+.og-rot { transform-origin: 12px 12px; animation: ob-spin 14s linear infinite; }
+.og-pulse { transform-origin: 12px 12px; animation: og-pulse 3.4s ease-in-out infinite; }
+.og-tw { animation: og-tw 2.8s ease-in-out infinite; }
+.og-tw.t2 { animation-delay: 1.3s; }
+.og-zap { animation: og-zap 2.8s ease-in-out infinite; }
+.og-arc { animation: og-arc 2.8s ease-in-out infinite; }
+.og-arc.a2 { animation-delay: 0.08s; }
+.og-shine { opacity: 0; animation: og-shine 3.8s ease-in-out infinite; }
+
+@keyframes og-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+@keyframes og-twinkle { 0%, 68%, 100% { transform: scale(1) rotate(0deg); } 78% { transform: scale(1.35) rotate(36deg); } 88% { transform: scale(0.92) rotate(72deg); } }
+@keyframes og-spark { 0%, 58%, 100% { opacity: 0; transform: scale(0.3); } 72% { opacity: 1; transform: scale(1); } 88% { opacity: 0; transform: scale(0.6); } }
+@keyframes og-wave { 0%, 100% { transform: skewY(0deg) scaleX(1); } 25% { transform: skewY(-5deg) scaleX(0.95); } 50% { transform: skewY(0deg) scaleX(1); } 75% { transform: skewY(4deg) scaleX(0.97); } }
+@keyframes og-lid { 0%, 60%, 100% { transform: translateY(0) rotate(0deg); } 68% { transform: translateY(-2.6px) rotate(-9deg); } 76% { transform: translateY(0) rotate(0deg); } 82% { transform: translateY(-1px) rotate(4deg); } 88% { transform: translateY(0) rotate(0deg); } }
+@keyframes og-pop { 0%, 30%, 100% { transform: scale(1); } 12% { transform: scale(1.16); } }
+@keyframes og-rise { 0%, 34%, 100% { transform: scaleY(1); } 8% { transform: scaleY(0.7); } 20% { transform: scaleY(1.07); } }
+@keyframes og-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-1.3px) rotate(10deg); } }
+@keyframes og-pulse { 0%, 100% { fill-opacity: 0.3; transform: scale(1); } 50% { fill-opacity: 0.6; transform: scale(1.14); } }
+@keyframes og-tw { 0%, 100% { opacity: 0.25; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes og-zap { 0%, 74%, 100% { transform: scale(1) rotate(0deg); fill-opacity: 0.42; } 80% { transform: scale(1.16) rotate(-5deg); fill-opacity: 0.95; } 86% { transform: scale(0.96) rotate(0deg); fill-opacity: 0.6; } 92% { transform: scale(1.05); fill-opacity: 0.8; } }
+@keyframes og-arc { 0%, 72%, 100% { opacity: 0.35; } 80% { opacity: 1; } 94% { opacity: 0.35; } }
+@keyframes og-shine { 0%, 52% { opacity: 0; transform: translateX(-9px); } 58% { opacity: 0.85; } 78%, 100% { opacity: 0; transform: translateX(10px); } }
+
+/* cometas percorrendo a órbita */
+.orbit-comet { position: absolute; left: -1.5px; top: -1.5px; width: calc(100% + 3px); height: calc(100% + 3px); overflow: visible; pointer-events: none; }
+.orbit-comet ellipse { fill: none; stroke-linecap: round; animation: oc-run 18s linear infinite; }
+.orbit-comet .oc-tail { stroke: rgba(170,225,255,0.22); stroke-width: 2; }
+.orbit-comet .oc-head { stroke: #ffffff; stroke-width: 2.6; }
+.orbit-comet .oc-tail.dim { stroke: rgba(200,170,255,0.16); }
+.orbit-comet .oc-head.dim { stroke: rgba(225,205,255,0.8); stroke-width: 2.2; }
+@keyframes oc-run { from { stroke-dashoffset: var(--o0, 0px); } to { stroke-dashoffset: var(--o1, -600px); } }
+
+/* poeira de estrelas colorida na cena */
+.menu-dust { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.menu-dust i { position: absolute; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); opacity: 0; animation: md-tw var(--d) ease-in-out infinite; animation-delay: var(--dl); }
+@keyframes md-tw { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 0.85; transform: scale(1); } }
+
+/* movimento só quando o menu está à vista; aparelho leve e "reduzir movimento" desligam */
+#screen-menu:not(.visible) .scene * { animation-play-state: paused !important; }
+body:has(.screen.panel.visible) #scene * { animation-play-state: paused !important; }
+.fx-low .scene * { animation: none !important; }
+.fx-low .scene .ob-circle .ic { filter: none; }
+.fx-low .menu-dust { display: none; }
+@media (prefers-reduced-motion: reduce) { .scene * { animation: none !important; } .menu-dust { display: none; } }
+
+/* ---------- recordes em ícones ---------- */
+.stats-line { gap: 8px; letter-spacing: 0; overflow: visible; }
+.st-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 4px; border-radius: 999px; background: rgba(6,10,26,0.55); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); letter-spacing: 0; text-transform: none; }
+.st-chip .ic { width: 22px; height: 22px; border-radius: 50%; color: var(--sc); background: var(--sc-bg); }
+.st-chip .ic .i { width: 13px; height: 13px; }
+.stats-line .st-chip b { font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--text); }
+.st-best { --sc: #ffc53d; --sc-bg: rgba(255,197,61,0.16); }
+.st-rank { --sc: #35d6ff; --sc-bg: rgba(53,214,255,0.14); }
+.st-starsTotal { --sc: #ffd23f; --sc-bg: rgba(255,210,63,0.16); }
+
+/* ---------- mapa da Galáxia: ícones no lugar de texto ---------- */
+.gx-name small.gx-mini { display: inline-flex; align-items: center; gap: 3px; margin-top: 1px; }
+.gx-name small.gx-mini .i { width: 10px; height: 10px; color: var(--rb1, #c9d3ee); }
+.gx-name small.gx-mini em { display: inline-flex; align-items: center; gap: 2px; }
+.gx-name small.gx-mini em.gx-portal .i { color: #ff8aa0; }
+.gx-core .gx-name small.gx-mini .i { width: 12px; height: 12px; color: var(--gold); }
+.gx-foot-main .gx-kicker { font-size: 12px; letter-spacing: 0.5px; }
+.gx-kicker .gk-sep { display: inline-block; width: 3px; height: 3px; margin: 0 6px; border-radius: 50%; background: rgba(255,255,255,0.35); }
+.gx-kicker .i.gk-flag { color: var(--rb1, #fff); }
+.gx-kicker .i.gk-portal { color: #ff8aa0; }
+
+/* ---------- loja: abas com ícone ---------- */
+.tabs.tabs-ic .tab { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 4px 5px; font-size: 10.5px; letter-spacing: 0.2px; min-width: 50px; }
+.tabs.tabs-ic .tab .i { width: 18px; height: 18px; margin: 0; }
+.tabs.tabs-ic .tab:not(.active) .i { color: var(--tc, var(--accent)); }
+
+/* ---------- loja: filtro e seções por raridade ---------- */
+.shop-filter { display: flex; gap: 4px; padding: 4px; margin: 2px 0 6px; border-radius: 14px; background: rgba(0,0,0,0.32); box-shadow: inset 0 0 0 1.5px var(--stroke); }
+.sf-btn { flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 0 4px; border-radius: 10px; font-family: var(--display); font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.sf-btn span { overflow: hidden; text-overflow: ellipsis; }
+.sf-btn .i { width: 15px; height: 15px; flex: none; }
+.sf-btn b { font-size: 10.5px; padding: 1px 6px; border-radius: 99px; background: rgba(255,255,255,0.08); font-weight: 700; }
+.sf-btn.on { color: #08131c; background: linear-gradient(180deg, #fff, #d6ecff); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
+.sf-btn.on b { background: rgba(8,19,28,0.12); }
+.sh-tier { display: flex; align-items: center; gap: 10px; margin: 18px 0 10px; padding: 8px 12px 8px 8px; border-radius: 16px; --rc: #9aa6c9; background: linear-gradient(90deg, var(--rc-bg, rgba(255,255,255,0.08)), rgba(255,255,255,0.02) 75%); box-shadow: inset 0 0 0 1px var(--rc-line, var(--stroke)); }
+.shop-filter + .sh-tier { margin-top: 10px; }
+.sh-gem { width: 34px; height: 34px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; flex: none; color: var(--rc); background: rgba(0,0,0,0.35); box-shadow: inset 0 0 0 1.5px var(--rc-line, var(--stroke)); }
+.sh-gem .i { width: 19px; height: 19px; }
+.sh-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.sh-main b { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--rc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-bar { display: block; height: 4px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.sh-bar span { display: block; height: 100%; border-radius: inherit; background: var(--rc); }
+.sh-price { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 99px; font-family: var(--display); font-size: 12px; font-weight: 600; color: var(--text); background: rgba(0,0,0,0.32); white-space: nowrap; flex: none; }
+.sh-price .ic-coin { width: 13px; height: 13px; }
+.sh-count { display: inline-flex; align-items: center; gap: 3px; font-family: var(--display); font-size: 12px; color: var(--muted); white-space: nowrap; flex: none; }
+.sh-count .i { width: 13px; height: 13px; color: var(--green); }
+.sh-tier.done .sh-count { color: var(--green); }
+.shop-grid-season { margin-bottom: 4px; }
+.shop-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 30px 10px; color: var(--muted); font-size: 13px; text-align: center; }
+.shop-empty .i { width: 30px; height: 30px; opacity: 0.7; }
