@@ -270,12 +270,14 @@ window.HR = window.HR || {};
   function helice(ctx, r, c, t, giro) {
     const u = U();
     const N = 30, VOLTAS = 1.55, amp = r * 0.37;
-    const fase = (giro || 0) * 0.45 + t * 0.45;
+    const fase = (giro || 0) + t * 0.10;
     const ang = k => k * VOLTAS * TAU + fase;
     const yy = k => -r + k * 2 * r;
     const env = k => amp * Math.abs(Math.sin(ang(k)));   // a beirada das duas fitas
 
-    // os cruzamentos: onde as duas se encostam e as cores trocam de lado
+    // os cruzamentos: onde as duas se encostam e as cores trocam de lado.
+    // Guardamos o numero ABSOLUTO de cada um: e dele que sai a cor da celula,
+    // senao um cruzamento novo entrando pelo topo inverte o desenho inteiro.
     const cortes = [0];
     for (let m = Math.ceil(ang(0) / Math.PI); ; m++) {
       const k = (m * Math.PI - fase) / (VOLTAS * TAU);
@@ -283,6 +285,10 @@ window.HR = window.HR || {};
       if (k > 0.001) cortes.push(k);
     }
     cortes.push(1);
+    const par = k => {
+      const m = Math.floor((ang(k) + 1e-5) / Math.PI);
+      return ((m % 2) + 2) % 2;
+    };
 
     const grad = (a, b, alto) => {
       const g = ctx.createLinearGradient(-r * 0.5, -r, r * 0.6, r);
@@ -303,7 +309,8 @@ window.HR = window.HR || {};
     for (let m = 0; m < cortes.length - 1; m++) {
       const a = cortes[m], b = cortes[m + 1];
       if (b - a < 0.02) continue;
-      ctx.fillStyle = m % 2 ? grad(c.claro, c.claro2, 0) : grad(c.escuro2, c.escuro, 0);
+      const q = par(a + (b - a) * 0.5);
+      ctx.fillStyle = q ? grad(c.claro, c.claro2, 0) : grad(c.escuro2, c.escuro, 0);
       ctx.beginPath();
       for (let i = 0; i <= 10; i++) { const k = a + (b - a) * (i / 10), x = env(k); i ? ctx.lineTo(x, yy(k)) : ctx.moveTo(x, yy(k)); }
       for (let i = 10; i >= 0; i--) { const k = a + (b - a) * (i / 10); ctx.lineTo(-env(k), yy(k)); }
@@ -311,7 +318,7 @@ window.HR = window.HR || {};
       // as pontes: sao elas que fazem ler DNA e nao so duas ondas
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      ctx.strokeStyle = u.rgba(m % 2 ? c.escuro2 : c.brilho, 0.32);
+      ctx.strokeStyle = u.rgba(q ? c.escuro2 : c.brilho, 0.32);
       ctx.lineWidth = Math.max(0.6, r * 0.026); ctx.lineCap = 'round';
       [0.32, 0.5, 0.68].forEach(q => {
         const k = a + (b - a) * q, x = env(k) * 0.8;
@@ -350,10 +357,11 @@ window.HR = window.HR || {};
           ctx.lineWidth = Math.max(0.5, r * 0.012); caminho(); ctx.stroke();
         }
       };
-      const dir = m % 2 ? c.brilhoClaro : c.escuroForte;
-      const esq = m % 2 ? c.escuroForte : c.brilhoClaro;
+      const q = par(a + (b - a) * 0.5);
+      const dir = q ? c.brilhoClaro : c.escuroForte;
+      const esq = q ? c.escuroForte : c.brilhoClaro;
       // a de tras primeiro, a da frente por cima
-      if (m % 2) { fita(-1, esq, false); fita(1, dir, true); }
+      if (q) { fita(-1, esq, false); fita(1, dir, true); }
       else { fita(1, dir, false); fita(-1, esq, true); }
     }
     // o halo da mistura, por cima das duas: so o brilho, sem contorno
@@ -413,7 +421,7 @@ window.HR = window.HR || {};
     ctx.translate(x, y);
     ctx.rotate((giro || 0) * 0.25 + Math.sin(t * 0.25) * 0.05);
     ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
-    helice(ctx, r, c, t, giro);
+    helice(ctx, r, c, t, 0);
     ctx.restore();
 
     // acabamento: aro externo suave + risco de luz no alto

@@ -32,9 +32,10 @@ window.HR = window.HR || {};
       claroForte: '#ffffff',
       escuroForte: U.mix(escuro, '#000000', 0.45)
     });
+    // a helice e pintada NA bola: ela vira com a bola, nao escorre por dentro
     ctx.save();
-    ctx.rotate(Math.sin(t * 0.25) * 0.05);
-    A.helice(ctx, r, c, t, rot || 0);
+    ctx.rotate((rot || 0) * 0.3 + Math.sin(t * 0.25) * 0.04);
+    A.helice(ctx, r, c, t, 0);
     ctx.restore();
   };
 

@@ -426,7 +426,8 @@ window.HR = window.HR || {};
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 3; i++) {
       const k = ((t * 0.25 + i * 0.33) % 1);
-      ctx.strokeStyle = u.rgba('#ffffff', 0.18 * (1 - k)); ctx.lineWidth = 1;
+      // nasce e morre em fade: sem pipoco no comeco nem no fim
+      ctx.strokeStyle = u.rgba('#ffffff', 0.2 * Math.sin(k * Math.PI)); ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(W * 0.5, H * 0.78, H * 0.07 + k * H * 0.08, -2.4, -0.7); ctx.stroke();
     }
     ctx.restore();
@@ -783,13 +784,16 @@ window.HR = window.HR || {};
     a.fundo(ctx, W, H, p.cor, 29, 0.45);
     for (let i = 0; i < n; i++) {
       const x = W * (0.16 + (i / (n - 1)) * 0.68);
-      const lido = i <= ((t * 0.55) % (n + 1.6));   // o dedo do Casco passando
+      // o dedo do Casco passando: vai e volta, e acende por perto em vez de
+      // ligar e desligar — assim nada pisca no fim da fila
+      const onde = (n - 1) * (0.5 - 0.5 * Math.cos(t * 0.30));
+      const lido = Math.max(0, 1 - Math.abs(i - onde) * 0.75);
       const R = H * 0.15;
-      aro(ctx, x, cy, R * 0.42, R, p.cor, lido ? 1 : 0.45);
+      aro(ctx, x, cy, R * 0.42, R, p.cor, 0.4 + lido * 0.6);
       // a marca de cada anel: todas diferentes, todas no mesmo lugar
       const ax = x - R * 0.36, ay = cy - R * 0.3;
       ctx.save(); ctx.lineCap = 'round';
-      a.bloom(ctx, '#fff3c2', [[2.2, lido ? 0.9 : 0.3], [6, lido ? 0.24 : 0.08]], () => {
+      a.bloom(ctx, '#fff3c2', [[2.2, 0.28 + lido * 0.62], [6, 0.07 + lido * 0.17]], () => {
         ctx.beginPath(); ctx.moveTo(ax, ay);
         ctx.quadraticCurveTo(ax + R * (0.2 + a.rnd(i * 3.7) * 0.3), ay + R * (0.2 + a.rnd(i * 5.1) * 0.3),
                              ax + R * 0.58, ay + R * (0.42 + a.rnd(i * 2.3) * 0.36));
@@ -1024,7 +1028,8 @@ window.HR = window.HR || {};
       ctx.beginPath(); ctx.arc(x, y, H * 0.035, 0, TAU); ctx.stroke();
     }
     ctx.restore();
-    const k = (t * 0.12) % 1, x = k * W;
+    // vai e volta pelo fio: da para segui-lo sem soltar, e sem salto no fim
+    const k = 0.5 - 0.5 * Math.cos(t * 0.22), x = k * W;
     const y = H * 0.5 + Math.sin(k * 5 + t * 0.5) * H * 0.22 * Math.sin(k * Math.PI);
     a.bola(ctx, x, y, H * 0.045, t, p.lavada, t * 0.3);
   };

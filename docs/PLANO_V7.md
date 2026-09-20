@@ -325,3 +325,18 @@ cruzamento uma fita passa por TRAS da outra, e e isso que da a volta. O desenho 
 so (`HR.FragArt.helice`), usado pela skin e pela bola dos cards: ela tem que ser a
 mesma pessoa no mural e na mao de quem joga.
 
+**v7.0.1 (2026-09-26) — a helice estava piscando.**
+
+A cor de cada celula da helice vinha da POSICAO dela na lista de cruzamentos. Como a
+lista e remontada a cada quadro, bastava um cruzamento novo entrar pelo topo para o
+indice de todas mudar — e o desenho inteiro invertia de cor de uma vez. Agora a cor
+vem do numero absoluto do cruzamento: cada celula nasce com a sua cor e morre com ela,
+entao o padrao escorrega em vez de piscar.
+
+A helice tambem deixou de correr por dentro da bola. Ela e pintada NA bola: gira com a
+bola, e o que sobra de movimento proprio e um respiro lento. Mais tres laços que davam
+salto no fim: o dedo do Casco em "As marcas" (acendia os cinco aneis e zerava de uma
+vez, agora vai e volta), a bola de "A costura" (chegava no fim do fio e reaparecia no
+comeco, agora volta pelo fio) e os aros do sono em "Dois" (nasciam e sumiam de repente,
+agora entram e saem em fade).
+
