@@ -19,45 +19,45 @@ window.HR = window.HR || {};
 /* cor por ato: I frio e lavado · II quente · III fundo e contrastado */
 HR.FRAGMENTS = [
   /* ---------------- ATO I — ACORDAR ---------------- */
-  { id: 'giro',      ato: 1, cena: 'sozinha', p: { cor: '#4cf0ff', lavada: 1.0 }, t: { k: 'fase', v: '1-1-1' } },
-  { id: 'faltava',   ato: 1, cena: 'vazio',   p: { cor: '#4cf0ff', lavada: 0.95 }, t: { k: 'perfeitos', v: 20 } },
-  { id: 'escuro',    ato: 1, cena: 'queda',   p: { cor: '#5aa9ff', lavada: 0.92 }, t: { k: 'queda', v: 1 } },
-  { id: 'cinza',     ato: 1, cena: 'reflexo', p: { cor: '#5aa9ff', lavada: 0.9 },  t: { k: 'mural', v: 1 } },
-  { id: 'apelido',   ato: 1, cena: 'nome',    p: { cor: '#4cf0ff', palavra: 'FAÍSCA' }, t: { k: 'sistema', v: '1-1' } },
-  { id: 'berco',     ato: 1, cena: 'galaxia', p: { cor: '#4cf0ff', bracos: 2 },    t: { k: 'galaxia', v: 0 } },
-  { id: 'maisnovo',  ato: 1, cena: 'rasgo',   p: { cor: '#5aa9ff', lavada: 0.85, fecha: 0 }, t: { k: 'sistema', v: '2-3' } },
-  { id: 'naofecha',  ato: 1, cena: 'anel',    p: { cor: '#ffcf4a' },               t: { k: 'perfeitos', v: 100 } },
-  { id: 'dois',      ato: 1, cena: 'duas',    p: { cor: '#5aa9ff', afast: 0.26 },  t: { k: 'galaxia', v: 1 } },
+  { id: 'giro',      ato: 1, cena: 'giro',      p: { cor: '#4cf0ff', lavada: 1.0 },  t: { k: 'fase', v: '1-1-1' } },
+  { id: 'faltava',   ato: 1, cena: 'faltava',   p: { cor: '#4cf0ff', lavada: 0.95 }, t: { k: 'perfeitos', v: 20 } },
+  { id: 'escuro',    ato: 1, cena: 'escuro',    p: { cor: '#5aa9ff', lavada: 0.92 }, t: { k: 'queda', v: 1 } },
+  { id: 'cinza',     ato: 1, cena: 'cinza',     p: { cor: '#5aa9ff', lavada: 0.9 },  t: { k: 'mural', v: 1 } },
+  { id: 'apelido',   ato: 1, cena: 'apelido',   p: { cor: '#4cf0ff', palavraK: 'fr_pal_faisca' }, t: { k: 'sistema', v: '1-1' } },
+  { id: 'berco',     ato: 1, cena: 'berco',     p: { cor: '#4cf0ff', lavada: 0.88 }, t: { k: 'galaxia', v: 0 } },
+  { id: 'maisnovo',  ato: 1, cena: 'maisnovo',  p: { cor: '#5aa9ff' },               t: { k: 'sistema', v: '2-3' } },
+  { id: 'naofecha',  ato: 1, cena: 'naofecha',  p: { cor: '#ffcf4a' },               t: { k: 'perfeitos', v: 100 } },
+  { id: 'dois',      ato: 1, cena: 'dois',      p: { cor: '#5aa9ff', afast: 0.24, lavada: 0.85 }, t: { k: 'galaxia', v: 1 } },
 
   /* ---------------- ATO II — LEMBRAR ---------------- */
-  { id: 'mesmodia',  ato: 2, cena: 'galaxia', p: { cor: '#7cff6b', bracos: 3 },    t: { k: 'sistema', v: '3-2' } },
-  { id: 'instante',  ato: 2, cena: 'juntos',  p: { cor: '#ff9f43' },               t: { k: 'sistema', v: '4-1' } },
-  { id: 'quente',    ato: 2, cena: 'calor',   p: { cor: '#ff9f43', lavada: 0.7 },  t: { k: 'egide', v: 1 } },
-  { id: 'delonge',   ato: 2, cena: 'rasgo',   p: { cor: '#a29bfe', lavada: 0.65, curva: 18 }, t: { k: 'galaxia', v: 4 } },
-  { id: 'quemsegur', ato: 2, cena: 'duas',    p: { cor: '#a29bfe', afast: 0.30 },  t: { k: 'sistema', v: '5-8' } },
-  { id: 'contempla', ato: 2, cena: 'ponto',   p: { cor: '#20304f' },               t: { k: 'segredo', v: 'contempla' } },
-  { id: 'pontoazul', ato: 2, cena: 'ponto',   p: { cor: '#20304f' },               t: { k: 'segredo', v: 'pontoazul' } },
-  { id: 'espiral',   ato: 2, cena: 'galaxia', p: { cor: '#ff7ad9', bracos: 4 },    t: { k: 'galaxia', v: 5 } },
-  { id: 'eraeu',     ato: 2, cena: 'nome',    p: { cor: '#ffd93d', palavra: 'EU' },t: { k: 'sistema', v: '7-1' } },
-  { id: 'fechando',  ato: 2, cena: 'rasgo',   p: { cor: '#ffd93d', lavada: 0.5, fecha: 0.35 }, t: { k: 'sistema', v: '7-6' } },
-  { id: 'queeuabri', ato: 2, cena: 'duas',    p: { cor: '#ffd93d', afast: 0.24, fecha: 0.3 }, t: { k: 'galaxia', v: 6 } },
-  { id: 'ninho',     ato: 2, cena: 'sozinha', p: { cor: '#7cff6b', lavada: 0.55 }, t: { k: 'segredo', v: 'ninho' } },
+  { id: 'mesmodia',  ato: 2, cena: 'mesmodia',  p: { cor: '#7cff6b' },               t: { k: 'sistema', v: '3-2' } },
+  { id: 'instante',  ato: 2, cena: 'instante',  p: { cor: '#ff9f43' },               t: { k: 'sistema', v: '4-1' } },
+  { id: 'quente',    ato: 2, cena: 'quente',    p: { cor: '#ff9f43', lavada: 0.7 },  t: { k: 'egide', v: 1 } },
+  { id: 'delonge',   ato: 2, cena: 'delonge',   p: { cor: '#a29bfe', lavada: 0.65, curva: 16 }, t: { k: 'galaxia', v: 4 } },
+  { id: 'quemsegur', ato: 2, cena: 'quemsegur', p: { cor: '#a29bfe', lavada: 0.6 },  t: { k: 'sistema', v: '5-8' } },
+  { id: 'contempla', ato: 2, cena: 'contempla', p: { cor: '#20304f' },               t: { k: 'segredo', v: 'contempla' } },
+  { id: 'pontoazul', ato: 2, cena: 'pontoazul', p: { cor: '#20304f' },               t: { k: 'segredo', v: 'pontoazul' } },
+  { id: 'espiral',   ato: 2, cena: 'espiral',   p: { cor: '#ff7ad9', bracos: 4 },    t: { k: 'galaxia', v: 5 } },
+  { id: 'eraeu',     ato: 2, cena: 'eraeu',     p: { cor: '#ffd93d', palavraK: 'fr_pal_faisca' }, t: { k: 'sistema', v: '7-1' } },
+  { id: 'fechando',  ato: 2, cena: 'fechando',  p: { cor: '#ffd93d', lavada: 0.5, fecha: 0.42 }, t: { k: 'sistema', v: '7-6' } },
+  { id: 'queeuabri', ato: 2, cena: 'queeuabri', p: { cor: '#ffd93d', lavada: 0.45 }, t: { k: 'galaxia', v: 6 } },
+  { id: 'ninho',     ato: 2, cena: 'ninho',     p: { cor: '#7cff6b', lavada: 0.55 }, t: { k: 'segredo', v: 'ninho' } },
 
   /* ---------------- ATO III — ESCOLHER ---------------- */
-  { id: 'asmarcas',  ato: 3, cena: 'anel',    p: { cor: '#5b6cff' },               t: { k: 'sistema', v: '8-1' } },
-  { id: 'letradele', ato: 3, cena: 'anel',    p: { cor: '#cfe4ff' },               t: { k: 'sistema', v: '8-5' } },
-  { id: 'letradela', ato: 3, cena: 'anel',    p: { cor: '#c9b4ff' },               t: { k: 'sistema', v: '8-7' } },
-  { id: 'juntosant', ato: 3, cena: 'juntos',  p: { cor: '#5b6cff' },               t: { k: 'galaxia', v: 7 } },
-  { id: 'paraeu',    ato: 3, cena: 'duas',    p: { cor: '#ff5ecf', afast: 0.34 },  t: { k: 'sistema', v: '9-3' } },
-  { id: 'opreco',    ato: 3, cena: 'duas',    p: { cor: '#ff5ecf', afast: 0.14, fecha: 0.62 }, t: { k: 'galaxia', v: 8 } },
-  { id: 'muitasmaos',ato: 3, cena: 'maos',    p: { cor: '#ffcf4a' },               t: { k: 'segredo', v: 'muitasmaos' } },
-  { id: 'costura',   ato: 3, cena: 'fio',     p: { cor: '#7cff6b', lavada: 0.3 },  t: { k: 'segredo', v: 'costura' } },
-  { id: 'aporta',    ato: 3, cena: 'porta',   p: { cor: '#ffcf4a' },               t: { k: 'singularidade', v: 1 } },
+  { id: 'asmarcas',  ato: 3, cena: 'asmarcas',  p: { cor: '#5b6cff' },               t: { k: 'sistema', v: '8-1' } },
+  { id: 'letradele', ato: 3, cena: 'letradele', p: { cor: '#cfe4ff' },               t: { k: 'sistema', v: '8-5' } },
+  { id: 'letradela', ato: 3, cena: 'letradela', p: { cor: '#c9b4ff' },               t: { k: 'sistema', v: '8-7' } },
+  { id: 'juntosant', ato: 3, cena: 'juntosant', p: { cor: '#ffb08a' },               t: { k: 'galaxia', v: 7 } },
+  { id: 'paraeu',    ato: 3, cena: 'paraeu',    p: { cor: '#ff5ecf', afast: 0.19, lavada: 0.2 }, t: { k: 'sistema', v: '9-3' } },
+  { id: 'opreco',    ato: 3, cena: 'opreco',    p: { cor: '#ff5ecf', afast: 0.22 },  t: { k: 'galaxia', v: 8 } },
+  { id: 'muitasmaos',ato: 3, cena: 'muitasmaos',p: { cor: '#ffcf4a', lavada: 0.25 }, t: { k: 'segredo', v: 'muitasmaos' } },
+  { id: 'costura',   ato: 3, cena: 'costura',   p: { cor: '#7cff6b', lavada: 0.3 },  t: { k: 'segredo', v: 'costura' } },
+  { id: 'aporta',    ato: 3, cena: 'aporta',    p: { cor: '#ffcf4a', lavada: 0.15 }, t: { k: 'singularidade', v: 1 } },
 
   /* ---------------- DEPOIS DO FIM ---------------- */
-  { id: 'nomeinteir',ato: 4, cena: 'nome',    p: { cor: '#ffcf4a', palavra: 'ORBO' }, t: { k: 'final', v: 1 } },
-  { id: 'oqueficou', ato: 4, cena: 'sozinha', p: { cor: '#ffcf4a', lavada: 0 },    t: { k: 'final', v: 2 } },
-  { id: 'todasmaos', ato: 4, cena: 'maos',    p: { cor: '#ffffff' },               t: { k: 'final', v: 4 } }
+  { id: 'nomeinteir',ato: 4, cena: 'nomeinteir',p: { cor: '#ffcf4a', palavraK: 'fr_pal_orbo' }, t: { k: 'final', v: 1 } },
+  { id: 'oqueficou', ato: 4, cena: 'oqueficou', p: { cor: '#ffcf4a', lavada: 0 },    t: { k: 'final', v: 2 } },
+  { id: 'todasmaos', ato: 4, cena: 'todasmaos', p: { cor: '#ffffff' },               t: { k: 'final', v: 4 } }
 ];
 
 HR.Frag = {
@@ -113,6 +113,7 @@ HR.Frag = {
 
 /* ---------------- texto ---------------- */
 Object.assign(HR.I18N.pt, {
+  fr_pal_faisca: 'FAÍSCA', fr_pal_orbo: 'ORBO',
   alb_frags: 'Fragmentos',
   frag_titulo: 'Fragmentos', frag_sub: 'O que ela lembra',
   frag_de: '{a} de {b}', frag_novo: 'FRAGMENTO', frag_onde: 'Onde',
@@ -192,6 +193,7 @@ Object.assign(HR.I18N.pt, {
 });
 
 Object.assign(HR.I18N.en, {
+  fr_pal_faisca: 'SPARK', fr_pal_orbo: 'ORBO',
   alb_frags: 'Fragments',
   frag_titulo: 'Fragments', frag_sub: 'What she remembers',
   frag_de: '{a} of {b}', frag_novo: 'FRAGMENT', frag_onde: 'Where',
@@ -271,6 +273,7 @@ Object.assign(HR.I18N.en, {
 });
 
 Object.assign(HR.I18N.es, {
+  fr_pal_faisca: 'CHISPA', fr_pal_orbo: 'ORBO',
   alb_frags: 'Fragmentos',
   frag_titulo: 'Fragmentos', frag_sub: 'Lo que ella recuerda',
   frag_de: '{a} de {b}', frag_novo: 'FRAGMENTO', frag_onde: 'Dónde',

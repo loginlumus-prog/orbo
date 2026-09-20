@@ -100,7 +100,9 @@ window.HR = window.HR || {};
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = g; ctx.fillRect(cx - meia, y - 26, meia * 2, 52);
     ctx.lineCap = 'round';
-    bloom(ctx, cor, [[1.4, 0.95], [4, 0.35], [11, 0.12]], caminho.bind(null), caminho);
+    // bloom so acende se o desenho passado traçar: antes o caminho era montado
+    // e nunca riscado, entao o rasgo ficava sem brilho nenhum.
+    bloom(ctx, cor, [[1.4, 0.95], [4, 0.35], [11, 0.12]], () => { caminho(); ctx.stroke(); });
     // o traco de cima, branco, e o que da o "fio de luz"
     ctx.strokeStyle = u.rgba('#ffffff', 0.85 - f * 0.3); ctx.lineWidth = 1;
     caminho(); ctx.stroke();
@@ -255,76 +257,163 @@ window.HR = window.HR || {};
     }
   }
 
-  /* ---------------- 4. a bola ---------------- */
-  // Yin-yang: a divisa em S, e cada metade carregando uma mancha da outra.
-  // lavada 1 = sem cor nenhuma (comeco) · 0 = inteira
-  function bola(ctx, x, y, r, t, lavada, giro) {
-    const u = U(), L = lavada == null ? 0 : lavada;
-    const claro = u.mix('#f6f8ff', '#b9bdca', L);
-    const claro2 = u.mix('#c9d8f2', '#9aa0ae', L);
-    const escuro = u.mix('#120f22', '#3a3a46', L);
-    const escuro2 = u.mix('#2a2352', '#4a4a58', L);
+  /* ---------------- 4. a bola: a dupla helice ---------------- */
+  /* Faisca nasceu da mistura de dois. Entao ela nao e um lado e outro lado: ela
+     e as duas coisas enroscadas. Duas ondas espelhadas descem pelo meio do
+     disco, se cruzam, e a cada cruzamento as cores TROCAM de fita — e por isso
+     que nenhuma das duas e dona da bola.
 
-    discoLuz(ctx, x, y, r * 2.8, u.mix('#9fe8ff', '#8a8fa6', L), 0.6 * (1 - L * 0.45));
+     Lembra o taijitu de longe, que e o que se quer, e nao e copia dele.
 
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate((giro || 0) + Math.sin(t * 0.25) * 0.05);   // ondula devagar, alem de girar
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+     helice() e chamada com o contexto ja no centro e recortado no circulo.
+     lavada 1 = sem cor nenhuma (comeco) · 0 = inteira */
+  function helice(ctx, r, c, t, giro) {
+    const u = U();
+    const N = 30, VOLTAS = 1.55, amp = r * 0.37;
+    const fase = (giro || 0) * 0.45 + t * 0.45;
+    const ang = k => k * VOLTAS * TAU + fase;
+    const yy = k => -r + k * 2 * r;
+    const env = k => amp * Math.abs(Math.sin(ang(k)));   // a beirada das duas fitas
 
-    // metade clara: o disco inteiro
-    const gc = ctx.createLinearGradient(-r, -r, r * 0.6, r);
-    gc.addColorStop(0, claro); gc.addColorStop(1, claro2);
-    ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+    // os cruzamentos: onde as duas se encostam e as cores trocam de lado
+    const cortes = [0];
+    for (let m = Math.ceil(ang(0) / Math.PI); ; m++) {
+      const k = (m * Math.PI - fase) / (VOLTAS * TAU);
+      if (k >= 1) break;
+      if (k > 0.001) cortes.push(k);
+    }
+    cortes.push(1);
 
-    // a divisa: uma onda livre do topo ao fundo. Nao e o S de compasso do
-    // taijitu — os dois lados tem curvatura diferente e ela respira.
-    const onda = Math.sin(t * 0.55) * 0.07;
-    const c1x = r * (0.88 + onda), c1y = -r * 0.58;
-    const c2x = -r * (0.74 - onda), c2y = r * 0.24;
-    const divisa = () => {
-      ctx.beginPath();
-      ctx.moveTo(0, -r);
-      ctx.bezierCurveTo(c1x, c1y, c2x, c2y, r * 0.06, r);
+    const grad = (a, b, alto) => {
+      const g = ctx.createLinearGradient(-r * 0.5, -r, r * 0.6, r);
+      g.addColorStop(0, alto ? a : b); g.addColorStop(1, alto ? b : a);
+      return g;
     };
 
-    // metade escura: a onda, fechada pelo lado direito do disco
-    const ge = ctx.createLinearGradient(-r * 0.4, -r, r, r);
-    ge.addColorStop(0, escuro2); ge.addColorStop(1, escuro);
-    ctx.fillStyle = ge;
-    divisa();
+    // o fundo: claro do lado de fora esquerdo, escuro do lado de fora direito
+    ctx.fillStyle = grad(c.claro, c.claro2, 1);
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+    ctx.fillStyle = grad(c.escuro2, c.escuro, 1);
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) { const k = i / N, x = env(k); i ? ctx.lineTo(x, yy(k)) : ctx.moveTo(x, yy(k)); }
     ctx.arc(0, 0, r, Math.PI / 2, -Math.PI / 2, true);
     ctx.closePath(); ctx.fill();
 
-    // o fio de luz correndo pela divisa: a "mistura"
-    ctx.save();
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // as celulas entre as duas fitas: alternando, que e a inversao acontecendo
+    for (let m = 0; m < cortes.length - 1; m++) {
+      const a = cortes[m], b = cortes[m + 1];
+      if (b - a < 0.02) continue;
+      ctx.fillStyle = m % 2 ? grad(c.claro, c.claro2, 0) : grad(c.escuro2, c.escuro, 0);
+      ctx.beginPath();
+      for (let i = 0; i <= 10; i++) { const k = a + (b - a) * (i / 10), x = env(k); i ? ctx.lineTo(x, yy(k)) : ctx.moveTo(x, yy(k)); }
+      for (let i = 10; i >= 0; i--) { const k = a + (b - a) * (i / 10); ctx.lineTo(-env(k), yy(k)); }
+      ctx.closePath(); ctx.fill();
+      // as pontes: sao elas que fazem ler DNA e nao so duas ondas
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = u.rgba(m % 2 ? c.escuro2 : c.brilho, 0.32);
+      ctx.lineWidth = Math.max(0.6, r * 0.026); ctx.lineCap = 'round';
+      [0.32, 0.5, 0.68].forEach(q => {
+        const k = a + (b - a) * q, x = env(k) * 0.8;
+        if (x < r * 0.04) return;
+        ctx.beginPath(); ctx.moveTo(-x, yy(k)); ctx.lineTo(x, yy(k)); ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    // as duas fitas. Cada pedaco vem da cor contraria a da celula que ele fecha:
+    // e assim que a cor "vira" no cruzamento. E a cada cruzamento uma passa por
+    // TRAS da outra — e isso, mais que a onda, que faz o olho ler uma helice.
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (let m = 0; m < cortes.length - 1; m++) {
+      const a = cortes[m], b = cortes[m + 1];
+      if (b - a < 0.02) continue;
+      // fundo: a fita que esta atras neste pedaco chega apagada nas pontas
+      const fita = (sinal, cor, frente) => {
+        const caminho = () => {
+          ctx.beginPath();
+          for (let i = 0; i <= 12; i++) { const k = a + (b - a) * (i / 12), x = sinal * env(k); i ? ctx.lineTo(x, yy(k)) : ctx.moveTo(x, yy(k)); }
+        };
+        // o degrade ao longo do pedaco: cheia no meio, sumindo no cruzamento
+        const g = ctx.createLinearGradient(0, yy(a), 0, yy(b));
+        const op = frente ? 1 : 0.5;
+        g.addColorStop(0, u.rgba(cor, 0.12 * op));
+        g.addColorStop(0.5, u.rgba(cor, 0.95 * op));
+        g.addColorStop(1, u.rgba(cor, 0.12 * op));
+        ctx.strokeStyle = u.rgba(cor, (frente ? 0.4 : 0.18));
+        ctx.lineWidth = r * (frente ? 0.11 : 0.085); caminho(); ctx.stroke();
+        ctx.strokeStyle = g;
+        ctx.lineWidth = Math.max(0.8, r * (frente ? 0.046 : 0.032)); caminho(); ctx.stroke();
+        // a beirada acesa: e o que deixa a fita escura visivel no lado escuro
+        if (frente) {
+          ctx.strokeStyle = u.rgba('#ffffff', 0.34);
+          ctx.lineWidth = Math.max(0.5, r * 0.012); caminho(); ctx.stroke();
+        }
+      };
+      const dir = m % 2 ? c.brilhoClaro : c.escuroForte;
+      const esq = m % 2 ? c.escuroForte : c.brilhoClaro;
+      // a de tras primeiro, a da frente por cima
+      if (m % 2) { fita(-1, esq, false); fita(1, dir, true); }
+      else { fita(1, dir, false); fita(-1, esq, true); }
+    }
+    // o halo da mistura, por cima das duas: so o brilho, sem contorno
     ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = u.rgba('#9fe8ff', 0.22 * (1 - L * 0.7)); ctx.lineWidth = r * 0.15; divisa(); ctx.stroke();
-    ctx.strokeStyle = u.rgba('#ffffff', 0.6 * (1 - L * 0.6)); ctx.lineWidth = r * 0.03; divisa(); ctx.stroke();
+    [1, -1].forEach(sinal => {
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) { const k = i / N, x = sinal * env(k); i ? ctx.lineTo(x, yy(k)) : ctx.moveTo(x, yy(k)); }
+      ctx.strokeStyle = u.rgba(c.brilho, 0.16); ctx.lineWidth = r * 0.14; ctx.stroke();
+    });
     ctx.restore();
 
-    // as duas marcas: borroes com halo, na barriga de cada metade.
-    // Nao sao circulos recortados — sao manchas, como tinta que passou.
-    const mancha = (mx, my, cor, forca, tam) => {
+    // as duas marcas: cada metade guardando um pedaco da outra
+    const mancha = (mx, my, cor, aro, tam) => {
       const g = ctx.createRadialGradient(mx - r * 0.04, my - r * 0.05, 0, mx, my, r * tam);
       g.addColorStop(0, u.rgba(cor, 1));
-      g.addColorStop(0.62, u.rgba(cor, 0.88));
-      g.addColorStop(0.85, u.rgba(cor, 0.45));
+      g.addColorStop(0.6, u.rgba(cor, 0.85));
+      g.addColorStop(0.85, u.rgba(cor, 0.4));
       g.addColorStop(1, u.rgba(cor, 0));
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(mx, my, r * tam, 0, TAU); ctx.fill();
-      ctx.strokeStyle = u.rgba('#ffffff', forca); ctx.lineWidth = r * 0.016;
-      ctx.beginPath(); ctx.arc(mx, my, r * tam * 0.62, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = u.rgba('#ffffff', aro); ctx.lineWidth = Math.max(0.5, r * 0.014);
+      ctx.beginPath(); ctx.arc(mx, my, r * tam * 0.6, 0, TAU); ctx.stroke();
     };
-    mancha(r * 0.34, -r * 0.30, '#f4f8ff', 0.45 * (1 - L * 0.5), 0.185);  // clara, dentro do escuro
-    mancha(-r * 0.31, r * 0.33, u.mix('#120d24', '#454550', L), 0.16 * (1 - L), 0.215);  // escura, dentro do claro
+    mancha(r * 0.58, -r * 0.46, c.brilhoClaro, 0.32, 0.115);
+    mancha(-r * 0.56, r * 0.48, c.escuroForte, 0.13, 0.135);
 
     // volume: uma luz so, de cima a esquerda, por cima de tudo
     const vol = ctx.createRadialGradient(-r * 0.36, -r * 0.42, r * 0.04, 0, 0, r * 1.05);
-    vol.addColorStop(0, u.rgba('#ffffff', 0.4 * (1 - L * 0.5)));
+    vol.addColorStop(0, u.rgba('#ffffff', c.luz));
     vol.addColorStop(0.45, u.rgba('#ffffff', 0.05));
     vol.addColorStop(1, 'rgba(0,0,0,0.42)');
     ctx.fillStyle = vol; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+  }
+
+  // as cores da helice a partir de "lavada" (1 = sem cor, 0 = inteira).
+  // base permite a skin trocar as duas cores sem refazer o desenho.
+  function coresFaisca(L, base) {
+    const u = U(), b = base || {};
+    return {
+      claro:   u.mix(b.claro   || '#f6f8ff', '#b9bdca', L),
+      claro2:  u.mix(b.claro2  || '#c9d8f2', '#9aa0ae', L),
+      escuro:  u.mix(b.escuro  || '#120f22', '#3a3a46', L),
+      escuro2: u.mix(b.escuro2 || '#2a2352', '#4a4a58', L),
+      brilho:  u.mix(b.brilho  || '#9fe8ff', '#8a8fa6', L),
+      brilhoClaro: u.mix(b.claroForte || '#ffffff', '#cfd3dd', L),
+      escuroForte: u.mix(b.escuroForte || '#0b0818', '#2e2e38', L),
+      luz: 0.4 * (1 - L * 0.5)
+    };
+  }
+
+  function bola(ctx, x, y, r, t, lavada, giro) {
+    const u = U(), L = lavada == null ? 0 : lavada;
+    const c = coresFaisca(L);
+
+    discoLuz(ctx, x, y, r * 2.8, c.brilho, 0.6 * (1 - L * 0.45));
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate((giro || 0) * 0.25 + Math.sin(t * 0.25) * 0.05);
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+    helice(ctx, r, c, t, giro);
     ctx.restore();
 
     // acabamento: aro externo suave + risco de luz no alto
@@ -384,6 +473,6 @@ window.HR = window.HR || {};
   }
 
   HR.FragArt = {
-    fundo, horizonte, pai, mae, bola, marca, moldura, discoLuz, bloom, rnd
+    fundo, horizonte, pai, mae, bola, marca, moldura, discoLuz, bloom, rnd, helice, coresFaisca
   };
 })();

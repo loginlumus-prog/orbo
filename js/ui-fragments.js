@@ -23,6 +23,8 @@ window.HR = window.HR || {};
   const lite = () => !!(HR.Perf && HR.Perf.lite && HR.Perf.lite());
 
   const SEGREDO = f => f.t.k === 'segredo' || f.t.k === 'final';
+  const RAIO = 14;      // o mesmo canto do .fr-cv no CSS
+  const VAO = 12;       // o mesmo vao da grade
 
   /* ---------------- desenhar um card ---------------- */
   /* As cenas medem tudo pela altura (r = H * 0.11, R = H * 0.34...). Num quadro
@@ -65,12 +67,12 @@ window.HR = window.HR || {};
       v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.5)');
       ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
     }
-    if (comMoldura) HR.FragArt.moldura(ctx, W, H, cor, Math.max(10, Math.round(W * 0.04)));
+    if (comMoldura) HR.FragArt.moldura(ctx, W, H, cor, comMoldura === true ? Math.max(10, Math.round(W * 0.04)) : comMoldura);
     ctx.restore();
   }
 
   // miniatura: um quadro so, no tamanho da celula
-  function miniatura(f, L) {
+  function miniatura(f, L, raio) {
     const dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     const w = L, h = Math.round(L * 0.7);
     const cv = HR.U.el('canvas', 'fr-cv');
@@ -78,7 +80,8 @@ window.HR = window.HR || {};
     cv.style.width = w + 'px'; cv.style.height = h + 'px';
     const ctx = cv.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    desenha(ctx, w, h, f, 3.2, true);
+    // a arte E o card: uma beirada so, do mesmo raio do canto do CSS
+    desenha(ctx, w, h, f, 3.2, raio || RAIO);
     return cv;
   }
 
@@ -109,7 +112,7 @@ window.HR = window.HR || {};
       ctx.restore();
       ctx.fillStyle = 'rgba(4,6,14,0.55)'; ctx.fillRect(0, 0, w, h);
     }
-    HR.FragArt.moldura(ctx, w, h, '#6c78a0', Math.max(10, Math.round(w * 0.04)));
+    HR.FragArt.moldura(ctx, w, h, '#6c78a0', RAIO);
     return cv;
   }
 
@@ -131,25 +134,42 @@ window.HR = window.HR || {};
       '<p class="fr-dica">' + esc(n >= T ? HR.t('frag_completo') : HR.t('frag_dica')) + '</p>';
     body.appendChild(topo);
 
-    const grade = HR.U.el('div', 'fr-grade');
-    const L = Math.max(96, Math.min(190, Math.round(((body.clientWidth || 340) - 26) / 2)));
-    HR.FRAGMENTS.forEach(f => {
-      const tem = HR.Frag.has(f.id);
-      const cel = HR.U.el('button', 'fr-cel' + (tem ? ' on' : '') + (SEGREDO(f) && !tem ? ' seg' : ''));
-      cel.type = 'button';
-      cel.style.setProperty('--fc', f.p.cor || '#4cf0ff');
-      cel.appendChild(tem ? miniatura(f, L) : vazio(f, L));
-      const leg = HR.U.el('span', 'fr-leg');
-      leg.innerHTML = tem
-        ? '<b>' + esc(HR.t('fr_' + f.id)) + '</b>'
-        : '<b class="fr-off">' + esc(SEGREDO(f) ? HR.t('frag_segredo') : HR.t('frag_bloq')) + '</b>';
-      cel.appendChild(leg);
-      if ((HR.Frag.novos() || []).indexOf(f.id) >= 0) cel.appendChild(HR.U.el('span', 'fr-novo', esc(HR.t('frag_novo'))));
-      if (tem) cel.addEventListener('click', () => { HR.Audio.sfx('open'); abrir(f.id); });
-      else cel.addEventListener('click', () => HR.Audio.sfx('error'));
-      grade.appendChild(cel);
+    // um lugar para cada ato: o mural le como um livro, nao como um monte
+    const larguraCel = () => {
+      const bw = body.clientWidth || 340;
+      const cols = bw >= 620 ? 3 : 2;
+      const max = cols === 3 ? 780 : 520;
+      return Math.max(96, Math.min(240, Math.floor((Math.min(bw, max) - (cols - 1) * VAO) / cols)));
+    };
+    const L = larguraCel();
+
+    [1, 2, 3, 4].forEach(ato => {
+      const lista = HR.FRAGMENTS.filter(f => (f.ato || 1) === ato);
+      if (!lista.length) return;
+      const tem = lista.filter(f => HR.Frag.has(f.id)).length;
+      body.appendChild(HR.U.el('div', 'section-title fr-secao',
+        esc(HR.t('frag_ato' + ato)) + ' <span class="muted">' + tem + '/' + lista.length + '</span>'));
+      const grade = HR.U.el('div', 'fr-grade');
+      lista.forEach(f => grade.appendChild(celula(f, L)));
+      body.appendChild(grade);
     });
-    body.appendChild(grade);
+  }
+
+  function celula(f, L) {
+    const tem = HR.Frag.has(f.id);
+    const cel = HR.U.el('button', 'fr-cel' + (tem ? ' on' : '') + (SEGREDO(f) && !tem ? ' seg' : ''));
+    cel.type = 'button';
+    cel.style.setProperty('--fc', f.p.cor || '#4cf0ff');
+    cel.appendChild(tem ? miniatura(f, L) : vazio(f, L));
+    const leg = HR.U.el('span', 'fr-leg');
+    leg.innerHTML = tem
+      ? '<b>' + esc(HR.t('fr_' + f.id)) + '</b>'
+      : '<b class="fr-off">' + esc(SEGREDO(f) ? HR.t('frag_segredo') : HR.t('frag_bloq')) + '</b>';
+    cel.appendChild(leg);
+    if ((HR.Frag.novos() || []).indexOf(f.id) >= 0) cel.appendChild(HR.U.el('span', 'fr-novo', esc(HR.t('frag_novo'))));
+    if (tem) cel.addEventListener('click', () => { HR.Audio.sfx('open'); abrir(f.id); });
+    else cel.addEventListener('click', () => HR.Audio.sfx('error'));
+    return cel;
   }
 
   // redesenhar o mural se ele estiver na tela agora
@@ -279,7 +299,7 @@ window.HR = window.HR || {};
     if (!host) { host = HR.U.el('div', ''); host.id = 'trophy-host'; ($('#app') || document.body).appendChild(host); }
     const el = HR.U.el('button', 'fr-pop'); el.type = 'button';
     el.style.setProperty('--fc', f.p.cor || '#4cf0ff');
-    el.appendChild(miniatura(f, 74));
+    el.appendChild(miniatura(f, 74, 10));
     el.insertAdjacentHTML('beforeend',
       '<span class="fr-pop-main"><span class="fr-pop-k">' + esc(HR.t('frag_novo')) + ' ' + HR.Frag.count() + '/' + HR.Frag.TOTAL + '</span>' +
       '<b>' + esc(HR.t('fr_' + id)) + '</b><small>' + esc(HR.t('frag_ver')) + '</small></span>');

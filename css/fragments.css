@@ -12,35 +12,50 @@
 }
 
 /* ---------- mural ---------- */
-.fr-topo-mural { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 14px; }
-.fr-topo-mural .num { font-family: var(--display); font-size: 34px; font-weight: 700; color: var(--text); line-height: 1; }
-.fr-topo-mural .num small { font-size: 17px; color: var(--muted); font-weight: 600; }
-.fr-barra { display: block; width: min(260px, 70%); height: 6px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow: hidden; }
+/* Regra desta tela: UMA beirada por coisa. A arte ja tem a dela, desenhada no
+   proprio quadro — entao a celula nao tem fundo, nem aro, nem recheio. */
+.fr-topo-mural { display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 2px 0 6px; text-align: center; }
+.fr-topo-mural .num { font-family: var(--display); font-size: 40px; font-weight: 700; color: var(--text); line-height: 1; }
+.fr-topo-mural .num small { font-size: 18px; color: var(--dim); font-weight: 600; }
+.fr-barra { display: block; width: min(220px, 60%); height: 4px; border-radius: 999px; background: rgba(255,255,255,0.09); overflow: hidden; }
 .fr-barra span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4cf0ff, #ffcf4a); transition: width 0.4s cubic-bezier(0.2,0.8,0.2,1); }
-.fr-dica { font-size: 12px; color: var(--muted); text-align: center; max-width: 30ch; }
+.fr-dica { font-size: 12px; line-height: 1.4; color: var(--muted); max-width: 32ch; }
 
-.fr-grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 8px; }
-@media (min-width: 620px) { .fr-grade { grid-template-columns: repeat(3, 1fr); } }
+.fr-secao { justify-content: center; max-width: 520px; margin: 18px auto 10px; }
+.fr-secao::after { display: none; }
+.fr-secao::before {
+  content: ''; position: absolute; left: 0; right: 0; top: -9px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+}
+.fr-secao { position: relative; }
+
+.fr-grade {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 12px;
+  width: 100%; max-width: 520px; margin: 0 auto; justify-items: center;
+}
+@media (min-width: 620px) {
+  .fr-grade { grid-template-columns: repeat(3, 1fr); max-width: 780px; }
+  .fr-secao { max-width: 780px; }
+}
 
 .fr-cel {
   --fc: #4cf0ff;
-  position: relative; display: flex; flex-direction: column; gap: 6px; padding: 6px 6px 8px;
-  border-radius: 16px; text-align: left; cursor: pointer;
-  background: linear-gradient(180deg, rgba(20,26,52,0.7), rgba(8,10,24,0.7));
-  box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.06);
-  transition: transform 0.15s, box-shadow 0.2s;
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  width: 100%; padding: 0; background: none; box-shadow: none; border-radius: 16px;
+  text-align: center; cursor: pointer; transition: transform 0.15s;
 }
-.fr-cel.on { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--fc) 55%, transparent), 0 6px 18px rgba(0,0,0,0.35); }
+.fr-cel .fr-cv { display: block; width: 100%; height: auto; border-radius: 14px; }
+.fr-cel.on .fr-cv { box-shadow: 0 10px 26px rgba(0,0,0,0.5); }
 .fr-cel.on:active { transform: translateY(2px); }
-.fr-cel.seg { opacity: 0.55; }
-.fr-cel .fr-cv { display: block; width: 100%; height: auto; border-radius: 12px; }
-.fr-leg { display: block; min-width: 0; padding: 0 2px; }
-.fr-leg b { display: block; font-family: var(--display); font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-cel.seg { opacity: 0.45; }
+.fr-leg { display: block; width: 100%; min-width: 0; padding: 0 2px; }
+.fr-leg b { display: block; font-family: var(--display); font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fr-leg .fr-off { color: var(--dim); font-weight: 500; font-family: var(--font); font-size: 11.5px; }
 .fr-novo {
-  position: absolute; right: 8px; top: 8px; padding: 2px 8px; border-radius: 999px;
+  position: absolute; right: 7px; top: 7px; padding: 2px 8px; border-radius: 999px;
   font-family: var(--display); font-size: 9.5px; font-weight: 700; letter-spacing: 1px;
   color: #1b1200; background: linear-gradient(180deg, #ffe89a, #ffb92b);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 /* ponto na aba quando entrou fragmento novo */

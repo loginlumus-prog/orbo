@@ -295,3 +295,33 @@ pulava todos os embrulhos e caia na grade generica do album, que para 'frags' na
 para listar. Trofeus ja contornava isso com um ouvinte proprio; agora a raiz esta corrigida
 e os dois vao pelo mesmo caminho.
 
+**v7.0 (2026-09-26) — a arte dos 33, uma por uma, e Faisca virou helice.**
+
+Revisao fragmento a fragmento, comparando o desenho com o que a frase diz, com o
+gatilho e com a historia. Das 33, so 9 batiam. Eram 15 composicoes repartidas entre
+os 33: a mesma espiral servia de "Berco", de "Tudo no mesmo dia" e de "Espiral";
+quatro fragmentos mostravam o mesmo anel; "O Ninho" era a bola sozinha; "Mais novo
+que eu", que fala de IDADE, mostrava o rasgo.
+
+Agora sao 33 desenhos, um por fragmento, e o desenho diz o que a frase diz: idade
+virou duas pilhas de mares (a do lugar tem quatro, a dela tem nove, com a regua
+marcando as duas alturas); "tudo no mesmo dia" virou uma fila de sementes do mesmo
+tamanho pulsando JUNTAS; "o instante" comeca com a tela vazia de verdade, sem poeira
+nenhuma; "o que eu abri" mostra galaxias DENTRO da fenda; "juntos antes" e um corpo
+so, sem estrela nenhuma em volta, porque ainda nao havia espaco; "quem segurava" tem
+duas maos, sem rosto.
+
+Dois defeitos antigos encontrados no caminho: `horizonte` montava o caminho do brilho
+e nunca o riscava (`bloom` recebia uma funcao que so fazia `beginPath`), entao o rasgo
+nunca teve brilho; e o card tinha tres beiradas empilhadas (a celula, o canto do canvas
+e a moldura desenhada dentro). Agora e uma beirada so: a arte E o card. O mural tambem
+ganhou uma secao por ato, com a conta de cada um.
+
+**Faisca virou uma dupla helice.** Ideia do autor, e e melhor que o taijitu em tudo:
+ela nasceu da mistura de dois, entao nao e um lado e outro lado — e as duas coisas
+enroscadas. Duas ondas espelhadas descem pelo disco, se cruzam, e a cada cruzamento a
+cor troca de fita; as celulas entre elas alternam e as pontes fazem ler DNA. A cada
+cruzamento uma fita passa por TRAS da outra, e e isso que da a volta. O desenho e um
+so (`HR.FragArt.helice`), usado pela skin e pela bola dos cards: ela tem que ser a
+mesma pessoa no mural e na mao de quem joga.
+
