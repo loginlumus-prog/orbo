@@ -1,5 +1,5 @@
 /* Service worker: cache do app shell para jogar offline (PWA). Suba a versão ao publicar. */
-const CACHE = 'orbo-v5.4.2';
+const CACHE = 'orbo-v5.4.3';
 const ASSETS = [
   './', './index.html', './manifest.json', './assets/icon.svg',
   './css/style.css', './css/hud.css', './css/shop.css', './css/galaxy.css', './css/v5.css', './css/v51.css', './css/v52.css', './css/v53.css', './css/v54.css',

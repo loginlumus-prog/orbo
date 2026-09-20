@@ -2,8 +2,10 @@
    ORBO v5.4: Galáxia navegável em dois níveis, com a mesma linguagem visual.
    - Tela da galáxia: os 10 sistemas viram estrelas em órbita; o sistema do chefe fica no centro.
    - Tela do sistema: as 10 fases viram mundos em órbita; a última (o chefe) fica no centro.
-   Tocar num sistema aproxima a câmera nele e a tela seguinte abre continuando a aproximação;
-   voltar afasta. Os botões continuam em DOM por cima (números, estrelas, cadeado), então
+   Câmera: tocar num sistema aproxima até ele e a tela seguinte abre continuando a aproximação;
+   voltar sai de dentro do sistema visitado e se afasta até o mapa inteiro. Canvas e rótulos
+   usam a mesma escala e o mesmo ponto de foco, então tudo se move junto.
+   Botão de voltar dentro do próprio mapa. Os botões dos corpos continuam em DOM, então
    toque, dicas e bloqueio seguem pelo mesmo código de sempre.
    Envolve HR.UI.renderRegion e HR.UI.renderSystem: troca só o bloco da lista (.lv-path).
    ===================================================================== */
@@ -12,7 +14,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const POOL = { world: ['planets', 'nebulae'], sun: ['stars'], core: ['blackholes'] };
   const TAU = Math.PI * 2;
-  let view = null, raf = null, ro = null;
+  let view = null, raf = null, ro = null, backFrom = null;
 
   const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const perfLow = () => !!(HR.Perf && HR.Perf.level === 0);
@@ -41,7 +43,7 @@
     return { pts, cx, cy, Rr, H, W };
   }
 
-  /* ---------------- fundo e arte dos corpos (desenhados uma vez) ---------------- */
+  /* ---------------- fundo e corpos (desenhados uma vez) ---------------- */
   function buildSky(W, H, R) {
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
@@ -66,7 +68,7 @@
     }
     return cv;
   }
-  // canvas com folga (o brilho da bola não é cortado) e escurecido dentro de um círculo, sem quadrado
+  // canvas com folga (o brilho não é cortado) e escurecido dentro de um círculo, sem quadrado
   function buildArt(skin, r, locked, seed, dpr) {
     const pad = r * 1.9, size = Math.ceil(pad * 2 * dpr);
     const cv = document.createElement('canvas');
@@ -83,29 +85,41 @@
     return { cv, pad };
   }
 
+  /* ---------------- câmera ---------------- */
+  // cam: { s0, s1, x0, y0, x1, y1, t0, dur, fade: 'in' | 'out' }
+  function camera(v, cam) { v.cam = cam; if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
+  function camState(v, t) {
+    const cam = v.cam;
+    if (!cam) return { s: 1, x: v.cx, y: v.cy, op: 1, done: true };
+    const k = Math.min(1, (t - cam.t0) / cam.dur), e = ease(k);
+    return {
+      s: cam.s0 + (cam.s1 - cam.s0) * e,
+      x: cam.x0 + (cam.x1 - cam.x0) * e,
+      y: cam.y0 + (cam.y1 - cam.y0) * e,
+      op: cam.fade === 'out' ? Math.max(0, 1 - k * 1.7) : Math.min(1, 0.15 + k * 1.9),
+      done: k >= 1
+    };
+  }
+
   /* ---------------- desenho ---------------- */
   function draw(t) {
     const v = view; if (!v) return;
-    const ctx = v.ctx, U = HR.U, acc = v.R.accent, glow = !perfLow(), W = v.W, H = v.H;
-    // câmera: aproxima ao entrar, afasta ao voltar
-    let s = 1;
-    if (v.camT != null) {
-      const k = Math.min(1, (t - v.camT) / v.camDur);
-      s = v.camFrom + (1 - v.camFrom) * ease(k);
-      if (k >= 1) { v.camT = null; v.wrap.classList.add('sv-ready'); }
-    }
-    if (v.zoomT != null) {
-      const k = Math.min(1, (t - v.zoomT) / 0.42);
-      s = 1 + 1.9 * ease(k);
+    const ctx = v.ctx, U = HR.U, acc = v.R.accent, glow = !perfLow(), W = v.W, H = v.H, still = v.still;
+    const cam = camState(v, t);
+    if (v.cam && cam.done && v.cam.fade !== 'out') v.cam = null;
+    // rótulos acompanham a mesma escala e o mesmo foco do canvas
+    if (v.nodes) {
+      v.nodes.style.transformOrigin = cam.x.toFixed(1) + 'px ' + cam.y.toFixed(1) + 'px';
+      v.nodes.style.transform = 'scale(' + cam.s.toFixed(3) + ')';
+      v.nodes.style.opacity = cam.op.toFixed(2);
     }
     ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
     if (v.sky) ctx.drawImage(v.sky, 0, 0, W, H);
     ctx.save();
-    const fx = v.zoomT != null ? v.zoomPt.x : v.cx, fy = v.zoomT != null ? v.zoomPt.y : v.cy;
-    ctx.translate(fx, fy); ctx.scale(s, s); ctx.translate(-fx, -fy);
+    ctx.translate(cam.x, cam.y); ctx.scale(cam.s, cam.s); ctx.translate(-cam.x, -cam.y);
 
-    const pts = v.pts, items = v.items, C = pts[9], still = v.still;
+    const pts = v.pts, items = v.items;
     // anel principal e faixa de progresso
     ctx.save(); ctx.translate(v.cx, v.cy);
     ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1.6; ctx.setLineDash([5, 8]);
@@ -113,14 +127,13 @@
     let doneUpTo = -1;
     for (let i = 0; i < 9; i++) { if (items[i].done) doneUpTo = i; else break; }
     if (doneUpTo >= 0) {
-      const a0 = pts[0].a, a1 = pts[Math.min(doneUpTo + 1, 8)].a;
       ctx.strokeStyle = U.rgba(acc, 0.8); ctx.lineWidth = 3;
       if (glow) { ctx.shadowColor = acc; ctx.shadowBlur = 12; }
-      ctx.beginPath(); ctx.ellipse(0, 0, v.Rr, v.Rr * 0.9, 0, a0, a1); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, 0, v.Rr, v.Rr * 0.9, 0, pts[0].a, pts[Math.min(doneUpTo + 1, 8)].a); ctx.stroke();
       ctx.shadowBlur = 0;
     }
     ctx.restore();
-    // raios até o centro: o caminho fica aceso quando o penúltimo passo está vencido
+    // raios até o centro
     const openCore = items[8].done || items[9].unlocked;
     for (let i = 0; i < 9; i++) {
       const p = pts[i], lit = openCore && items[i].done;
@@ -128,7 +141,7 @@
       ctx.lineWidth = lit ? 1.8 : 1;
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(v.cx, v.cy); ctx.stroke();
     }
-    // pulso de luz correndo pelo anel vencido
+    // pulso de luz correndo pelo trecho vencido
     if (doneUpTo >= 0 && !still) {
       const a = pts[0].a + ((t * 0.5) % 1) * (pts[Math.min(doneUpTo + 1, 8)].a - pts[0].a);
       const px = v.cx + Math.cos(a) * v.Rr, py = v.cy + Math.sin(a) * v.Rr * 0.9;
@@ -139,7 +152,6 @@
 
     items.forEach((it, i) => {
       const p = pts[i], r = p.r, center = i === 9;
-      // centro: aura do chefe
       if (center) {
         const k = still ? 0.5 : 0.5 + Math.sin(t * 1.5) * 0.5;
         const col = it.done ? '#ffcf4a' : it.unlocked ? '#ff5e7e' : '#5a6488';
@@ -147,13 +159,12 @@
         ag.addColorStop(0, U.rgba(col, 0.26 + k * 0.16)); ag.addColorStop(1, U.rgba(col, 0));
         ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(p.x, p.y, r * 2.6, 0, TAU); ctx.fill();
       }
-      // órbita do corpo
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(-0.4 + (still ? 0 : Math.sin(t * 0.35 + i) * 0.05));
       ctx.strokeStyle = it.unlocked ? U.rgba(acc, it.done ? 0.45 : 0.24) : 'rgba(255,255,255,0.1)';
       ctx.lineWidth = center ? 2.2 : 1.4;
       ctx.beginPath(); ctx.ellipse(0, 0, r * 1.5, r * 0.56, 0, 0, TAU); ctx.stroke();
       ctx.restore();
-      // corpo
+
       const art = v.art[i];
       if (art) {
         ctx.save(); ctx.translate(p.x, p.y);
@@ -161,7 +172,6 @@
         ctx.drawImage(art.cv, -art.pad, -art.pad, art.pad * 2, art.pad * 2);
         ctx.restore();
       }
-      // luas
       if (it.unlocked && !perfLow()) {
         const moons = center ? 3 : (i % 2 ? 1 : 2);
         for (let m = 0; m < moons; m++) {
@@ -191,7 +201,7 @@
     const v = view;
     if (!v || !v.wrap.isConnected || (HR.UI.stack && HR.UI.stack.indexOf(v.screen) < 0)) { view = null; return; }
     if (!document.hidden) draw(performance.now() / 1000);
-    if (!v.still || v.camT != null || v.zoomT != null) raf = requestAnimationFrame(loop);
+    if (!v.still || v.cam) raf = requestAnimationFrame(loop);
   }
 
   /* ---------------- DOM por cima ---------------- */
@@ -216,88 +226,108 @@
     return h + '</button>';
   }
 
-  function build(screen, wrap, items, R, camFrom) {
+  function build(screen, wrap, items, R, cam) {
     const W = Math.max(240, wrap.clientWidth || 340), L = layout(W);
     const dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     wrap.style.height = L.H + 'px';
     const cv = wrap.querySelector('.sv-cv'), nodes = wrap.querySelector('.sv-nodes');
     cv.width = W * dpr; cv.height = L.H * dpr; cv.style.width = W + 'px'; cv.style.height = L.H + 'px';
     nodes.innerHTML = items.map((it, i) => nodeHtml(it, L.pts[i], i)).join('');
-    wrap.classList.remove('sv-ready');
     const still = reduceMotion();
     view = {
-      screen, wrap, cv, ctx: cv.getContext('2d'), W, H: L.H, dpr, cx: L.cx, cy: L.cy, Rr: L.Rr,
+      screen, wrap, cv, nodes, ctx: cv.getContext('2d'), W, H: L.H, dpr, cx: L.cx, cy: L.cy, Rr: L.Rr,
       pts: L.pts, items, R, still, ballSkin: equippedSkin(),
       art: items.map((it, i) => buildArt(it.skin, L.pts[i].r, !it.unlocked, i * 1.7, dpr)),
-      sky: buildSky(W, L.H, R),
-      camFrom: still ? 1 : camFrom, camDur: 0.62, camT: still ? null : performance.now() / 1000, zoomT: null
+      sky: buildSky(W, L.H, R), cam: null
     };
-    if (still) wrap.classList.add('sv-ready');
+    if (!still && cam) {
+      const from = cam.from || {};
+      const fx = from.x != null ? from.x : L.cx, fy = from.y != null ? from.y : L.cy;
+      view.cam = { s0: from.s != null ? from.s : 1, s1: 1, x0: fx, y0: fy, x1: L.cx, y1: L.cy, t0: performance.now() / 1000, dur: cam.dur || 0.66, fade: 'in' };
+    }
     draw(performance.now() / 1000);
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(loop);
+    return L;
   }
 
-  function mount(body, screen, items, R, camFrom, onNode) {
+  function mount(body, screen, items, R, cam, backLabel, onNode) {
     const path = body.querySelector('.lv-path'); if (!path) return;
     const wrap = HR.U.el('div', 'sv-wrap');
-    wrap.innerHTML = '<canvas class="sv-cv" aria-hidden="true"></canvas><div class="sv-nodes"></div>';
+    wrap.innerHTML = '<canvas class="sv-cv" aria-hidden="true"></canvas><div class="sv-nodes"></div>' +
+      '<button type="button" class="sv-back">' + HR.icon('chevronLeft') + '<span>' + esc(backLabel) + '</span></button>';
     path.parentNode.replaceChild(wrap, path);
-    build(screen, wrap, items, R, camFrom);
+    const L = build(screen, wrap, items, R, cam);
+    wrap.querySelector('.sv-back').addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (HR.Audio) HR.Audio.sfx('click');
+      HR.UI.back();
+    });
     if (onNode) wrap.addEventListener('click', onNode, true);
+    // o mapa entra no campo de visão: sem isso a animação acontecia abaixo da dobra
+    requestAnimationFrame(() => {
+      if (!wrap.isConnected || !wrap.scrollIntoView) return;
+      try { wrap.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' }); }
+      catch (_) { wrap.scrollIntoView(); }
+    });
     if (ro) { ro.disconnect(); ro = null; }
     if ('ResizeObserver' in window) {
       let w0 = wrap.clientWidth;
-      ro = new ResizeObserver(() => { if (wrap.isConnected && Math.abs(wrap.clientWidth - w0) > 8) { w0 = wrap.clientWidth; build(screen, wrap, items, R, 1); } });
+      ro = new ResizeObserver(() => { if (wrap.isConnected && Math.abs(wrap.clientWidth - w0) > 8) { w0 = wrap.clientWidth; build(screen, wrap, items, R, null); } });
       ro.observe(wrap);
     }
+    return L;
   }
 
   /* ---------------- galáxia: os 10 sistemas ---------------- */
   const origRenderRegion = HR.UI.renderRegion;
-  HR.UI.renderRegion = function (arg) {
+  HR.UI.renderRegion = function () {
     const r = origRenderRegion.apply(this, arguments);
     const body = $('#region-body'); if (!body || !HR.Render || !HR.Render.drawBall) return r;
     const first = body.querySelector('[data-system]'); if (!first) return r;
     const ri = +first.getAttribute('data-system').split('-')[0];
     const C = HR.Campaign, R = HR.REGIONS[ri], cur = C.currentSystem(ri), need = HR.CONFIG.PROGRESSION.systemStars[ri];
     const galOpen = C.isRegionUnlocked(ri);
+    const GREEK = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ'];
     const items = HR.SYSTEM_KEYS.map((key, si) => {
       const st = C.systemState(ri, si), stars = C.systemStars(ri, si), unlocked = st !== 'locked', boss = si === 9;
       const name = HR.t('system_n', { name: C.systemName(si) });
       return {
-        attr: 'data-system="' + ri + '-' + si + '"', label: '', icon: boss ? HR.icon(HR.BOSSES[R.boss].icon) : null,
+        attr: 'data-system="' + ri + '-' + si + '"', label: boss ? '' : GREEK[si], icon: boss ? HR.icon(HR.BOSSES[R.boss].icon) : null,
         name: C.systemName(si), sub: stars + '/30', stars: null,
         done: st === 'done', unlocked, current: galOpen && si === cur && st === 'open', boss,
         skin: skinFrom(boss ? POOL.core : POOL.sun, R.id + '-' + si, si),
         tipT: name, tipD: !galOpen ? HR.t('locked') : !unlocked ? HR.t('system_locked', { name: C.systemName(si - 1), n: need }) : HR.t('stars_of', { a: stars, b: 30 }), aria: name
       };
     });
-    items.forEach((it, i) => { if (!it.icon) it.label = ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ'][i]; });
-    mount(body, 'region', items, R, 1.28, e => {
+    // voltando de um sistema: a câmera sai de dentro dele e se afasta até o mapa inteiro
+    const L0 = layout(Math.max(240, body.clientWidth - 4 || 340));
+    const from = (backFrom && backFrom.ri === ri) ? { s: 2.5, x: L0.pts[backFrom.si].x, y: L0.pts[backFrom.si].y } : { s: 1.16, x: L0.cx, y: L0.cy };
+    const dur = (backFrom && backFrom.ri === ri) ? 0.7 : 0.45;
+    backFrom = null;
+    mount(body, 'region', items, R, { from, dur }, HR.t('galaxy'), e => {
       const btn = e.target.closest && e.target.closest('[data-system]'); if (!btn || !view) return;
       const si = +btn.getAttribute('data-system').split('-')[1];
       if (!C.systemUnlocked(ri, si)) return;             // bloqueado: deixa o aviso de sempre acontecer
       e.preventDefault(); e.stopPropagation();
       if (HR.Audio) HR.Audio.sfx('click');
       if (view.still) { HR.UI.open('system', ri + '-' + si); return; }
-      view.zoomPt = view.pts[si]; view.zoomT = performance.now() / 1000;
-      view.wrap.classList.add('sv-zoom');
-      if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(loop);
-      setTimeout(() => HR.UI.open('system', ri + '-' + si), 330);
+      const p = view.pts[si];
+      camera(view, { s0: 1, s1: 3.1, x0: p.x, y0: p.y, x1: p.x, y1: p.y, t0: performance.now() / 1000, dur: 0.38, fade: 'out' });
+      setTimeout(() => HR.UI.open('system', ri + '-' + si), 300);
     });
     return r;
   };
 
   /* ---------------- sistema: as 10 fases, chefe no centro ---------------- */
   const origRenderSystem = HR.UI.renderSystem;
-  HR.UI.renderSystem = function (arg) {
+  HR.UI.renderSystem = function () {
     const r = origRenderSystem.apply(this, arguments);
     const body = $('#system-body'); if (!body || !HR.Render || !HR.Render.drawBall) return r;
     const first = body.querySelector('[data-level]'); if (!first) return r;
     const ids = first.getAttribute('data-level').split('-'), ri = +ids[0] - 1, si = +ids[1] - 1;
     const C = HR.Campaign, R = HR.REGIONS[ri], levels = C.systemLevels(ri, si), cur = C.currentLevel();
+    backFrom = { ri, si };
     const items = levels.map((L, i) => {
       const stars = C.stars(L.id), boss = !!L.boss;
       const tipD = (boss ? C.bossName(L) + ' · ' : '') + HR.t('rings_n', { n: L.rings }) + ' · ×' + L.speed.toFixed(2) +
@@ -311,7 +341,7 @@
         tipT: HR.t('level_n', { n: L.id }), tipD, aria: HR.t('level_n', { n: L.id })
       };
     });
-    mount(body, 'system', items, R, 0.46, null);
+    mount(body, 'system', items, R, { from: { s: 0.34 }, dur: 0.72 }, HR.t('systems'));
     return r;
   };
 })();
