@@ -66,7 +66,10 @@ HR.CONTRACTS = [
     else pool = ['right', 'top', 'left', 'bottom'];
     const swaps = R.mech === 'storm' || R.mech === 'vortex' || R.mech === 'hyper';
     const count = swaps ? Math.min(4, 2 + Math.floor(li / 3)) : Math.min(pool.length, 1 + Math.floor((li + si * 0.5) / 3));
-    const start = (ri * 3 + si * 5 + li * 2) % pool.length, step = (ri + si) % 2 ? 1 : 3;
+    // passo 1 em li: as fases seguidas percorrem as quatro direcoes do baralho.
+    // Com passo 2 (como era) so davam dois indices, sempre do mesmo eixo, e o
+    // sistema inteiro comecava sempre na horizontal ou sempre na vertical.
+    const start = (ri * 3 + si * 5 + li) % pool.length, step = (ri + si) % 2 ? 1 : 3;
     const out = [];
     for (let i = 0; i < count; i++) { const d = pool[(start + i * step) % pool.length]; if (!out.includes(d)) out.push(d); }
     return out;

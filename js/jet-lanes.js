@@ -392,6 +392,15 @@ window.HR = window.HR || {};
 
   // Teclado ligado direto no corredor: nao depende do estado de teclas de ninguem.
   // Uma tecla = um passo; segurar nao repete (o navegador marca repeat).
+  // A tecla e PROJETADA no eixo das faixas: numa fase que corre para a direita as
+  // faixas estao uma sobre a outra (W/S); numa que corre para cima ou para baixo
+  // elas ficam lado a lado (A/D). Assim vale para as quatro direcoes de fase.
+  const TECLAS = [
+    { c: ['KeyW', 'ArrowUp'],    k: ['w', 'arrowup', 'up'],       sx: 0,  sy: -1 },
+    { c: ['KeyS', 'ArrowDown'],  k: ['s', 'arrowdown', 'down'],   sx: 0,  sy: 1 },
+    { c: ['KeyA', 'ArrowLeft'],  k: ['a', 'arrowleft', 'left'],   sx: -1, sy: 0 },
+    { c: ['KeyD', 'ArrowRight'], k: ['d', 'arrowright', 'right'], sx: 1,  sy: 0 }
+  ];
   window.addEventListener('keydown', function (e) {
     if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
     const g = HR.game;
@@ -399,8 +408,13 @@ window.HR = window.HR || {};
     if (!(g.state === 'playing' || g.state === 'ready')) return;
     if (HR.UI && HR.UI.isModalOpen && HR.UI.isModalOpen()) return;
     const c = e.code || '', k = (e.key || '').toLowerCase();
-    if (c === 'KeyW' || c === 'ArrowUp' || k === 'w' || k === 'arrowup' || k === 'up') { g.jetStepLane(-1); e.preventDefault(); }
-    else if (c === 'KeyS' || c === 'ArrowDown' || k === 's' || k === 'arrowdown' || k === 'down') { g.jetStepLane(1); e.preventDefault(); }
+    const t = TECLAS.find(x => x.c.indexOf(c) >= 0 || x.k.indexOf(k) >= 0);
+    if (!t) return;
+    const V = g.vAxis();
+    const proj = t.sx * V.x + t.sy * V.y;
+    if (Math.abs(proj) < 0.5) { e.preventDefault(); return; }   // tecla do outro eixo: nao faz nada
+    g.jetStepLane(proj > 0 ? 1 : -1);
+    e.preventDefault();
   }, true);
 
   HR.JetTrack = { PASSOS, MAX_PILHA, GRAUS, SOBE_A_CADA, PASSO, grauDe };

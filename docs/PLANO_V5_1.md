@@ -280,3 +280,21 @@ continua valendo, e a barra do HUD anda liso. Arquivos: js/fx-v65.js e js/jet-la
   cada um com um farol pulsando na cor dele. A pessoa ve o melhor caminho antes de chegar.
   Os poderes tambem ficaram mais frequentes (de 24/18/14/11/9 passos para 14/12/10/8/7),
   porque agora eles sao o destino da trilha, nao um bonus solto.
+
+## v6.6 (2026-09-23) — direcao das fases e A/D no corredor
+
+**Todo sistema comecava no mesmo eixo.** O indice de partida em `dirsFor` era
+`(ri*3 + si*5 + li*2) % 4`. Com passo 2 em `li` num baralho de 4 direcoes, so dois indices
+sao alcancados — e sempre do mesmo par. Cada sistema ficava preso num eixo: a galaxia 3
+comecava as dez fases do sistema 1 na horizontal, a 4 comecava todas na vertical. Trocando
+o passo para 1, as fases seguidas percorrem as quatro direcoes e toda sequencia de quatro
+tem duas comecando de cima ou de baixo. As primeiras quatro fases de cada galaxia passaram
+de (por exemplo, galaxia 3) `left, right, left, right` para `left, bottom, right, top`.
+O sistema 1 da galaxia 1 continua sendo a rampa de ensino de sempre.
+
+**A e D no corredor.** Quando a fase corre na vertical, as tres faixas ficam lado a lado na
+tela — entao quem troca de faixa e A/D, nao W/S. Em vez de tratar o caso a parte, a tecla e
+projetada no eixo das faixas: cada tecla vale no eixo em que ela realmente aponta, nas quatro
+direcoes de fase, e a tecla do outro eixo simplesmente nao faz nada. Conferido: em fase
+horizontal W/S mandam e D e ignorado; em fase vertical A/D e as setas laterais mandam e W e
+ignorado.
