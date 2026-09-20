@@ -151,3 +151,52 @@ tem `pointer-events: none !important`. Tela escondida nao recebe toque nenhum, n
 Conferido: durante a partida os cinco botoes do HUD continuam clicaveis e o HUD segue deixando
 o toque passar para o jogo; com o menu na frente, nenhum dos botoes das cinco telas escondidas
 recebe toque.
+
+## v6.4 (2026-09-22) — otimizacao de verdade
+
+Medicao antes de mexer (fase 1-1-1, no Muito bom): o JS do jogo custava **1,2 ms** por
+quadro (update 0,30 + render 0,95) e sobravam **19,5 ms fora dele**. Ou seja, o problema
+nunca foi o desenho do jogo.
+
+**O culpado: animacao de tela escondida.** `opacity: 0` nao para animacao CSS. Os aneis
+girando do menu, a poeira, os cometas e os aneis conicos dos oito botoes continuavam sendo
+repintados durante a partida inteira, atras do HUD. Provado por A/B no mesmo aparelho:
+
+| caso | fps | p95 |
+|---|---|---|
+| Muito bom como estava | 50,3 | 30,9 ms |
+| so desligando animacao de tela escondida | **60,2** | **18,5 ms** |
+| com `display: none` nas escondidas (referencia) | 60,2 | 17,2 ms |
+| tambem sem animacao no HUD | 60,3 | 18,6 ms (nao muda nada) |
+
+A correcao e uma regra de CSS: `.screen:not(.visible)` e `.modal:not(.visible)`, e tudo
+dentro delas, ficam com `animation: none`.
+
+**Fundo base guardado numa camada.** O degrade de tela cheia e a tonalidade da fase eram
+dois preenchimentos de tela inteira por quadro — em retina, 3 milhoes de pixels vezes dois.
+Nenhum dos dois muda de um quadro para o outro (a tonalidade entra a 2% por quadro). Agora
+vao para uma camada refeita so quando a cor anda mais de 2 tons, e o quadro faz uma copia.
+Por quadro: `fillRect` caiu de 3 para 1 e os dois degrades de tela cheia sumiram.
+
+**HUD:** as variaveis de estilo (`--p`, `--m`, `--flow`) eram reescritas a cada quadro mesmo
+sem mudar de valor, o que invalida o estilo da arvore inteira do HUD. Agora so escreve quando
+o valor muda.
+
+**Niveis recalibrados.** Como o desenho custa entre 0,3 ms e 0,6 ms em qualquer nivel, o que
+ainda pesa em celular e a quantidade de pixel. A resolucao volta a ser o degrau principal e
+os efeitos param de ser cortados cedo demais:
+
+| nivel | resolucao | particulas | efeitos |
+|---|---|---|---|
+| Muito bom | 2,00x | 1200 | tudo |
+| Bom | 2,00x | 700 | tudo |
+| Normal | 1,50x | 300 | sem cenario, sem 2o efeito |
+| Baixo | 1,00x | 80 | so o essencial |
+
+**Chute inicial otimista.** Antes qualquer aparelho com 4 nucleos caia no Normal. Agora:
+2 nucleos ou 2 GB = Baixo; 3 nucleos ou 3 GB = Normal; 6 nucleos ou mais (com 6 GB, ou iOS,
+que nao informa memoria) = Muito bom; o resto = Bom. Comecar alto custa pouco porque o vigia
+desce em 3 segundos se travar — comecar baixo deixaria aparelho bom feio para sempre.
+
+Depois de tudo, na fase 1-1-1: Muito bom 59,6 fps (p95 17,8 ms); em retina simulada,
+Muito bom 57,1 e Bom 56,1; Normal e Baixo 60 fps cravados, zero quadro lento.

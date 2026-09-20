@@ -15,10 +15,10 @@ window.HR = window.HR || {};
 HR.Perf = {
   // dpr = resolução · part = teto de partículas · bg = quanto do fundo é desenhado
   TABLE: [
-    { dpr: 1.00, part: 60,   fx2: false, bgFx: false, scenes: false, bg: 0.25, glow: false, anims: false, trail: false, flow: false },
-    { dpr: 1.25, part: 220,  fx2: false, bgFx: true,  scenes: false, bg: 0.55, glow: true,  anims: false, trail: true,  flow: false },
-    { dpr: 1.75, part: 600,  fx2: true,  bgFx: true,  scenes: true,  bg: 1.00, glow: true,  anims: true,  trail: true,  flow: true },
-    { dpr: 2.00, part: 1000, fx2: true,  bgFx: true,  scenes: true,  bg: 1.25, glow: true,  anims: true,  trail: true,  flow: true }
+    { dpr: 1.00, part: 80,   fx2: false, bgFx: false, scenes: false, bg: 0.30, glow: false, anims: false, trail: false, flow: false },
+    { dpr: 1.50, part: 300,  fx2: false, bgFx: true,  scenes: false, bg: 0.65, glow: true,  anims: false, trail: true,  flow: false },
+    { dpr: 2.00, part: 700,  fx2: true,  bgFx: true,  scenes: true,  bg: 1.00, glow: true,  anims: true,  trail: true,  flow: true },
+    { dpr: 2.00, part: 1200, fx2: true,  bgFx: true,  scenes: true,  bg: 1.30, glow: true,  anims: true,  trail: true,  flow: true }
   ],
   MODES: ['auto', 'ultra', 'high', 'normal', 'low'],
   BY_MODE: { ultra: 3, high: 2, normal: 1, low: 0 },
@@ -39,19 +39,17 @@ HR.Perf = {
     const saved = s && s.qualityAuto2;
     return typeof saved === 'number' ? Math.max(0, Math.min(3, saved)) : this.guess();
   },
-  // chute inicial: memória, núcleos, tela e economia de dados
+  // Chute inicial. Comeca otimista de proposito: se travar, o vigia desce em 3 s.
+  // O contrario (comecar baixo) deixa aparelho bom feio para sempre, porque nada sobe.
+  // O iOS nao informa memória (fica nulo): la o numero de nucleos decide sozinho.
   guess() {
-    const mem = navigator.deviceMemory || 4, cores = navigator.hardwareConcurrency || 4;
-    const conn = navigator.connection || {}, save = !!conn.saveData;
-    const px = (window.screen ? screen.width * screen.height : 400000) * Math.min(2, window.devicePixelRatio || 1);
-    let lv = 3;
-    if (mem <= 2 || cores <= 2) lv = 0;
-    else if (mem <= 4 || cores <= 4) lv = 1;
-    else if (mem <= 6 || cores <= 6) lv = 2;
-    if (save) lv = Math.min(lv, 1);
-    // tela grande e poucos núcleos: o preenchimento pesa mais que a conta
-    if (px > 2200000 && cores <= 6) lv = Math.min(lv, 1);
-    return lv;
+    const cores = navigator.hardwareConcurrency || 4;
+    const mem = typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null;
+    if ((navigator.connection || {}).saveData) return 1;      // economia de dados: respeita
+    if (cores <= 2 || (mem !== null && mem <= 2)) return 0;    // bem fraco (ex.: iPhone 7)
+    if (cores <= 3 || (mem !== null && mem <= 3)) return 1;    // fraco
+    if (cores >= 6 && (mem === null || mem >= 6)) return 3;    // aparelho bom
+    return 2;                                                   // a grande maioria
   },
 
   T() { return this.TABLE[this.level] || this.TABLE[1]; },

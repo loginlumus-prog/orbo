@@ -570,7 +570,7 @@ HR.Render.Background = class {
   build() {
     if (!this.theme || !this.W) return;
     const U = RU(), W = this.W, H = this.H;
-    this.grad = null;
+    this.grad = null; this.baseLayer = null; this.baseC = null;
     // v6.2: o nível de gráfico decide quantos elementos o fundo tem
     const q = HR.Perf && HR.Perf.bg ? HR.Perf.bg() : 1, qn = (v, min) => Math.max(min || 0, Math.round(v * q));
     this.stars = [];
@@ -730,22 +730,35 @@ HR.Render.Background = class {
     }
     ctx.restore(); ctx.globalAlpha = 1;
   }
+  // degrade de fundo + tonalidade da fase numa camada guardada: o quadro so copia.
+  // Refaz quando a tela muda de tamanho, quando o tema troca ou quando a cor anda
+  // mais de 2 tons — a tonalidade entra a 2% por quadro, entao isso e raro.
+  baseLayerDraw(ctx, W, H, c, th) {
+    const bw = Math.max(1, Math.round(W)), bh = Math.max(1, Math.round(H)), b = this.baseC;
+    if (!this.baseLayer || this.baseLayer.width !== bw || this.baseLayer.height !== bh || !b ||
+        Math.abs(b.r - c.r) > 2 || Math.abs(b.g - c.g) > 2 || Math.abs(b.b - c.b) > 2) {
+      if (!this.baseLayer) this.baseLayer = document.createElement('canvas');
+      if (this.baseLayer.width !== bw || this.baseLayer.height !== bh) { this.baseLayer.width = bw; this.baseLayer.height = bh; }
+      const bx = this.baseLayer.getContext('2d');
+      const lg = bx.createLinearGradient(0, 0, 0, bh);
+      lg.addColorStop(0, th.colors[0]); lg.addColorStop(0.55, th.colors[1]); lg.addColorStop(1, th.colors[2]);
+      bx.fillStyle = lg; bx.fillRect(0, 0, bw, bh);
+      const tg = bx.createRadialGradient(bw * 0.85, bh * 0.1, 0, bw * 0.85, bh * 0.1, bh * 0.9);
+      tg.addColorStop(0, 'rgba(' + (c.r | 0) + ',' + (c.g | 0) + ',' + (c.b | 0) + ',0.16)');
+      tg.addColorStop(1, 'rgba(0,0,0,0)');
+      bx.fillStyle = tg; bx.fillRect(0, 0, bw, bh);
+      this.baseC = { r: c.r, g: c.g, b: c.b };
+    }
+    ctx.drawImage(this.baseLayer, 0, 0, W, H);
+  }
   draw(ctx, t) {
     const U = RU(), W = this.W, H = this.H, th = this.theme;
     if (!th) return;
     const sx = this.sx || 0, sy = this.sy || 0;
-    if (!this.grad) {
-      this.grad = ctx.createLinearGradient(0, 0, 0, H);
-      this.grad.addColorStop(0, th.colors[0]); this.grad.addColorStop(0.55, th.colors[1]); this.grad.addColorStop(1, th.colors[2]);
-    }
-    ctx.fillStyle = this.grad; ctx.fillRect(0, 0, W, H);
-
     // tonalidade da fase (suave, interpolada)
     const tc = U.hexToRgb(this.tint), c = this.tintCur;
     c.r += (tc.r - c.r) * 0.02; c.g += (tc.g - c.g) * 0.02; c.b += (tc.b - c.b) * 0.02;
-    const tg = ctx.createRadialGradient(W * 0.85, H * 0.1, 0, W * 0.85, H * 0.1, H * 0.9);
-    tg.addColorStop(0, 'rgba(' + (c.r | 0) + ',' + (c.g | 0) + ',' + (c.b | 0) + ',0.16)'); tg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H);
+    this.baseLayerDraw(ctx, W, H, c, th);
 
     // efeitos de região: água (feixes de luz + cáusticas) · brasas (partículas subindo)
     const fx = (HR.Perf && HR.Perf.bgFx && !HR.Perf.bgFx()) ? null : (this.fx || th.fx);

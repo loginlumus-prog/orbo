@@ -175,8 +175,17 @@
       el.classList.toggle('held', S.active && live);
       el.classList.toggle('dim', live && this.game.run.autoT > 0 && !this.game.run.anomalyActive);
       const x = S.active ? S.x * T : 0, y = S.active ? S.y * T : 0;
-      knob.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
-      el.style.setProperty('--m', (S.active ? m : 0).toFixed(2));
+      const tr = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+      if (knob._tr !== tr) { knob._tr = tr; knob.style.transform = tr; }
+      this.setVar(el, '--m', (S.active ? m : 0).toFixed(2));
+    },
+    // escreve a variavel de estilo so quando o valor muda: escrever igual
+    // invalida o estilo da arvore inteira sem motivo
+    setVar(el, name, value) {
+      if (!el) return;
+      const k = '_v' + name;
+      if (el[k] === value) return;
+      el[k] = value; el.style.setProperty(name, value);
     },
     startHudLoop() {
       if (this.hudRaf) return;
@@ -188,7 +197,7 @@
           const ab = run.abilities[+btn.dataset.slot]; if (!ab) return;
           const total = HR.Abilities.cooldown(ab.id, run);
           const p = total > 0 ? 1 - ab.cd / total : 1;
-          btn.style.setProperty('--p', p.toFixed(3));
+          this.setVar(btn, '--p', p.toFixed(3));
           btn.classList.toggle('ready', ab.cd <= 0);
           btn.classList.toggle('active', ab.active > 0);
           const cd = $('.ab-cd', btn); if (cd) cd.textContent = ab.cd > 0 ? Math.ceil(ab.cd) : '';
@@ -198,13 +207,13 @@
           const G = HR.GEAR.consumables.aegis, n = HR.Consumables.count('aegis'), active = run.aegisT > 0, cd = run.aegisCd > 0;
           gb.classList.toggle('active', active); gb.classList.toggle('ending', active && run.aegisT < 3); gb.classList.toggle('cd', cd);
           gb.classList.toggle('empty', !active && !cd && n <= 0); gb.classList.toggle('ready', !active && !cd && n > 0 && this.game.state === 'playing');
-          gb.style.setProperty('--p', active ? (run.aegisT / G.dur).toFixed(3) : cd ? (1 - run.aegisCd / G.cd).toFixed(3) : '1');
+          this.setVar(gb, '--p', active ? (run.aegisT / G.dur).toFixed(3) : cd ? (1 - run.aegisCd / G.cd).toFixed(3) : '1');
           const cdEl = gb.querySelector('.gb-cd'), txt = cd ? String(Math.ceil(run.aegisCd)) : active ? String(Math.ceil(run.aegisT)) : ''; if (cdEl.textContent !== txt) cdEl.textContent = txt;
           const ce = gb.querySelector('.gb-count'); if (ce.textContent !== String(n)) ce.textContent = n;
         }
         const jetsEl = $('#hud-jets'); if (jetsEl) jetsEl.classList.toggle('show', !!jetsEl.childElementCount && !run.jetUsed && run.ringsResolved === 0 && (this.game.state === 'ready' || this.game.state === 'playing'));
         this.updateStick();
-        $('#screen-hud').style.setProperty('--flow', run.flowV.toFixed(2));
+        this.setVar($('#screen-hud'), '--flow', run.flowV.toFixed(2));
         this.hudPowers(run);
         const ev = this.game.event; if (ev && ev.dur) this.fill('evFill', 1 - ev.t / ev.dur); else if (ev && ev.id === 'guardian') this.fill('evFill', 1 - ev.passed / 3);
         const v = $('#fx-vignette');
