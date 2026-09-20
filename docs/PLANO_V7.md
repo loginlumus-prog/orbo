@@ -242,3 +242,21 @@ cada fragmento), e a reescrita da abertura e da galaxia 1 na chave nova.
 so no `refreshMenu`, mas tocar em "Infinito" chama `refreshMode` — entao o selo so
 aparecia se a pessoa entrasse no menu de novo. Bug latente desde a v6.1. Agora os dois
 desenham o selo.
+
+**v6.8 (2026-09-25) — a abertura na chave nova.**
+
+Antes Faisca sabia tudo desde a primeira cena: o ceu abriu, os pais foram puxados, ela vai
+atras. Nao havia o que descobrir, e nada disso batia com os fragmentos.
+
+Agora ela acorda **sem lembrar de nada**. A unica coisa que sente e uma falta — e a falta
+tem formato. O lugar tambem parece recem-feito, que e o primeiro degrau da escada que so
+fecha na galaxia 9. A pergunta da abertura deixou de ser "voce entendeu o que aconteceu?"
+e virou **"voce lembra de alguma coisa?"**.
+
+Ajustes de coerencia na galaxia 1: Vela virou o pai (a luz branca) e Ancora a mae (a
+escura), entao Casco passou a falar do pai e a carta esta com a letra dele; o "lugar onde o
+ceu abriu" virou "tem um fora?", porque ela nao sabe nem isso.
+
+Tambem entrou: o letreiro passou a ser so a palavra (sem arcos, sem bola, sem cor) e a skin
+de Faisca, que nao se compra — ganha-se **respondendo** uma pergunta da historia. Quem pula
+todas joga o jogo inteiro sem ela. Conferido nos dois caminhos.
