@@ -5,7 +5,8 @@ HR.Input = {
   el: null, down: false, pointerId: null, lastX: 0, lastY: 0, dx: 0, dy: 0, absY: 0, absX: 0, hasHover: false,
   keys: { up: false, down: false, left: false, right: false },
   // analógico virtual: origem no ponto do toque, arrastada junto quando o dedo passa do raio
-  stick: { active: false, ox: 0, oy: 0, x: 0, y: 0, R: 46 }, onTap: null, onEscape: null, onAbility: null, lastPointerType: 'touch',
+  stick: { active: false, ox: 0, oy: 0, x: 0, y: 0, R: 46 }, onTap: null, onEscape: null, onAbility: null, onDoubleTap: null, lastPointerType: 'touch',
+  tap_: { t: 0, x: 0, y: 0 },
 
   attach(el) {
     this.el = el;
@@ -18,6 +19,10 @@ HR.Input = {
       this.lastX = e.clientX; this.lastY = e.clientY; this.absY = e.clientY; this.absX = e.clientX;
       const S = this.stick; S.active = true; S.ox = e.clientX; S.oy = e.clientY; S.x = 0; S.y = 0;
       try { el.setPointerCapture(e.pointerId); } catch (_) { /* ok */ }
+      // dois toques rápidos e no mesmo lugar: atalho da Égide
+      const T = this.tap_, now = e.timeStamp || Date.now();
+      if (now - T.t < 320 && Math.hypot(e.clientX - T.x, e.clientY - T.y) < 28) { T.t = 0; if (this.onDoubleTap) this.onDoubleTap(e); }
+      else { T.t = now; T.x = e.clientX; T.y = e.clientY; }
       if (this.onTap) this.onTap(e);
     }, { passive: true });
 

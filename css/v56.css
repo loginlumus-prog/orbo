@@ -1,0 +1,57 @@
+/* =====================================================================
+   ORBO v5.6: HUD mais enxuto, ficha de talentos em árvore e conquista discreta na partida.
+   ===================================================================== */
+
+/* ---------- HUD menor: o número não toma mais a tela ---------- */
+.hud-score { font-size: 40px; text-shadow: 0 3px 16px rgba(0,0,0,0.55); }
+.hud-combo { font-size: 14px; letter-spacing: 0.5px; }
+.hud-progress { gap: 4px; margin-top: 2px; }
+.hud-phase-label { font-size: 9px; letter-spacing: 2px; opacity: 0.85; }
+.seg-bar { width: 150px; gap: 2px; }
+.seg-bar i { height: 4px; }
+@media (max-height: 720px) { .hud-score { font-size: 34px; } .seg-bar { width: 132px; } }
+
+/* ---------- fileira de talentos: agora é botão ---------- */
+.hud-perks { pointer-events: none; }
+.hud-perks.has-perks { pointer-events: auto; cursor: pointer; }
+.hud-perks.pop { animation: perks-pop 0.42s cubic-bezier(0.2,0.9,0.25,1.3); }
+@keyframes perks-pop { 0% { transform: scale(1); } 40% { transform: scale(1.16); } 100% { transform: scale(1); } }
+
+/* ---------- ficha da partida (talentos em árvore) ---------- */
+.perk-modal { z-index: 24; }
+.perk-card { max-width: 400px; width: 100%; max-height: 86vh; padding: 16px 14px 14px; gap: 10px; text-align: left; align-items: stretch; }
+.perk-head { display: flex; flex-direction: column; gap: 2px; align-items: center; }
+.perk-head h3 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 600; }
+.perk-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; padding-right: 2px; }
+
+.perk-stats { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.perk-stat { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px; border-radius: 999px; background: rgba(255,255,255,0.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1); }
+.ps-ic { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: var(--accent); background: rgba(76,240,255,0.14); }
+.ps-ic .i { width: 13px; height: 13px; }
+.perk-stat b { font-family: var(--display); font-size: 13px; font-weight: 600; }
+
+.perk-tree { display: flex; flex-direction: column; gap: 7px; --tc: #4cf0ff; }
+.perk-tree-head { display: flex; align-items: center; gap: 7px; }
+.pt-ic { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 8px; color: var(--tc); background: color-mix(in srgb, var(--tc) 16%, transparent); }
+.pt-ic .i { width: 14px; height: 14px; }
+.perk-tree-head b { flex: 1; font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--tc); letter-spacing: 0.4px; }
+.perk-tree-head i { font-style: normal; font-family: var(--display); font-size: 12px; color: var(--muted); }
+.perk-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.perk-node { position: relative; width: 46px; height: 46px; border-radius: 15px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); opacity: 0.5; }
+.perk-node .pn-ic .i { width: 21px; height: 21px; }
+.perk-node.on { opacity: 1; color: #fff; background: color-mix(in srgb, var(--tc) 18%, rgba(255,255,255,0.04)); box-shadow: inset 0 0 0 1.5px var(--tc), 0 0 16px color-mix(in srgb, var(--tc) 35%, transparent); }
+.perk-node.rar-legendary.on { box-shadow: inset 0 0 0 1.5px var(--gold), 0 0 18px rgba(255,207,74,0.4); }
+.perk-node.rar-mythic.on { box-shadow: inset 0 0 0 1.5px #ff8a3d, 0 0 18px rgba(255,138,61,0.4); }
+.pn-pips { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); display: inline-flex; gap: 2px; }
+.pn-pips i { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.pn-pips i.on { background: var(--tc); }
+.pn-check { position: absolute; right: -3px; top: -3px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #06251a; background: var(--green); }
+.pn-check .i { width: 10px; height: 10px; }
+.perk-close { margin-top: 2px; }
+
+/* ---------- conquista durante a partida: só um selo discreto ---------- */
+.ach-mini { position: absolute; right: calc(12px + var(--sar)); top: calc(112px + var(--sat)); z-index: 30; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: 999px; pointer-events: none; background: rgba(4,6,14,0.72); box-shadow: inset 0 0 0 1.5px rgba(255,207,74,0.5), 0 4px 14px rgba(0,0,0,0.4); opacity: 0; transform: translateX(10px); transition: opacity 0.2s, transform 0.25s; }
+.ach-mini.show { opacity: 1; transform: none; }
+.ach-mini .i { width: 15px; height: 15px; color: var(--gold); }
+.ach-mini b { font-family: var(--display); font-size: 12px; font-weight: 600; color: var(--gold); }
+@media (max-height: 720px) { .ach-mini { top: calc(100px + var(--sat)); } }

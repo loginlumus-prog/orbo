@@ -73,3 +73,11 @@ Ajustes pedidos depois (2026-09-14):
 - Fim de fase: os rotulos (Arcos, Perfeitos, Erros, Moedas, Recompensas) viraram icones; o nome aparece ao tocar.
 - Ficha da fase: "como ganhar estrelas" virou tres selos curtos com icone (60 % dos arcos, 40 % perfeitos, sem dano).
 - Explicacoes longas (notas de ajuda, descricao de mecanica e de chefe) sairam da tela e viraram um "i" ao lado do titulo, com o texto completo no toque. Arquivos: js/ui-lean-v55.js, css/v55.css.
+
+## v5.6: ficha de talentos, HUD enxuto e atalhos (2026-09-20)
+
+- Escolher talento nao mostra mais texto na partida: a fileira de icones embaixo pisca e vira botao.
+- Ficha da partida (js/ui-perks-v56.js, css/v56.css): status no estilo RPG (vidas, escudos, tamanho do arco, zona do perfeito, velocidade, moedas, recarga, duracao, pontos) e cinco arvores (Protecao, Mira, Voo, Riqueza, Ascensao) com o que foi pego aceso. Abre pausando o jogo.
+- HUD menor: pontuacao 64 -> 40 px, combo e nome da fase menores, barra de progresso mais estreita.
+- Conquista durante a partida vira um selo discreto no canto; o cartao completo aparece ao sair da partida. Item novo do album segue a mesma regra.
+- Atalhos: Espaco pausa e despausa no computador; toque duplo (ou clique duplo) usa a Egide.

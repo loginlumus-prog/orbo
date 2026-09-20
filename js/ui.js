@@ -64,7 +64,12 @@ HR.UI = {
     HR.Input.onTap = e => {
       if (this.isModalOpen()) return;
       const kb = !!(e && e.type === 'keydown');
-      if (this.current === 'hud') { if (this.game.state === 'ready') this.game.begin(); else if (kb && this.game.state === 'paused') this.resume(); return; }
+      if (this.current === 'hud') {
+        if (this.game.state === 'ready') this.game.begin();
+        else if (kb && this.game.state === 'paused') this.resume();
+        else if (kb && this.game.state === 'playing') this.pause();   // v5.6: Espaço pausa
+        return;
+      }
       if (!kb || Date.now() - (this.baseAt || 0) < 700) return;
       const vis = el => el && el.offsetParent !== null && el.style.display !== 'none';
       if (this.current === 'over') { const b = $('#btn-again'); if (vis(b)) b.click(); }
