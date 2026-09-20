@@ -66,3 +66,10 @@ Ajustes pedidos depois (2026-09-14):
 - Vida na tela: céu com nebulosas na cor da galáxia e estrelas, trilha de voo com o trecho vencido brilhando e um pulso de luz percorrendo, luas em órbita, aro de luz nas fases vencidas, halo na fase atual com a bola equipada orbitando, e o chefe como mundo maior com aura pulsando.
 - Botões continuam em DOM por cima (número, estrelas, cadeado, aviso de evento), então toque, dicas e o tratamento de fase bloqueada seguem iguais.
 - Respeita o modo gráfico Leve (menos estrelas, sem brilho nem luas) e "reduzir movimento" (desenha parado). Medido em 60 quadros por segundo, média de 16,7 ms por quadro.
+
+## v5.5: menos texto, mais simbolo (2026-09-20)
+
+- O cartao de texto dos poderes (comecou / acabando / acabou) saiu: ficam o chip com icone e segundos, o anel de tempo na bola e a contagem 3-2-1. Para trazer de volta: HR.POWER_CALL = true.
+- Fim de fase: os rotulos (Arcos, Perfeitos, Erros, Moedas, Recompensas) viraram icones; o nome aparece ao tocar.
+- Ficha da fase: "como ganhar estrelas" virou tres selos curtos com icone (60 % dos arcos, 40 % perfeitos, sem dano).
+- Explicacoes longas (notas de ajuda, descricao de mecanica e de chefe) sairam da tela e viraram um "i" ao lado do titulo, com o texto completo no toque. Arquivos: js/ui-lean-v55.js, css/v55.css.

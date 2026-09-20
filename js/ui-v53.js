@@ -33,6 +33,9 @@
   };
 
   function powerCall(info) {
+    // v5.5: o cartão de texto saiu. O ícone com o tempo no canto, o anel na bola e a contagem
+    // 3-2-1 já dizem tudo; deixe HR.POWER_CALL = true para trazer o cartão de volta.
+    if (!HR.POWER_CALL) return;
     const d = info && info.def; if (!d) return;
     const el = ensure(); if (!el) return;
     const run = game && game.run;
