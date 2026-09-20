@@ -345,7 +345,7 @@
       const next = sg ? HR.Singularity.nextLevel(HR.Singularity.level(id)) : HR.Campaign.next(id);
       if (next && (sg ? HR.Singularity.canPlay(next.id) : HR.Campaign.isUnlocked(next.id))) this.afterOver(() => this.startLevel(next.id));
     },
-    levelEndRetry() { this.afterOver(() => this.startLevel(this.lastSummary.levelId)); },
+    levelEndRetry() { const s = this.lastSummary; if (!s || !s.levelId) { this.goMenu(); return; } this.afterOver(() => this.startLevel(s.levelId)); },
     stopHud() { if (this.hudRaf) { cancelAnimationFrame(this.hudRaf); this.hudRaf = null; } $('#fx-vignette').className = 'fx-vignette'; }
   });
 })();

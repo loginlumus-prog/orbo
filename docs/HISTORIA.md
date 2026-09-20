@@ -1109,25 +1109,22 @@ Repetir um chefe de sistema já vencido troca a fala de abertura do guardião (3
 
 ---
 
-## 24. O modo Infinito passa a ser conquistado
+## 24. O Infinito melhora conforme a campanha anda
 
-**Regra nova:** o modo Infinito (e o ranking infinito) abre quando o jogador **vence o chefe da Galáxia 1** (`1-10-10`) — ou seja, depois de 100 fases do Berço.
+**Nada de cadeado.** O Infinito continua aberto desde o primeiro segundo, para todo mundo. O que muda é que ele **rende mais** conforme você vence galáxias:
 
-**Por quê (design):**
-- Quem entra no jogo hoje vai direto para o Infinito, faz 30 segundos, não entende nada e sai. A campanha é o tutorial emocional: ensina a voar, apresenta a história e dá motivo.
-- O Berço é fácil de propósito: 100 fases largas e lentas. É uma hora de jogo tranquila, não uma parede.
-- Quando o Infinito abre, ele abre como **prêmio** e como **ferramenta**: é onde se farma moeda sem a pressão da campanha.
+| Galáxias vencidas | 0 | 1 | 2 | 3 | 5 | 8 | 10 |
+|---|---|---|---|---|---|---|---|
+| Moedas no Infinito | normal | **+30 %** | +40 % | +50 % | +70 % | +100 % | **+120 %** |
 
-**Por quê (história):**
-> **Vela (carta 1, versão longa):** "Deixei um anel girando lá no Berço."
-> "Ele não vai a lugar nenhum. É para treinar, e é para quando você sentir falta."
-O Infinito **é o anel da mãe**. A tela do Infinito ganha uma linha: *"O anel que ela deixou girando."*
+Fórmula: `1 + 0,2 + 0,1 × galáxias vencidas` (zero galáxia = sem bônus). Vale junto com o +25 % de quem domina a Singularidade.
 
-**Respeito a quem já joga:** se o save já tem recorde no Infinito ou o chefe da galáxia 1 já vencido, nada é bloqueado. O cadeado só existe para conta nova.
+**Por quê (design):** quem só quer jogar o Infinito joga desde já e nunca esbarra num muro. E quem termina a primeira galáxia descobre que o Infinito ficou melhor — ou seja, a campanha vira um investimento, não um pedágio.
 
-**Na tela:** o botão "Infinito" fica com cadeado e a dica *"Termine a Galáxia 1"*. Um toque leva para a campanha.
+**Por quê (história):** é o anel que Vela deixou girando no Berço. Ele reconhece quem foi longe.
+> **Vela (carta 1):** "Deixei esse anel girando. É para treinar — e para quando sentir falta."
 
----
+**Na tela:** o botão "Infinito" ganha um selo dourado com o bônus atual (+30 %) e uma dica: *"O anel de Vela: +30 % de moedas no Infinito"*.
 
 ## 25. Economia: o escalonamento pedido
 
@@ -1258,7 +1255,7 @@ Passei o documento inteiro três vezes procurando furo. O que foi verificado:
 
 **Pontos que ainda são risco (assumidos, não resolvidos)**
 - ⚠️ Volume de texto em 3 idiomas. Mitigação: um arquivo por galáxia, carregado sob demanda.
-- ⚠️ O cadeado do Infinito muda a primeira sessão de quem é novo. É a mudança mais arriscada do documento inteiro em termos de retenção. Vale medir depois de publicar.
+- ⚠️ O bônus do Infinito precisa de medição: se ficar generoso demais, a campanha perde graça; se ficar de menos, ninguém nota. Começamos em +30 % após a galáxia 1.
 - ⚠️ A virada da G8 só funciona se o jogador chegar lá. Hoje, quantas pessoas chegam na galáxia 8? Se forem poucas, vale adiantar parte da revelação para a G6.
 
 ---
@@ -1268,7 +1265,7 @@ Passei o documento inteiro três vezes procurando furo. O que foi verificado:
 1. **Os nomes.** Faísca (filha), Vela (mãe), Âncora (pai), Casco (o velho), Íris (a cometa), Poeira (o grão), Cardume (a multidão). Vela e Âncora vêm da frase da família ("uma casa precisa de vela e âncora"). Vela tem ainda uma segunda raiz: no céu real existe a constelação Vela, que é um dos três pedaços do antigo Navio Argo — uma nave que foi partida em três. Cabe demais numa história sobre uma família partida em três. Se quiser outros nomes, é troca barata agora e cara depois.
 2. **A virada.** Os pais entraram por vontade própria e os anéis são recado deles. É o coração de tudo. Se você não gostar disso, o resto muda junto.
 3. **O final da Força acaba com o céu apagado.** É duro. Eu acho que precisa ser — é o que dá peso às outras escolhas — mas é uma decisão de dono.
-4. **O cadeado do Infinito** depois da Galáxia 1.
+4. **O bônus do Infinito** (+30 % após a galáxia 1, +10 % por galáxia seguinte). Decisão tomada: sem cadeado.
 5. **Os multiplicadores de moeda** da §25.
 6. **O registro espiritual.** A Singularidade que você já tem fala de perdão, misericórdia, serviço e graça, com parábolas claras (o rei que perdoa a dívida, o viajante caído). Escrevi a campanha no mesmo tom: humano e universal, sem citar religião nenhuma. Se você quiser mais explícito ou mais discreto, dá para calibrar.
 

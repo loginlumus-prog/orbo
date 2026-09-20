@@ -1142,6 +1142,8 @@ HR.Game = class {
     let coins = run.coins + bonus;
     if (run.mode === 'practice') coins = Math.floor(coins / 2);
     if (run.mode === 'endless' && HR.Campaign.singularityMastered()) coins = Math.round(coins * R.masteredCoinMul);
+    // v5.9: o anel de Vela — cada galáxia vencida rende mais moeda no Infinito
+    if (run.mode === 'endless' && HR.Story) coins = Math.round(coins * HR.Story.endlessBonus());
     let xp = run.mode === 'practice' ? 0 : run.score * E.xp.perRing + run.perfects * E.xp.perPerfect + (run.level ? 0 : (run.phaseNumber - 1) * E.xp.perPhase);
     if (run.level && success) xp += E.xp.perLevel;
     xp = Math.min(HR.CONFIG.PROGRESSION.xpRunCap, Math.round(xp * run.core.xp));

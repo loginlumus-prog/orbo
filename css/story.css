@@ -1,0 +1,32 @@
+/* =====================================================================
+   ORBO v5.9 — a tela da história. Reaproveita o cartão de diálogo da
+   Singularidade e acrescenta narração, botão de pular e o selo do Infinito.
+   ===================================================================== */
+.story-modal { z-index: 28; }
+.story-card { gap: 10px; padding: 16px 16px 18px; }
+.story-cv { width: 108px; height: 108px; }
+.story-who { letter-spacing: 2px; font-size: 11px; }
+.story-line { font-size: 17px; min-height: 66px; display: flex; align-items: center; justify-content: center; }
+.story-line.narr { font-family: var(--font, sans-serif); font-weight: 400; font-size: 15px; font-style: italic; color: var(--muted); }
+.story-opt { text-align: left; line-height: 1.25; }
+.story-next { min-height: 44px; }
+
+.story-skip {
+  position: absolute; right: 10px; top: 10px; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px 5px 7px; border-radius: 999px; border: none; cursor: pointer;
+  color: var(--muted); background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+}
+.story-skip .i { width: 13px; height: 13px; }
+.story-skip span { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+.story-skip:active { background: rgba(255,255,255,0.12); }
+
+/* selo do anel de Vela no botão do Infinito */
+.mode-btn { position: relative; }
+.mode-bonus {
+  position: absolute; right: 4px; top: 3px; padding: 1px 6px; border-radius: 999px;
+  font-family: var(--display); font-size: 10px; font-weight: 700; color: #1b1200;
+  background: linear-gradient(180deg, #ffe89a, #ffb92b); box-shadow: 0 2px 0 rgba(0,0,0,0.35);
+}
+
+@media (max-height: 720px) { .story-cv { width: 88px; height: 88px; } .story-line { min-height: 58px; font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { .story-line.in { animation: none; } }

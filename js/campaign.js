@@ -259,7 +259,9 @@ HR.CONTRACTS = [
       return s;
     },
     firstClearReward(level) {
-      let coins = 40 + level.ri * 30 + level.si * 6 + level.li * 4;
+      // v5.9: escalonamento por galáxia — a partir da 3ª dá para comprar uma coisa ou outra
+      const GM = [1, 1, 1.35, 1.35, 1.5, 2, 2.2, 2.4, 2.7, 3];
+      let coins = Math.round((40 + level.ri * 30 + level.si * 6 + level.li * 4) * (GM[level.ri] || 1));
       if (level.galaxyBoss) coins *= 6; else if (level.boss) coins = Math.round(coins * 2.5);
       const gems = level.galaxyBoss ? 30 + level.ri * 4 : level.boss ? 5 : (level.li === 4 ? 1 : 0);
       return { coins, gems, aegis: level.boss && !level.galaxyBoss ? 1 : 0 };
