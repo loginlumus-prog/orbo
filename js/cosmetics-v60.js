@@ -139,8 +139,8 @@
     trail_soap: 'Bolhas de Sabão', trail_braid: 'Trança', trail_embers: 'Brasas', trail_sonar: 'Sonar',
     flavor_trail_soap: 'Sobem e estouram sozinhas.', flavor_trail_braid: 'Dois fios que se cruzam sem parar.',
     flavor_trail_embers: 'Cinza que ainda tem fogo.', flavor_trail_sonar: 'Ondas que dizem onde você passou.',
-    aegis_coral: 'Coral', aegis_mintshield: 'Menta', aegis_goldleaf: 'Folha de Ouro', aegis_violetcircuit: 'Circuito Violeta', aegis_rosewindow: 'Rosácea', aegis_deepsonar: 'Sonar Profundo',
-    jet_violet: 'Violeta', jet_mintjet: 'Menta', jet_sunset: 'Pôr do Sol', jet_ghostjet: 'Fantasma'
+    aegisskin_coral: 'Coral', aegisskin_mintshield: 'Menta', aegisskin_goldleaf: 'Folha de Ouro', aegisskin_violetcircuit: 'Circuito Violeta', aegisskin_rosewindow: 'Rosácea', aegisskin_deepsonar: 'Sonar Profundo',
+    jetskin_violet: 'Violeta', jetskin_mintjet: 'Menta', jetskin_sunset: 'Pôr do Sol', jetskin_ghostjet: 'Fantasma'
   });
   Object.assign(HR.I18N.en, {
     skin_callisto: 'Callisto', skin_triton: 'Triton', skin_vesta: 'Vesta', skin_eris: 'Eris',
@@ -161,8 +161,8 @@
     trail_soap: 'Soap Bubbles', trail_braid: 'Braid', trail_embers: 'Embers', trail_sonar: 'Sonar',
     flavor_trail_soap: 'They rise and pop on their own.', flavor_trail_braid: 'Two threads crossing without stopping.',
     flavor_trail_embers: 'Ash that still holds fire.', flavor_trail_sonar: 'Waves that say where you passed.',
-    aegis_coral: 'Coral', aegis_mintshield: 'Mint', aegis_goldleaf: 'Gold Leaf', aegis_violetcircuit: 'Violet Circuit', aegis_rosewindow: 'Rose Window', aegis_deepsonar: 'Deep Sonar',
-    jet_violet: 'Violet', jet_mintjet: 'Mint', jet_sunset: 'Sunset', jet_ghostjet: 'Ghost'
+    aegisskin_coral: 'Coral', aegisskin_mintshield: 'Mint', aegisskin_goldleaf: 'Gold Leaf', aegisskin_violetcircuit: 'Violet Circuit', aegisskin_rosewindow: 'Rose Window', aegisskin_deepsonar: 'Deep Sonar',
+    jetskin_violet: 'Violet', jetskin_mintjet: 'Mint', jetskin_sunset: 'Sunset', jetskin_ghostjet: 'Ghost'
   });
   Object.assign(HR.I18N.es, {
     skin_callisto: 'Calisto', skin_triton: 'Tritón', skin_vesta: 'Vesta', skin_eris: 'Eris',
@@ -183,7 +183,7 @@
     trail_soap: 'Burbujas de Jabón', trail_braid: 'Trenza', trail_embers: 'Brasas', trail_sonar: 'Sonar',
     flavor_trail_soap: 'Suben y estallan solas.', flavor_trail_braid: 'Dos hilos que se cruzan sin parar.',
     flavor_trail_embers: 'Ceniza que todavía tiene fuego.', flavor_trail_sonar: 'Ondas que dicen por dónde pasaste.',
-    aegis_coral: 'Coral', aegis_mintshield: 'Menta', aegis_goldleaf: 'Hoja de Oro', aegis_violetcircuit: 'Circuito Violeta', aegis_rosewindow: 'Rosetón', aegis_deepsonar: 'Sonar Profundo',
-    jet_violet: 'Violeta', jet_mintjet: 'Menta', jet_sunset: 'Atardecer', jet_ghostjet: 'Fantasma'
+    aegisskin_coral: 'Coral', aegisskin_mintshield: 'Menta', aegisskin_goldleaf: 'Hoja de Oro', aegisskin_violetcircuit: 'Circuito Violeta', aegisskin_rosewindow: 'Rosetón', aegisskin_deepsonar: 'Sonar Profundo',
+    jetskin_violet: 'Violeta', jetskin_mintjet: 'Menta', jetskin_sunset: 'Atardecer', jetskin_ghostjet: 'Fantasma'
   });
 })();

@@ -80,7 +80,7 @@ window.HR = window.HR || {};
     });
     if (!list.length) return;
     list.sort((a, c) => a.v - c.v);
-    const U = HR.U, br = this.ballR ? this.ballR() : b.r, glow = !HR.Perf || HR.Perf.level > 0;
+    const U = HR.U, br = this.ballR ? this.ballR() : b.r, glow = !HR.Perf || !HR.Perf.glow || HR.Perf.glow();
     ctx.save();
     ctx.translate(b.x, b.y + Math.sin(t * 3) * 2); ctx.rotate(-(rot || 0)); ctx.lineCap = 'round';
     list.slice(0, 3).forEach((it, i) => {

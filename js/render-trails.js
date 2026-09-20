@@ -373,7 +373,7 @@ window.HR = window.HR || {};
   HR.Render.TRAILS = T;
   const base = HR.Render.drawTrail;
   HR.Render.drawTrail = function (ctx, trailId, pts, skin, t, heat) {
-    const f = T[trailId];
+    const f = (HR.Perf && HR.Perf.trailFx && !HR.Perf.trailFx()) ? null : T[trailId];
     if (!f) return base.apply(this, arguments);
     if (!pts || pts.length < 3) return;
     ctx.save(); f(ctx, pts, skin, t, heat || 0); ctx.restore();

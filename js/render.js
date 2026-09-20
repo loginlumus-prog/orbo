@@ -571,13 +571,15 @@ HR.Render.Background = class {
     if (!this.theme || !this.W) return;
     const U = RU(), W = this.W, H = this.H;
     this.grad = null;
+    // v6.2: o nível de gráfico decide quantos elementos o fundo tem
+    const q = HR.Perf && HR.Perf.bg ? HR.Perf.bg() : 1, qn = (v, min) => Math.max(min || 0, Math.round(v * q));
     this.stars = [];
-    if (this.theme.stars) for (let i = 0; i < 70; i++) this.stars.push({ x: Math.random(), y: Math.random(), s: U.rand(0.6, 2.2), p: U.rand(0, 6.28), sp: U.rand(0.08, 0.3) });
-    this.dust = []; for (let i = 0; i < 40; i++) this.dust.push({ x: Math.random(), y: Math.random(), s: U.rand(0.8, 1.8), a: U.rand(0.25, 0.6) });
-    this.streaks = []; for (let i = 0; i < 18; i++) this.streaks.push({ x: Math.random(), y: Math.random(), l: U.rand(0.5, 1), a: U.rand(0.4, 1) });
+    if (this.theme.stars) for (let i = 0; i < qn(70, 10); i++) this.stars.push({ x: Math.random(), y: Math.random(), s: U.rand(0.6, 2.2), p: U.rand(0, 6.28), sp: U.rand(0.08, 0.3) });
+    this.dust = []; for (let i = 0; i < qn(40, 0); i++) this.dust.push({ x: Math.random(), y: Math.random(), s: U.rand(0.8, 1.8), a: U.rand(0.25, 0.6) });
+    this.streaks = []; for (let i = 0; i < qn(18, 0); i++) this.streaks.push({ x: Math.random(), y: Math.random(), l: U.rand(0.5, 1), a: U.rand(0.4, 1) });
     this.shapes = [];
     const kind = this.theme.shapes;
-    const n = kind === 'grid' ? 0 : kind === 'bubbles' ? 26 : kind === 'waves' ? 4 : 7;
+    const n = qn(kind === 'grid' ? 0 : kind === 'bubbles' ? 26 : kind === 'waves' ? 4 : 7, 0);
     for (let i = 0; i < n; i++) this.shapes.push({ x: Math.random(), y: Math.random(), r: U.rand(0.12, 0.42), p: U.rand(0, 6.28), sp: U.rand(0.05, 0.25), hue: U.rand(0, 360) });
     void W; void H;
   }
@@ -746,7 +748,7 @@ HR.Render.Background = class {
     ctx.fillStyle = tg; ctx.fillRect(0, 0, W, H);
 
     // efeitos de região: água (feixes de luz + cáusticas) · brasas (partículas subindo)
-    const fx = this.fx || th.fx;
+    const fx = (HR.Perf && HR.Perf.bgFx && !HR.Perf.bgFx()) ? null : (this.fx || th.fx);
     if (fx === 'water') {
       for (let i = 0; i < 3; i++) {
         const x0 = W * (0.18 + i * 0.32) + Math.sin(t * 0.25 + i * 2) * 30;
@@ -826,8 +828,8 @@ HR.Render.Background = class {
       });
       ctx.globalAlpha = 1;
     }
-    if (this.drawScene) this.drawScene(ctx, t);
-    this.drawFlowLayers(ctx, t);
+    if (this.drawScene && (!HR.Perf || !HR.Perf.scenes || HR.Perf.scenes())) this.drawScene(ctx, t);
+    if (!HR.Perf || !HR.Perf.flowLayers || HR.Perf.flowLayers()) this.drawFlowLayers(ctx, t);
     if (this.season && HR.Seasons) HR.Seasons.sprinkle(ctx, W, H, t, this.season.sprinkle);
     // vinheta
     const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.85);

@@ -610,7 +610,9 @@ HR.UI = {
     row('target', HR.t('sensitivity'), '', slider('sensitivity', 0.5, 2, 0.1));
     row('sparkle', HR.t('perk_auto'), HR.t('perk_auto_d'), toggle('autoPerk'));
     row('hourglass', HR.t('adapt_slowmo'), HR.t('adapt_slowmo_d'), toggle('adaptSlowmo'));
-    row('sliders', HR.t('quality'), HR.t('quality_d'), seg([{ v: 'auto', l: HR.t('quality_auto') }, { v: 'high', l: HR.t('quality_high') }, { v: 'low', l: HR.t('quality_low') }], s.quality || 'auto', v => { if (HR.Perf) HR.Perf.setMode(v, this.game); })).classList.add('setting-stack');
+    const qRow = row('sliders', HR.t('quality'), HR.t('quality_d'), seg([{ v: 'auto', l: HR.t('quality_auto') }, { v: 'ultra', l: HR.t('quality_l3') }, { v: 'high', l: HR.t('quality_l2') }, { v: 'normal', l: HR.t('quality_l1') }, { v: 'low', l: HR.t('quality_l0') }], s.quality || 'auto', v => { if (HR.Perf) { HR.Perf.setMode(v, this.game); if (this.renderQualityNote) this.renderQualityNote(); } }));
+    qRow.classList.add('setting-stack', 'setting-quality');
+    if (this.renderQualityNote) this.renderQualityNote();
     body.appendChild(HR.U.el('div', 'section-title', HR.t('profile')));
     row('user', HR.t('language'), '', seg([{ v: 'pt', l: 'PT' }, { v: 'en', l: 'EN' }, { v: 'es', l: 'ES' }], HR.lang, v => { s.lang = v; HR.Store.save(); HR.setLang(v); this.renderSettings(); this.refreshMenu(); }));
     if (HR.Online) {

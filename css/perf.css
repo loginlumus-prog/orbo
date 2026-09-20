@@ -1,0 +1,55 @@
+/* =====================================================================
+   ORBO v6.2: o que o CSS desliga em cada nível de gráfico.
+   .perf-3 muito bom · .perf-2 bom · .perf-1 normal · .perf-0 baixo
+   Regra: quanto mais baixo, menos coisa pintando fora do canvas do jogo.
+   ===================================================================== */
+
+/* ---------- normal e baixo: nada de animação contínua de ícone ---------- */
+.perf-1 .g58 *, .perf-0 .g58 *,
+.perf-1 .og-bob, .perf-1 .og-twinkle, .perf-1 .og-spark, .perf-1 .og-wave, .perf-1 .og-lid,
+.perf-1 .og-pop, .perf-1 .og-spin, .perf-1 .og-rise, .perf-1 .og-float, .perf-1 .og-rot,
+.perf-1 .og-pulse, .perf-1 .og-tw, .perf-1 .og-zap, .perf-1 .og-arc, .perf-1 .og-shine,
+.perf-0 .og-bob, .perf-0 .og-twinkle, .perf-0 .og-spark, .perf-0 .og-wave, .perf-0 .og-lid,
+.perf-0 .og-pop, .perf-0 .og-spin, .perf-0 .og-rise, .perf-0 .og-float, .perf-0 .og-rot,
+.perf-0 .og-pulse, .perf-0 .og-tw, .perf-0 .og-zap, .perf-0 .og-arc, .perf-0 .og-shine { animation: none !important; }
+
+/* o anel girando de cada ícone é um gradiente cônico: caro em aparelho fraco */
+.perf-1 .ic-live::after, .perf-0 .ic-live::after { animation: none !important; opacity: 0.35; }
+.perf-0 .ic-live::after { display: none; }
+
+/* poeira do menu e cometas da órbita */
+.perf-1 .menu-dust, .perf-0 .menu-dust,
+.perf-1 .orbit-comet, .perf-0 .orbit-comet { display: none; }
+
+/* ---------- baixo: sem desfoque, sem sombra longa, sem brilho ---------- */
+.perf-0 * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.perf-0 .ob-ring, .perf-0 .levelup-glow, .perf-0 .fx-vignette { display: none; }
+.perf-0 .btn > .ic.ic-live svg, .perf-0 .btn-icon > .ic.ic-live svg,
+.perf-0 .plate .i, .perf-0 .pz-ic .i, .perf-0 .pt-ic .i { filter: none !important; }
+.perf-0 .shop-stage::before, .perf-0 .shop-stage::after { display: none; }
+.perf-0 .story-line.in { animation: none; }
+.perf-0 .scene::before, .perf-0 .scene::after { display: none; }
+
+/* ---------- normal: o fundo do menu fica mais simples ---------- */
+.perf-1 .ob-ring .a, .perf-1 .ob-ring .m { display: none; }
+
+/* ---------- aviso de travamento ---------- */
+.perf-ask {
+  position: fixed; left: 50%; bottom: calc(18px + var(--sab)); transform: translateX(-50%) translateY(8px);
+  z-index: 40; display: flex; align-items: center; gap: 10px; width: min(420px, calc(100% - 24px));
+  padding: 10px 12px; border-radius: 18px; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.25s;
+  background: linear-gradient(180deg, rgba(20,16,40,0.97), rgba(8,6,18,0.98));
+  box-shadow: 0 18px 40px rgba(0,0,0,0.5), inset 0 0 0 1.5px rgba(255,207,74,0.45);
+}
+.perf-ask.show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+.perf-ask .i { width: 18px; height: 18px; color: var(--gold); flex: none; }
+.perf-ask p { flex: 1; min-width: 0; margin: 0; font-size: 12.5px; line-height: 1.3; color: var(--text); }
+.perf-ask button { flex: none; border: none; cursor: pointer; padding: 8px 12px; border-radius: 12px; font-family: var(--display); font-size: 12px; font-weight: 700; }
+.perf-ask .yes { color: #1b1200; background: linear-gradient(180deg, #ffe89a, #ffb92b); }
+.perf-ask .no { color: var(--muted); background: rgba(255,255,255,0.07); }
+
+/* ---------- nota do nível escolhido, nos ajustes ---------- */
+.quality-note { margin: 6px 2px 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+.quality-note b { color: var(--accent); font-weight: 700; }
+.setting-quality .seg { flex-wrap: wrap; }
+.setting-quality .seg button { flex: 1 1 60px; font-size: 12px; padding: 0 6px; }

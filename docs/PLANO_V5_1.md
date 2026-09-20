@@ -96,3 +96,14 @@ Ajustes pedidos depois (2026-09-14):
 - Talentos: cada arvore tem cor, glifo e barra de progresso; o talento apagado mantem um tom da arvore, entao da para ver a categoria de relance. Na pausa cada selo da faixa usa a cor da sua arvore e os cartoes de escolha ganham o selo da arvore no canto.
 - Correcao: as regras .perk-card do v5.6 estavam pegando tambem os cartoes de escolha da partida (alinhavam a esquerda e esticavam). Agora sao .perk-modal .perk-card.
 - Arquivos: js/ui-glyph-v58.js, css/v58.css. Ajustes em js/ui.js, js/ui-galaxy.js, js/ui-singularity.js (data-icon nos botoes), js/ui-lean-v55.js, js/ui-perks-v56.js, js/ui-v52.js.
+
+## v5.8 a v6.2 (2026-09-21)
+
+- **v5.8** icones vivos: HR.glyph (animacao curta + cor por assunto), placas nos botoes, talentos com cor de arvore.
+- **v5.9** a historia entra no jogo: js/story.js (eixo U/Q/F, marcas, cartas), js/ui-story.js, texto por galaxia (g1 a g5), o Ninho (3-7-7) e a bola Poeira. Economia da campanha escalonada por galaxia.
+- **v6.0** icones redondos vazados, loja com palco por colecao, "Bolas" virou "Skins", revisao de arte (Terra, Biscoito, Rocha, Europa, Mercurio, Ceres, gude, anel de Saturno e Urano) e +12 bolas, +10 temas, +4 rastros, +10 visuais de Egide e Jato.
+- **v6.1** as Fendas: um buraco negro por galaxia no Infinito, com ouro crescente (x1,00 a x2,98) e recorde separado. Sem cadeado: a fenda 1 esta sempre aberta.
+- **v6.2** quatro niveis de grafico (0 baixo, 1 normal, 2 bom, 3 muito bom) com tabela unica em js/perf.js, classes perf-N no <html>, vigia que desce o nivel sozinho no automatico (ou sugere no manual) e css/perf.css desligando animacao de icone, desfoque e brilho nos niveis baixos.
+
+Medido no navegador (fase 9-9-9, 255 quadros): render 0,83 ms no muito bom e 0,44 ms no baixo; quadros acima de 22 ms cairam de 30 para 4.
+Revisao completa (tools/audit.js): 0 erros e 0 avisos — 151 bolas, 43 rastros, 45 temas, 1.000 fases, 60 cenas de historia, 199 conquistas e 2.808 chaves de texto com PT/EN/ES iguais.

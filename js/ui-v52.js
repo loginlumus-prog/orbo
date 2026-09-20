@@ -68,7 +68,7 @@
 
   function decorate() {
     const scene = $('#scene'); if (!scene) return;
-    document.documentElement.classList.toggle('fx-low', !!(HR.Perf && HR.Perf.level === 0));
+    if (HR.Perf && HR.Perf.apply) HR.Perf.apply();   // v6.2: o nível de gráfico manda nas classes
     if (scene.dataset.v52) return;
     scene.dataset.v52 = '1';
     $$('.orbit-btn', scene).forEach((b, i) => {
