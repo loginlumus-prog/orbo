@@ -35,11 +35,11 @@ window.HR = window.HR || {};
   // os cinco graus: de quanto em quanto a faixa rica troca, quanto vale a moeda
   // comum e a rica, de quantos em quantos passos vem um item, e o desenho do caminho
   const GRAUS = [
-    { troca: 8, comum: 2, rica: 5,  item: 24, forma: 'simples', nome: 'jet_g1', cor: '#9be7ff' },
-    { troca: 6, comum: 3, rica: 8,  item: 18, forma: 'rampa',   nome: 'jet_g2', cor: '#9be7ff' },
-    { troca: 4, comum: 4, rica: 12, item: 14, forma: 'coluna',  nome: 'jet_g3', cor: '#7cff6b' },
-    { troca: 3, comum: 6, rica: 18, item: 11, forma: 'ambos',   nome: 'jet_g4', cor: '#ff9d1c' },
-    { troca: 2, comum: 9, rica: 26, item: 9,  forma: 'cheio',   nome: 'jet_g5', cor: '#ffcf4a' }
+    { troca: 8, comum: 2, rica: 5,  item: 14, forma: 'simples', nome: 'jet_g1', cor: '#9be7ff' },
+    { troca: 6, comum: 3, rica: 8,  item: 12, forma: 'rampa',   nome: 'jet_g2', cor: '#9be7ff' },
+    { troca: 4, comum: 4, rica: 12, item: 10, forma: 'coluna',  nome: 'jet_g3', cor: '#7cff6b' },
+    { troca: 3, comum: 6, rica: 18, item: 8,  forma: 'ambos',   nome: 'jet_g4', cor: '#ff9d1c' },
+    { troca: 2, comum: 9, rica: 26, item: 7,  forma: 'cheio',   nome: 'jet_g5', cor: '#ffcf4a' }
   ];
   const ITENS = [['magnet', '#ffcf4a'], ['shield', '#4cf0ff'], ['star', '#ffe27a']];
   // pontos por moeda rica, por grau (a comum vale um quarto). Um arco normal vale 1 ponto,
@@ -99,15 +99,35 @@ window.HR = window.HR || {};
   const origUpdateBall = G.updateBall;
   G.updateBall = function (sdt, dt) {
     const run = this.run;
-    if (run.jetLeft > 0 && (this.state === 'playing' || this.state === 'ready')) {
+    const noCorredor = run.jetLeft > 0 && (this.state === 'playing' || this.state === 'ready');
+    if (noCorredor) {
       try { this.jetLaneControl(dt); } catch (_) { /* nunca derruba o quadro */ }
+      // garante o ramo do piloto la dentro: sem isso o controle normal volta num
+      // quadro solto e uma tecla presa ou um arrasto antigo mexem na bola por fora
+      run.autoT = Math.max(run.autoT, 0.5);
     } else if (run.jetLane != null) run.jetLane = null;
-    return origUpdateBall.apply(this, arguments);
+    const r = origUpdateBall.apply(this, arguments);
+    // reafirma o alvo depois de tudo: a faixa escolhida e a palavra final
+    if (noCorredor && run.jetLane != null) this.ball.ty = this.Lv * FAIXAS[run.jetLane];
+    return r;
+  };
+
+  // a faixa de partida e a mais perto de onde a bola ja esta
+  G.jetEnsureLane = function () {
+    const run = this.run;
+    if (run.jetLane != null) return run.jetLane;
+    let melhor = 1, dist = 1e9;
+    FAIXAS.forEach((f, i) => { const d = Math.abs(this.ball.y - this.Lv * f); if (d < dist) { dist = d; melhor = i; } });
+    run.jetLane = melhor;
+    this._jSU = this._jSD = false; this._jAcc = 0;
+    return melhor;
   };
 
   G.jetStepLane = function (passo) {
-    const run = this.run, antes = run.jetLane;
-    run.jetLane = Math.max(0, Math.min(2, (run.jetLane == null ? 1 : run.jetLane) + passo));
+    const run = this.run;
+    if (!(run.jetLeft > 0)) return;
+    const antes = this.jetEnsureLane();
+    run.jetLane = Math.max(0, Math.min(2, antes + passo));
     if (run.jetLane !== antes) {
       HR.Audio.sfx('tick'); HR.U.vibrate(8);
       this.particles.burst({
@@ -120,19 +140,7 @@ window.HR = window.HR || {};
 
   G.jetLaneControl = function (dt) {
     const I = HR.Input, b = this.ball, run = this.run, V = this.vAxis();
-    if (run.jetLane == null) {
-      // comeca na faixa mais perto de onde a bola ja esta
-      let melhor = 1, dist = 1e9;
-      FAIXAS.forEach((f, i) => { const d = Math.abs(b.y - this.Lv * f); if (d < dist) { dist = d; melhor = i; } });
-      run.jetLane = melhor;
-      this._jUp = this._jDown = this._jSU = this._jSD = false; this._jAcc = 0;
-    }
-
-    // teclado: um passo por toque, nao por quadro
-    const cima = !!I.keys.up, baixo = !!I.keys.down;
-    if (cima && !this._jUp) this.jetStepLane(-1);
-    if (baixo && !this._jDown) this.jetStepLane(1);
-    this._jUp = cima; this._jDown = baixo;
+    this.jetEnsureLane();
 
     // analogico do celular: inclinar um pouco ja troca de faixa (e solta para trocar de novo)
     const S = I.stick, m = Math.hypot(S.x, S.y);
@@ -310,35 +318,90 @@ window.HR = window.HR || {};
   };
 
   G.drawJetLanes = function (ctx) {
-    const U = HR.U, run = this.run;
+    const U = HR.U, run = this.run, t = this.time;
     const F = GRAUS[Math.max(0, run.jetGrau || 0)];
     const sk = HR.Gear.current('jet');
-    const cor = sk.color === 'rainbow' ? U.hsl((this.time * 200) % 360, 90, 65, 1) : F.cor;
-    const desl = (this.time * 260) % 34;
-    const forca = 0.12 + (run.jetGrau || 0) * 0.055 + (run.jetSurgeT || 0) * 0.5;
+    const cor = sk.color === 'rainbow' ? U.hsl((t * 200) % 360, 90, 65, 1) : F.cor;
+    const desl = (t * 260) % 34;
+    const forca = 0.10 + (run.jetGrau || 0) * 0.035 + (run.jetSurgeT || 0) * 0.4;
     ctx.save();
     ctx.translate(this.frame.ox, this.frame.oy); ctx.rotate(this.frame.angle);
-    ctx.lineCap = 'round';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+    // 1. as tres faixas: so uma referencia fraca, para nao competir com a trilha
     ctx.setLineDash([12, 22]); ctx.lineDashOffset = -desl;
+    ctx.lineWidth = 2;
     for (let i = 0; i < 3; i++) {
       const y = this.Lv * FAIXAS[i];
       ctx.strokeStyle = U.rgba(cor, forca);
-      ctx.lineWidth = 2 + (run.jetGrau || 0) * 0.5;
       ctx.beginPath(); ctx.moveTo(-40, y); ctx.lineTo(this.Lu + 80, y); ctx.stroke();
     }
     ctx.setLineDash([]);
-    // riscos de velocidade durante o impulso
+
+    // 2. A TRILHA: costura tudo que vale a pena (moeda rica e poder) numa fita
+    //    de luz. E o melhor caminho, desenhado antes de chegar.
+    const pts = this.pickups
+      .filter(p => p.jet && (p.rica || p.id !== 'coins') && p.x > -80)
+      .sort((a, b) => a.x - b.x);
+    if (pts.length > 1) {
+      const pulso = 0.5 + 0.5 * Math.sin(t * 3.4);
+      const curva = () => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].baseY);
+        for (let i = 1; i < pts.length; i++) {
+          const a = pts[i - 1], b = pts[i];
+          ctx.quadraticCurveTo(a.x, a.baseY, (a.x + b.x) / 2, (a.baseY + b.baseY) / 2);
+        }
+        ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].baseY);
+        ctx.stroke();
+      };
+      ctx.strokeStyle = U.rgba('#ffcf4a', 0.10 + pulso * 0.05); ctx.lineWidth = 20; curva();
+      ctx.strokeStyle = U.rgba('#ffcf4a', 0.22 + pulso * 0.08); ctx.lineWidth = 8;  curva();
+      ctx.strokeStyle = U.rgba('#fff3c2', 0.55 + pulso * 0.2);  ctx.lineWidth = 2.5; curva();
+      // setinhas correndo pela trilha, mostrando o sentido
+      ctx.setLineDash([6, 26]); ctx.lineDashOffset = -((t * 420) % 32);
+      ctx.strokeStyle = U.rgba('#ffffff', 0.7); ctx.lineWidth = 3; curva();
+      ctx.setLineDash([]);
+    }
+
+    // 3. farol em cada poder que esta chegando
+    this.pickups.forEach(p => {
+      if (!p.jet || p.id === 'coins' || p.taken) return;
+      const k = 0.5 + 0.5 * Math.sin(t * 4 + p.seed);
+      const r = p.r * (1.7 + k * 0.6);
+      const g = ctx.createRadialGradient(p.x, p.baseY, p.r * 0.5, p.x, p.baseY, r);
+      g.addColorStop(0, U.rgba(p.color, 0.35));
+      g.addColorStop(1, U.rgba(p.color, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.baseY, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = U.rgba(p.color, 0.5 + k * 0.4); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.baseY, p.r * (1.3 + k * 0.5), 0, Math.PI * 2); ctx.stroke();
+    });
+
+    // 4. riscos de velocidade durante o impulso
     if (run.jetSurgeT > 0) {
       const s = run.jetSurgeT;
       ctx.strokeStyle = U.rgba('#ffffff', 0.45 * s); ctx.lineWidth = 2;
       for (let i = 0; i < 14; i++) {
-        const y = ((i * 97 + this.time * 90) % 1) * 0 + (i + 0.5) * (this.Lv / 14);
-        const x0 = this.Lu - ((this.time * 2600 + i * 211) % (this.Lu + 400));
+        const y = (i + 0.5) * (this.Lv / 14);
+        const x0 = this.Lu - ((t * 2600 + i * 211) % (this.Lu + 400));
         ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 - 60 - s * 120, y); ctx.stroke();
       }
     }
     ctx.restore();
   };
+
+  // Teclado ligado direto no corredor: nao depende do estado de teclas de ninguem.
+  // Uma tecla = um passo; segurar nao repete (o navegador marca repeat).
+  window.addEventListener('keydown', function (e) {
+    if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+    const g = HR.game;
+    if (!g || !g.run || !(g.run.jetLeft > 0)) return;
+    if (!(g.state === 'playing' || g.state === 'ready')) return;
+    if (HR.UI && HR.UI.isModalOpen && HR.UI.isModalOpen()) return;
+    const c = e.code || '', k = (e.key || '').toLowerCase();
+    if (c === 'KeyW' || c === 'ArrowUp' || k === 'w' || k === 'arrowup' || k === 'up') { g.jetStepLane(-1); e.preventDefault(); }
+    else if (c === 'KeyS' || c === 'ArrowDown' || k === 's' || k === 'arrowdown' || k === 'down') { g.jetStepLane(1); e.preventDefault(); }
+  }, true);
 
   HR.JetTrack = { PASSOS, MAX_PILHA, GRAUS, SOBE_A_CADA, PASSO, grauDe };
 })();

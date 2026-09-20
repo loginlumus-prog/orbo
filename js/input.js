@@ -57,6 +57,10 @@ HR.Input = {
     });
     // clique de mouse/toque não deixa o botão com foco (evita o Espaço repetir o último clique e mostrar a dica)
     document.addEventListener('click', e => { const b = e.detail > 0 && e.target.closest && e.target.closest('button'); if (b) b.blur(); }, true);
+    // janela perdeu o foco com uma tecla apertada: o keyup nunca chega e a tecla fica
+    // presa. Sem isto a bola anda sozinha e o teclado para de responder de vez.
+    window.addEventListener('blur', () => this.reset());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) this.reset(); });
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowUp' || e.code === 'KeyW') this.keys.up = false;
       else if (e.code === 'ArrowDown' || e.code === 'KeyS') this.keys.down = false;

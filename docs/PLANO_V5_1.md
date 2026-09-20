@@ -262,3 +262,21 @@ continua valendo, e a barra do HUD anda liso. Arquivos: js/fx-v65.js e js/jet-la
 - **Impulso de verdade.** Cada jato usado (inclusive o primeiro) da onda de choque, tremida,
   leque de faiscas para tras, riscos de velocidade e um ganho real de velocidade que vai
   baixando em ~1,2 s. Medido: 245 -> 956 -> 686 unidades por segundo.
+
+**v6.5.3 a v6.5.6** — o corredor ficou jogavel de verdade:
+
+- **W/S nao trocavam de faixa.** O caminho antigo lia `HR.Input.keys` com deteccao de borda.
+  Basta um `keyup` se perder (a janela perde o foco com a tecla apertada) para a tecla ficar
+  "segurada" para sempre — e a borda nunca mais dispara. Duas correcoes: o corredor passou a
+  ouvir o teclado DIRETO (uma tecla, um passo, sem intermediario, aceitando `code` ou `key`),
+  e `js/input.js` agora zera as teclas quando a janela perde o foco ou a aba e escondida.
+- **Controle autoritativo.** Se o piloto automatico piscasse para zero por um quadro, o
+  controle normal voltava e uma tecla presa ou um arrasto antigo mexiam na bola por fora,
+  deixando faixa e posicao em desacordo. Dentro do corredor a faixa e a palavra final: o
+  alvo e reafirmado depois que toda a fisica roda.
+- **A TRILHA.** A faixa rica deixou de ser "umas moedas douradas soltas" e virou um caminho
+  desenhado: uma fita de luz em tres camadas costura todas as moedas ricas a frente, com
+  setinhas correndo no sentido do voo, e passa por cima dos poderes que estao chegando —
+  cada um com um farol pulsando na cor dele. A pessoa ve o melhor caminho antes de chegar.
+  Os poderes tambem ficaram mais frequentes (de 24/18/14/11/9 passos para 14/12/10/8/7),
+  porque agora eles sao o destino da trilha, nao um bonus solto.
