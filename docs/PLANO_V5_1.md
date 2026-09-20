@@ -251,3 +251,14 @@ continua valendo, e a barra do HUD anda liso. Arquivos: js/fx-v65.js e js/jet-la
    usado (`!run.jetUsed`), entao era impossivel usar o segundo. Agora eles ficam na tela
    enquanto o corredor estiver aberto, em destaque, com o selo da pilha (1/5, 2/5...) e o
    tempo que cada um acrescenta. No limite o botao fica apagado e o toque avisa.
+
+**v6.5.2** — o corredor precisava valer a pena e precisava ser sentido:
+
+- **Ponto, nao so moeda.** Cada moeda do corredor soma pontos conforme o grau (0,35 / 0,5 /
+  0,8 / 1,2 / 2,0 por moeda rica; a comum vale um quarto). Ficar na faixa rica encadeia uma
+  sequencia que multiplica ate x3, e sair dela zera — entao a escolha da faixa decide o
+  dinheiro E a pontuacao. Um arco normal vale 1 ponto, entao um corredor de grau 1 a 3 rende
+  mais ou menos o dobro de uma fase curta. Ao fechar, um aviso diz quanto rendeu.
+- **Impulso de verdade.** Cada jato usado (inclusive o primeiro) da onda de choque, tremida,
+  leque de faiscas para tras, riscos de velocidade e um ganho real de velocidade que vai
+  baixando em ~1,2 s. Medido: 245 -> 956 -> 686 unidades por segundo.

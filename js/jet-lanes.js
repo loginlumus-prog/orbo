@@ -42,6 +42,9 @@ window.HR = window.HR || {};
     { troca: 2, comum: 9, rica: 26, item: 9,  forma: 'cheio',   nome: 'jet_g5', cor: '#ffcf4a' }
   ];
   const ITENS = [['magnet', '#ffcf4a'], ['shield', '#4cf0ff'], ['star', '#ffe27a']];
+  // pontos por moeda rica, por grau (a comum vale um quarto). Um arco normal vale 1 ponto,
+  // entao um corredor de grau 1 a 3 rende mais ou menos o dobro de uma fase curta.
+  const PONTOS = [0.35, 0.5, 0.8, 1.2, 2.0];
 
   const G = HR.Game && HR.Game.prototype;
   if (!G) return;
@@ -66,7 +69,7 @@ window.HR = window.HR || {};
       run.jetStacks = (run.jetStacks || 1) + 1;
       run.jetsUsed++;
       HR.Store.data.stats5[kind === 'megajet' ? 'megajetsUsed' : 'jetsUsed']++; HR.Store.save();
-      HR.Audio.sfx('levelup'); HR.U.vibrate([15, 25]);
+      this.jetSurge(run.jetStacks);
       this.emit('banner', { title: HR.t('jet_stack', { n: run.jetStacks }), sub: HR.t('jet_stack_d'), color: '#ffcf4a' });
       this.emit('gear', { kind: 'jet' });
       return true;
@@ -82,6 +85,8 @@ window.HR = window.HR || {};
     this.jetStep = 0;
     run.jetLeft = run.jetTotal = PASSOS[kind] || 62;
     run.jetStacks = 1; run.jetGrau = -1; run.jetCoins = 0; run.jetOffLane = false;
+    run.jetScore = 0; run.jetScoreAcc = 0; run.jetStreak = 0; run.jetSurgeT = 0;
+    this.jetSurge(1);                     // o primeiro tambem empurra a tela
     this.emit('gear', { kind: 'jet' });   // redesenha o selo ja com 1/5
     return ok;
   };
@@ -147,10 +152,38 @@ window.HR = window.HR || {};
     b.ty = this.Lv * FAIXAS[run.jetLane];
   };
 
+  /* ---------------- o impulso: onda, tremida, risco e velocidade ---------------- */
+  // cada jato novo empurra a tela de novo. A sensacao importa tanto quanto o numero:
+  // sem isso, empilhar parecia so gastar dinheiro.
+  G.jetSurge = function (n) {
+    const run = this.run, b = this.ball, sk = HR.Gear.current('jet');
+    const cor = sk.color === 'rainbow' ? '#ff5ecf' : sk.color;
+    run.jetSurgeT = 1;                       // vai a zero em ~1,2 s
+    this.shake = Math.max(this.shake, 10 + n * 2);
+    this.particles.burst({ x: b.x, y: b.y, n: 1, speed: 0, color: '#ffffff', size: 40 + n * 10, life: 0.55, type: 'wave' });
+    this.particles.burst({ x: b.x, y: b.y, n: 1, speed: 0, color: cor, size: 26 + n * 8, life: 0.7, type: 'wave' });
+    this.particles.burst({
+      x: b.x - b.r, y: b.y, n: 22 + n * 6, speed: 620, angle: Math.PI, spread: 0.55,
+      color: [cor, sk.color2 || '#ffffff', '#ffffff'], size: 5, life: 0.5, type: 'spark'
+    });
+    this.particles.text(b.x, b.y - 60, '+' + n, '#ffcf4a', 26);
+    HR.Audio.sfx('levelup'); HR.U.vibrate([18, 30, 50]);
+  };
+
+  // enquanto o impulso dura, o corredor corre mais rapido de verdade
+  const origSpeedAt = G.speedAt;
+  G.speedAt = function (n, base) {
+    const v = origSpeedAt.apply(this, arguments);
+    const run = this.run;
+    if (!base && run && run.jetLeft > 0 && run.jetSurgeT > 0) return v * (1 + run.jetSurgeT * 0.45);
+    return v;
+  };
+
   /* ---------------- o corredor acaba por distancia ---------------- */
   const origUpdAb = G.updateAbilities;
   G.updateAbilities = function (dt) {
     const run = this.run;
+    if (run.jetSurgeT > 0) run.jetSurgeT = Math.max(0, run.jetSurgeT - dt / 1.2);
     if (run.jetLeft > 0) {
       const v = this.speedAt(run.ringsPassed) * this.timeScale;   // ja inclui a velocidade do jato
       run.jetLeft = Math.max(0, run.jetLeft - (v * dt) / PASSO);
@@ -233,7 +266,9 @@ window.HR = window.HR || {};
     if (run.jetCoins >= 20 && !run.jetOffLane) d.stats5.jetGoldRuns = (d.stats5.jetGoldRuns || 0) + 1;
     if ((run.jetGrau || 0) >= 4) d.stats5.jetMaxGrade = (d.stats5.jetMaxGrade || 0) + 1;
     HR.Store.save();
+    if (run.jetScore > 0) this.emit('banner', { title: HR.t('jet_done', { n: run.jetScore }), sub: HR.t('jet_done_d', { n: run.jetCoins }), color: '#ffcf4a' });
     run.jetCoins = 0; run.jetOffLane = false; run.jetStacks = 0; run.jetGrau = -1;
+    run.jetScore = 0; run.jetScoreAcc = 0; run.jetStreak = 0; run.jetSurgeT = 0;
     run.jetLane = null; this.ball.ty = this.ball.y;
     return r;
   };
@@ -245,6 +280,22 @@ window.HR = window.HR || {};
       const run = this.run;
       run.jetCoins = (run.jetCoins || 0) + 1;
       if (!p.rica) run.jetOffLane = true;
+
+      // sequencia: so cresce na faixa rica, e zera ao sair dela
+      run.jetStreak = p.rica ? Math.min(30, (run.jetStreak || 0) + 1) : 0;
+      const mult = 1 + Math.min(2, (run.jetStreak || 0) / 15);          // ate x3
+      const base = PONTOS[Math.max(0, Math.min(4, run.jetGrau || 0))] * (p.rica ? 1 : 0.25);
+      run.jetScoreAcc = (run.jetScoreAcc || 0) + base * mult;
+      if (run.jetScoreAcc >= 1) {
+        const ganho = Math.floor(run.jetScoreAcc);
+        run.jetScoreAcc -= ganho;
+        run.score += ganho;
+        run.jetScore = (run.jetScore || 0) + ganho;
+        this.emit('score', run, false);
+      }
+      if (run.jetStreak && run.jetStreak % 10 === 0) {
+        this.particles.text(p.x, p.y - 52, 'x' + mult.toFixed(1), '#ffcf4a', 20);
+      }
     }
     return origCollect.apply(this, arguments);
   };
@@ -264,7 +315,7 @@ window.HR = window.HR || {};
     const sk = HR.Gear.current('jet');
     const cor = sk.color === 'rainbow' ? U.hsl((this.time * 200) % 360, 90, 65, 1) : F.cor;
     const desl = (this.time * 260) % 34;
-    const forca = 0.12 + (run.jetGrau || 0) * 0.055;
+    const forca = 0.12 + (run.jetGrau || 0) * 0.055 + (run.jetSurgeT || 0) * 0.5;
     ctx.save();
     ctx.translate(this.frame.ox, this.frame.oy); ctx.rotate(this.frame.angle);
     ctx.lineCap = 'round';
@@ -276,6 +327,16 @@ window.HR = window.HR || {};
       ctx.beginPath(); ctx.moveTo(-40, y); ctx.lineTo(this.Lu + 80, y); ctx.stroke();
     }
     ctx.setLineDash([]);
+    // riscos de velocidade durante o impulso
+    if (run.jetSurgeT > 0) {
+      const s = run.jetSurgeT;
+      ctx.strokeStyle = U.rgba('#ffffff', 0.45 * s); ctx.lineWidth = 2;
+      for (let i = 0; i < 14; i++) {
+        const y = ((i * 97 + this.time * 90) % 1) * 0 + (i + 0.5) * (this.Lv / 14);
+        const x0 = this.Lu - ((this.time * 2600 + i * 211) % (this.Lu + 400));
+        ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 - 60 - s * 120, y); ctx.stroke();
+      }
+    }
     ctx.restore();
   };
 
@@ -289,6 +350,7 @@ Object.assign(HR.I18N.pt, {
   jet_g1: 'SUBIDA', jet_g2: 'CORRENTE', jet_g3: 'ENXAME', jet_g4: 'TURBILHÃO', jet_g5: 'CHUVA DE OURO',
   jet_stack: 'CORREDOR +{n}', jet_stack_d: 'Mais tempo lá em cima',
   jet_full: 'O corredor já está no limite (5)',
+  jet_done: 'CORREDOR: +{n} PONTOS', jet_done_d: '{n} moedas colhidas',
   a_jetgold: 'Faixa de ouro', a_d_jetGoldRuns: 'Termine {n} corredores só na faixa rica',
   a_jetgrade: 'Chuva de ouro', a_d_jetMaxGrade: 'Chegue ao grau 5 do corredor {n} vezes'
 });
@@ -298,6 +360,7 @@ Object.assign(HR.I18N.en, {
   jet_g1: 'CLIMB', jet_g2: 'CURRENT', jet_g3: 'SWARM', jet_g4: 'WHIRL', jet_g5: 'GOLD RAIN',
   jet_stack: 'CORRIDOR +{n}', jet_stack_d: 'More time up there',
   jet_full: 'The corridor is already at the limit (5)',
+  jet_done: 'CORRIDOR: +{n} POINTS', jet_done_d: '{n} coins collected',
   a_jetgold: 'Golden lane', a_d_jetGoldRuns: 'Finish {n} corridors on the rich lane only',
   a_jetgrade: 'Gold rain', a_d_jetMaxGrade: 'Reach corridor grade 5 {n} times'
 });
@@ -307,6 +370,7 @@ Object.assign(HR.I18N.es, {
   jet_g1: 'SUBIDA', jet_g2: 'CORRIENTE', jet_g3: 'ENJAMBRE', jet_g4: 'TORBELLINO', jet_g5: 'LLUVIA DE ORO',
   jet_stack: 'PASILLO +{n}', jet_stack_d: 'Más tiempo allá arriba',
   jet_full: 'El pasillo ya está al límite (5)',
+  jet_done: 'PASILLO: +{n} PUNTOS', jet_done_d: '{n} monedas recogidas',
   a_jetgold: 'Carril dorado', a_d_jetGoldRuns: 'Termina {n} pasillos solo por el carril rico',
   a_jetgrade: 'Lluvia de oro', a_d_jetMaxGrade: 'Llega al grado 5 del pasillo {n} veces'
 });
