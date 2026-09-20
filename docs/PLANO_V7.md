@@ -284,3 +284,14 @@ colecao"); e nada redesenhava o mural quando um fragmento entrava com ele aberto
 contagem vem antes, `unlock` repinta a grade, a aba Fragmentos ganha um ponto e o botao
 Colecao do menu tambem. O aviso de fragmento novo passou a levar para a colecao: fechar o
 card deixa a pessoa no mural, nao no menu.
+
+**v6.9.1 (2026-09-26) — o mural sumia ao clicar na aba.**
+
+Abrir a colecao por codigo mostrava o mural; clicar na aba "Fragmentos" mostrava
+"FRAGMENTOS 0/0" e nada. Motivo: `renderAchievements` de js/ui-galaxy.js fiava o clique das
+abas na **propria funcao local**, e nao em `HR.UI.renderAchievements`. As abas que moram em
+outros arquivos (Trofeus, Fragmentos) embrulham `HR.UI.renderAchievements` — entao o clique
+pulava todos os embrulhos e caia na grade generica do album, que para 'frags' nao tem nada
+para listar. Trofeus ja contornava isso com um ouvinte proprio; agora a raiz esta corrigida
+e os dois vao pelo mesmo caminho.
+

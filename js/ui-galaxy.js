@@ -663,7 +663,10 @@
     if (!ALB_TABS.includes(HR.UI.achTab)) HR.UI.achTab = 'ach';
     if (!tabs.childElementCount) {
       ALB_TABS.forEach(tb => { const b = HR.U.el('button', 'tab' + (tb === HR.UI.achTab ? ' active' : ''), HR.icon(ALB_ICONS[tb]) + '<span>' + esc(HR.t('alb_' + tb)) + '</span>'); b.setAttribute('data-tab', tb); tabs.appendChild(b); });
-      HR.UI.wireTabs('ach-tabs', t => { HR.UI.achTab = t; renderAchievements(); });
+      // HR.UI.renderAchievements, nao a funcao daqui: as abas novas (Trofeus,
+      // Fragmentos) moram em arquivos que embrulham esta funcao. Chamando a
+      // local, o clique na aba pulava todos eles e caia na grade generica.
+      HR.UI.wireTabs('ach-tabs', t => { HR.UI.achTab = t; (HR.UI.renderAchievements || renderAchievements).call(HR.UI); });
     }
     HR.UI.setTab('ach-tabs', HR.UI.achTab);
     const cnt = albumCounts(); HR.UI.bind('achCount', cnt.a + '/' + cnt.b);
