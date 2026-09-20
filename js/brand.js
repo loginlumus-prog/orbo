@@ -41,7 +41,12 @@ HR.Brand = {
       '<path d="M40 7.3 A19 26 -18 0 1 24 56.7" fill="none" stroke="' + a + '" stroke-width="4" stroke-linecap="round"/>' +
       '</svg>';
   },
-  logo(accent) {
+  // v7: so o nome. Os arcos e a bola sairam — a marca e a palavra.
+  logo() {
+    return '<span class="lg lg-word" aria-label="ORBO">ORBO</span>';
+  },
+  // o letreiro antigo continua disponivel para quem precisar do simbolo
+  logoIcon(accent) {
     const id = Math.random().toString(36).slice(2, 7);
     return '<span class="lg" aria-label="ORBO"><span class="lg-o">' + this.ring(accent, id) + '</span><span class="lg-t">RB</span><span class="lg-o">' + this.ball(accent, id) + '</span></span>';
   },
