@@ -58,3 +58,11 @@ Ajustes pedidos depois (2026-09-14):
 
 - **Analógico direto:** a inclinação vira a velocidade da bola na hora (antes a bola seguia um alvo preso a uma mola, que ficava até ~200 px à frente). Tempo até 90% da velocidade: 250 ms → 83 ms; inverter a direção: 283 ms → 100 ms; parar ao soltar: 150 ms → 117 ms. Zona morta 0,12 → 0,07 e curva 1,35 → 1,12 (resposta mais linear). `CONFIG.BALL.stickResponse`.
 - **Poderes com começo, meio e fim** (`js/game-v53.js`, `js/ui-v53.js`, `css/v53.css`): aviso grande com ícone ao começar (nome, efeito e duração); anel de tempo em volta da bola para estrela, fantasma, cometa, piloto automático, Égide (últimos 6 s) e fênix; nos últimos 2,5 s o anel pisca cada vez mais rápido, aparece a contagem 3-2-1 junto da bola e um aviso "Acabando" com os segundos; ao acabar, aviso "Acabou" com ícone riscado ("o controle é seu" no piloto automático) e câmera lenta curta (`ADAPT.powerEnd`). Chips do HUD mostram os segundos restantes e pulsam no fim.
+
+## v5.4: rota entre mundos na tela do sistema (2026-09-20)
+
+- A lista de fases deixou de ser o mesmo caminho de círculos da tela de sistemas. Agora é uma rota desenhada em canvas (`js/ui-system-v54.js`, `css/v54.css`), que envolve `HR.UI.renderSystem` e troca só o bloco `.lv-path`.
+- Cada fase é um mundo: arte das bolas das coleções planetas, nebulosas e buracos negros, escolhida de forma fixa por id da fase (mesma fase, mesmo mundo). Cada planeta é desenhado uma vez num canvas próprio e depois só gira, para não pesar.
+- Vida na tela: céu com nebulosas na cor da galáxia e estrelas, trilha de voo com o trecho vencido brilhando e um pulso de luz percorrendo, luas em órbita, aro de luz nas fases vencidas, halo na fase atual com a bola equipada orbitando, e o chefe como mundo maior com aura pulsando.
+- Botões continuam em DOM por cima (número, estrelas, cadeado, aviso de evento), então toque, dicas e o tratamento de fase bloqueada seguem iguais.
+- Respeita o modo gráfico Leve (menos estrelas, sem brilho nem luas) e "reduzir movimento" (desenha parado). Medido em 60 quadros por segundo, média de 16,7 ms por quadro.
