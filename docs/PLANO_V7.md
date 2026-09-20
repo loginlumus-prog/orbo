@@ -237,3 +237,8 @@ As falas entram uma a uma, com o tempo de leitura, e o botao de pular continua n
 
 Falta na etapa: ligar a cor da bola de Faisca ao mural (ela comeca lavada e ganha cor a
 cada fragmento), e a reescrita da abertura e da galaxia 1 na chave nova.
+
+**v6.7.1** — o Infinito parecia ter voltado ao antigo. O selo das Fendas era desenhado
+so no `refreshMenu`, mas tocar em "Infinito" chama `refreshMode` — entao o selo so
+aparecia se a pessoa entrasse no menu de novo. Bug latente desde a v6.1. Agora os dois
+desenham o selo.

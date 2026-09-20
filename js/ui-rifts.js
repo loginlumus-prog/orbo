@@ -104,7 +104,7 @@
   after(HR.UI, 'back', function () { if (!HR.UI.stack.includes('rifts')) stopLoop(); });
 
   /* ---------------- selo no menu ---------------- */
-  after(HR.UI, 'refreshMenu', function () {
+  function selo() {
     const dock = $('.bottom-dock'), seg = $('#mode-seg'); if (!dock || !seg) return;
     let chip = $('#rift-chip');
     const endless = HR.Store.data.mode === 'endless' || ($('.mode-btn[data-mode="endless"]') || {}).classList && $('.mode-btn[data-mode="endless"]').classList.contains('active');
@@ -121,7 +121,10 @@
       '<span class="rc-gold">' + HR.icon('coin', '', true) + '×' + R().mul(n).toFixed(2).replace('.00', '') + '</span>' +
       '<span class="rc-n">' + R().openCount() + '/' + R().N + '</span>' +
       '<span class="rc-go">' + HR.icon('chevronRight') + '</span>';
-  });
+  }
+  after(HR.UI, 'refreshMenu', selo);
+  after(HR.UI, 'refreshMode', selo);   // é este que roda ao tocar em "Infinito"
+  HR.UI.riftChip = selo;
 
   /* ---------------- recorde por fenda ---------------- */
   after(HR.UI, 'onOver', function (s) { if (s && s.mode === 'endless') R().record(s.score || 0); });
