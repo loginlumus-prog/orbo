@@ -130,7 +130,17 @@
       const b = $('#gear-aegis'); if (b) b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.game.useAegis(); });
       const L = run.level, allowJet = !practice && !(L && (L.boss || L.sg));
       let jh = '';
-      if (allowJet && !run.jetUsed) ['jet', 'megajet'].forEach(k => { const c = HR.Consumables.count(k); if (!c) return; const G = HR.GEAR.consumables[k]; jh += '<button type="button" class="jet-btn" data-jet="' + k + '" style="--ac:' + G.color + '"' + HR.tip(HR.t(k), HR.t(k + '_d')) + '>' + HR.plate(G.icon, G.color, 'sm round') + '<span class="jet-txt"><b>' + esc(HR.t(k)) + (desktop && k === 'jet' ? ' <kbd>J</kbd>' : '') + '</b><small>×' + c + ' · ' + esc(HR.t('rings_n', { n: G.rings })) + '</small></span></button>'; });
+      // v6.5: enquanto o corredor esta aberto os botoes CONTINUAM na tela, para empilhar
+      const voando = run.jetLeft > 0, pilha = run.jetStacks || 0, MAXP = (HR.JetTrack && HR.JetTrack.MAX_PILHA) || 5;
+      const segs = k => Math.round((((HR.JetTrack && HR.JetTrack.PASSOS[k]) || 62) * 190) / 590);
+      if (allowJet && (!run.jetUsed || voando)) ['jet', 'megajet'].forEach(k => {
+        const c = HR.Consumables.count(k); if (!c) return;
+        const G = HR.GEAR.consumables[k], cheio = voando && pilha >= MAXP;
+        jh += '<button type="button" class="jet-btn' + (voando ? ' stacking' : '') + (cheio ? ' full' : '') + '" data-jet="' + k + '" style="--ac:' + G.color + '"' + HR.tip(HR.t(k), HR.t(k + '_d')) + '>' +
+          HR.plate(G.icon, G.color, 'sm round') +
+          '<span class="jet-txt"><b>' + esc(HR.t(k)) + (desktop && k === 'jet' ? ' <kbd>J</kbd>' : '') + '</b><small>×' + c + ' · +' + segs(k) + ' s</small></span>' +
+          (voando ? '<span class="jet-stack">' + pilha + '/' + MAXP + '</span>' : '') + '</button>';
+      });
       jets.innerHTML = jh;
       $$('.jet-btn', jets).forEach(btn => btn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.game.useJet(btn.dataset.jet); }));
     },
@@ -211,7 +221,7 @@
           const cdEl = gb.querySelector('.gb-cd'), txt = cd ? String(Math.ceil(run.aegisCd)) : active ? String(Math.ceil(run.aegisT)) : ''; if (cdEl.textContent !== txt) cdEl.textContent = txt;
           const ce = gb.querySelector('.gb-count'); if (ce.textContent !== String(n)) ce.textContent = n;
         }
-        const jetsEl = $('#hud-jets'); if (jetsEl) jetsEl.classList.toggle('show', !!jetsEl.childElementCount && !run.jetUsed && run.ringsResolved === 0 && (this.game.state === 'ready' || this.game.state === 'playing'));
+        const jetsEl = $('#hud-jets'); if (jetsEl) jetsEl.classList.toggle('show', !!jetsEl.childElementCount && (!run.jetUsed || run.jetLeft > 0) && run.ringsResolved === 0 && (this.game.state === 'ready' || this.game.state === 'playing'));
         this.updateStick();
         this.setVar($('#screen-hud'), '--flow', run.flowV.toFixed(2));
         this.hudPowers(run);

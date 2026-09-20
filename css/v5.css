@@ -104,6 +104,10 @@
 .jet-txt { display: flex; flex-direction: column; line-height: 1.1; }
 .jet-txt b { font-family: var(--display); font-size: 14px; font-weight: 600; }
 .jet-txt small { font-size: 10.5px; font-weight: 700; color: var(--ac); }
+/* v6.5: enquanto o corredor esta aberto o botao fica em destaque e mostra a pilha */
+.jet-btn.stacking { box-shadow: 0 4px 0 rgba(0,0,0,0.45), inset 0 0 0 2px var(--ac), 0 0 26px color-mix(in srgb, var(--ac) 55%, transparent); }
+.jet-btn.full { opacity: 0.45; }
+.jet-stack { flex: none; margin-left: 2px; padding: 2px 8px; border-radius: 999px; font-family: var(--display); font-size: 12px; font-weight: 700; color: #1b1200; background: linear-gradient(180deg, #ffe89a, #ffb92b); }
 .jet-btn kbd { font: 800 10px var(--font, sans-serif); padding: 1px 5px; border-radius: 5px; background: #fff; color: #000; margin-left: 3px; }
 .fx-vignette.jet { box-shadow: inset 0 0 140px rgba(255,170,80,0.32); }
 

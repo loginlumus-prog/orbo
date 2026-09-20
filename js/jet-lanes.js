@@ -82,7 +82,69 @@ window.HR = window.HR || {};
     this.jetStep = 0;
     run.jetLeft = run.jetTotal = PASSOS[kind] || 62;
     run.jetStacks = 1; run.jetGrau = -1; run.jetCoins = 0; run.jetOffLane = false;
+    this.emit('gear', { kind: 'jet' });   // redesenha o selo ja com 1/5
     return ok;
+  };
+
+  /* ---------------- dentro do corredor, quem pilota e a pessoa ---------------- */
+  // O jato mantem o piloto automatico ligado (e ele que segura a bola nos arcos
+  // normais). No corredor nao ha arco, entao o piloto nao mira em nada e a bola
+  // travava. Aqui a mira passa a ser a FAIXA escolhida, e o resto da fisica de
+  // sempre leva a bola ate la com o mesmo deslize macio.
+  const origUpdateBall = G.updateBall;
+  G.updateBall = function (sdt, dt) {
+    const run = this.run;
+    if (run.jetLeft > 0 && (this.state === 'playing' || this.state === 'ready')) {
+      try { this.jetLaneControl(dt); } catch (_) { /* nunca derruba o quadro */ }
+    } else if (run.jetLane != null) run.jetLane = null;
+    return origUpdateBall.apply(this, arguments);
+  };
+
+  G.jetStepLane = function (passo) {
+    const run = this.run, antes = run.jetLane;
+    run.jetLane = Math.max(0, Math.min(2, (run.jetLane == null ? 1 : run.jetLane) + passo));
+    if (run.jetLane !== antes) {
+      HR.Audio.sfx('tick'); HR.U.vibrate(8);
+      this.particles.burst({
+        x: this.ball.x - this.ball.r, y: this.ball.y, n: 6, speed: 180,
+        angle: passo > 0 ? Math.PI / 2 : -Math.PI / 2, spread: 0.8,
+        color: ['#ffffff', HR.Gear.current('jet').color2 || '#ffffff'], size: 3, life: 0.3, type: 'spark'
+      });
+    }
+  };
+
+  G.jetLaneControl = function (dt) {
+    const I = HR.Input, b = this.ball, run = this.run, V = this.vAxis();
+    if (run.jetLane == null) {
+      // comeca na faixa mais perto de onde a bola ja esta
+      let melhor = 1, dist = 1e9;
+      FAIXAS.forEach((f, i) => { const d = Math.abs(b.y - this.Lv * f); if (d < dist) { dist = d; melhor = i; } });
+      run.jetLane = melhor;
+      this._jUp = this._jDown = this._jSU = this._jSD = false; this._jAcc = 0;
+    }
+
+    // teclado: um passo por toque, nao por quadro
+    const cima = !!I.keys.up, baixo = !!I.keys.down;
+    if (cima && !this._jUp) this.jetStepLane(-1);
+    if (baixo && !this._jDown) this.jetStepLane(1);
+    this._jUp = cima; this._jDown = baixo;
+
+    // analogico do celular: inclinar um pouco ja troca de faixa (e solta para trocar de novo)
+    const S = I.stick, m = Math.hypot(S.x, S.y);
+    const sv = S.active && m > 0.05 ? (S.x * V.x + S.y * V.y) : 0;
+    if (sv > 0.40 && !this._jSD) { this.jetStepLane(1); this._jSD = true; }
+    if (sv < -0.40 && !this._jSU) { this.jetStepLane(-1); this._jSU = true; }
+    if (Math.abs(sv) < 0.20) { this._jSU = this._jSD = false; }
+
+    // arrasto (modos que usam deslocamento): acumula ate dar um passo
+    const d = I.consumeDelta2();
+    const dv = d.dx * V.x + d.dy * V.y;
+    this._jAcc = (this._jAcc || 0) + dv;
+    if (this._jAcc > 24) { this.jetStepLane(1); this._jAcc = 0; }
+    else if (this._jAcc < -24) { this.jetStepLane(-1); this._jAcc = 0; }
+    else this._jAcc *= Math.exp(-4 * dt);
+
+    b.ty = this.Lv * FAIXAS[run.jetLane];
   };
 
   /* ---------------- o corredor acaba por distancia ---------------- */
@@ -172,6 +234,7 @@ window.HR = window.HR || {};
     if ((run.jetGrau || 0) >= 4) d.stats5.jetMaxGrade = (d.stats5.jetMaxGrade || 0) + 1;
     HR.Store.save();
     run.jetCoins = 0; run.jetOffLane = false; run.jetStacks = 0; run.jetGrau = -1;
+    run.jetLane = null; this.ball.ty = this.ball.y;
     return r;
   };
 

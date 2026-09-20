@@ -239,3 +239,15 @@ cinco Mega Jatos dao ~3min45, com quase tres minutos no grau 5.
 Tecnico: `run.jetLeft` deixou de ser "arcos restantes" e passou a ser "passos de corredor
 restantes", descontado por distancia — todo o resto do jogo, que so pergunta `jetLeft > 0`,
 continua valendo, e a barra do HUD anda liso. Arquivos: js/fx-v65.js e js/jet-lanes.js.
+
+**v6.5.1** — dois erros do corredor, achados no primeiro teste:
+
+1. **A bola ficava travada.** O jato liga o piloto automatico, e o piloto mira no proximo
+   arco — como o corredor nao tem arco nenhum, a mira nao existia e a bola parava. O corredor
+   passou a ter controle proprio: `W`/`S` (ou as setas) trocam de faixa, e no celular um
+   toquinho do analogico para cima ou para baixo faz o mesmo. A bola desliza ate a faixa com
+   a mesma fisica de sempre, com um estalo e uma faisca a cada troca.
+2. **Nao dava para empilhar.** O HUD escondia os botoes de jato assim que o primeiro era
+   usado (`!run.jetUsed`), entao era impossivel usar o segundo. Agora eles ficam na tela
+   enquanto o corredor estiver aberto, em destaque, com o selo da pilha (1/5, 2/5...) e o
+   tempo que cada um acrescenta. No limite o botao fica apagado e o toque avisa.
