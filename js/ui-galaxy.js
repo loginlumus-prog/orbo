@@ -638,8 +638,8 @@
 
   /* =================== ÁLBUM (coleção) =================== */
   const CAT_ICONS = { flight: 'ring', precision: 'target', wealth: 'coins', galaxy: 'galaxy', power: 'powers', collection: 'ball', dedication: 'calendar', secret: 'eyeOff', singularity: 'light' };
-  const ALB_TABS = ['ach', 'skins', 'trails', 'themes', 'gear', 'bosses', 'rings', 'items', 'titles'];
-  const ALB_ICONS = { ach: 'trophy', rings: 'ring', items: 'gift', bosses: 'crown', skins: 'ball', trails: 'trail', themes: 'palette', titles: 'rank', gear: 'aegis' };
+  const ALB_TABS = ['ach', 'frags', 'skins', 'trails', 'themes', 'gear', 'bosses', 'rings', 'items', 'titles'];
+  const ALB_ICONS = { ach: 'trophy', frags: 'layers', rings: 'ring', items: 'gift', bosses: 'crown', skins: 'ball', trails: 'trail', themes: 'palette', titles: 'rank', gear: 'aegis' };
   function albumCounts() {
     const d = HR.Store.data, C = HR.Campaign, c = HR.Achievements.counts();
     const bosses = HR.REGIONS.filter((R, i) => C.bossBeaten(i)).length;

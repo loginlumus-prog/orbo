@@ -213,3 +213,27 @@ que reage ao que esta sendo dito:
 
 Tudo em canvas, com o mesmo teto de desempenho do resto: no nivel Baixo, quadro parado.
 As falas entram uma a uma, com o tempo de leitura, e o botao de pular continua no canto.
+
+---
+
+## Diario de execucao
+
+**v6.7 (2026-09-24) — etapa 4 parcial: os fragmentos existem.**
+
+- `js/render-frag.js` — os cinco elementos. O pai ganhou coroa de 32 raios, cascas
+  elipticas desencontradas e miolo com cruz de lente. A mae ganhou o oposto exato:
+  poeira sendo PUXADA para dentro, borda acesa em tres trechos e um anel interno de luz
+  engolida. Faisca virou onda: a divisa vai do topo ao fundo numa curva livre que ondula,
+  as metades sao desiguais e as duas marcas sao borroes com halo — lembra o yin-yang sem
+  ser a copia dele.
+- `js/frag-scenes.js` — quinze arranjos. Os 33 cards sao ajustes deles.
+- `js/fragments.js` — os 33 fragmentos com gatilho, arranjo e texto em PT/EN/ES.
+- `js/ui-fragments.js` + `css/fragments.css` — o mural como aba nova dentro de Conquistas,
+  card em tela cheia animado e aviso de fragmento novo. As miniaturas desenham um quadro
+  e param; so o card aberto anima, e no nivel Baixo nem ele.
+- `js/ui-v7.js` — botao do arco da vitrine: desliga o arco que gira em volta da bola para
+  dar para ver a skin sozinha. Os arcos fantasma do fundo continuam.
+- `js/brand.js` — o ultimo "O" do letreiro passou a ser a Faisca nova.
+
+Falta na etapa: ligar a cor da bola de Faisca ao mural (ela comeca lavada e ganha cor a
+cada fragmento), e a reescrita da abertura e da galaxia 1 na chave nova.

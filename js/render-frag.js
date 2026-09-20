@@ -188,30 +188,70 @@ window.HR = window.HR || {};
     ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
   }
 
-  // a mae: funda, acesa nas bordas — onde ele tem miolo, ela tem contorno
+  // a mae: funda, acesa nas bordas — onde ele tem miolo, ela tem contorno.
+  // O oposto da coroa dele: a poeira nao sai, e puxada para dentro.
   function mae(ctx, x, y, r, t, forca) {
     const u = U(), k = forca == null ? 1 : forca;
-    discoLuz(ctx, x, y, r * 3.0, '#6a4fd0', 0.45 * k);
-    const corpo = ctx.createRadialGradient(x, y, r * 0.2, x, y, r);
-    corpo.addColorStop(0, u.rgba('#05030c', 0.98 * k));
-    corpo.addColorStop(0.6, u.rgba('#0b0718', 0.98 * k));
-    corpo.addColorStop(0.93, u.rgba('#1b1236', 0.95 * k));
-    corpo.addColorStop(1, u.rgba('#2a1c52', 0.9 * k));
-    ctx.fillStyle = corpo; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
-    // a borda acesa: dois arcos, um forte e um de sobra, deslocados
+    discoLuz(ctx, x, y, r * 3.4, '#6a4fd0', 0.55 * k);
+
+    // poeira sendo puxada: riscos apontando para o centro, mais curtos perto dela
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
-    const a0 = -0.9 + Math.sin(t * 0.4) * 0.1;
-    bloom(ctx, '#c9b4ff', [[1.6, 0.95], [5, 0.3], [13, 0.1]], () => {
-      ctx.beginPath(); ctx.arc(x, y, r * 0.995, a0, a0 + 2.5); ctx.stroke();
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * TAU - t * 0.05;
+      const fora = r * (1.9 + rnd(i * 6.1) * 0.9);
+      const perto = r * (1.06 + ((t * 0.35 + rnd(i * 2.9)) % 1) * 0.5);
+      const g = ctx.createLinearGradient(x + Math.cos(a) * fora, y + Math.sin(a) * fora,
+                                         x + Math.cos(a) * perto, y + Math.sin(a) * perto);
+      g.addColorStop(0, u.rgba('#8f74e8', 0));
+      g.addColorStop(1, u.rgba('#d9ccff', 0.45 * k));
+      ctx.strokeStyle = g; ctx.lineWidth = r * 0.03;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * fora, y + Math.sin(a) * fora);
+      ctx.lineTo(x + Math.cos(a) * perto, y + Math.sin(a) * perto);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // corpo: fundo de verdade, com uma leve tonalidade roxa so na casca
+    const corpo = ctx.createRadialGradient(x + r * 0.12, y + r * 0.1, r * 0.05, x, y, r);
+    corpo.addColorStop(0, u.rgba('#020108', 1 * k));
+    corpo.addColorStop(0.55, u.rgba('#080514', 0.99 * k));
+    corpo.addColorStop(0.88, u.rgba('#190f34', 0.97 * k));
+    corpo.addColorStop(1, u.rgba('#331f63', 0.95 * k));
+    ctx.fillStyle = corpo; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+
+    // o anel de dentro: a luz que ela engoliu e nao devolve
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, r * 0.99, 0, TAU); ctx.clip();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = u.rgba('#6a4fd0', 0.30 * k); ctx.lineWidth = r * 0.05;
+    ctx.beginPath(); ctx.ellipse(x + r * 0.06, y + r * 0.04, r * 0.62, r * 0.5, -0.4, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = u.rgba('#9f86ff', 0.16 * k); ctx.lineWidth = r * 0.03;
+    ctx.beginPath(); ctx.ellipse(x - r * 0.04, y - r * 0.02, r * 0.38, r * 0.3, 0.5, 0, TAU); ctx.stroke();
+    ctx.restore();
+
+    // a borda acesa: tres trechos, de forcas diferentes, que e o que a define
+    ctx.save(); ctx.lineCap = 'round';
+    const a0 = -1.0 + Math.sin(t * 0.4) * 0.12;
+    bloom(ctx, '#d9ccff', [[2, 1], [6, 0.32], [17, 0.12]], () => {
+      ctx.beginPath(); ctx.arc(x, y, r * 0.995, a0, a0 + 2.3); ctx.stroke();
     });
-    bloom(ctx, '#7f63e0', [[1.2, 0.7], [4, 0.2]], () => {
-      ctx.beginPath(); ctx.arc(x, y, r * 0.995, a0 + 3.3, a0 + 4.9); ctx.stroke();
+    bloom(ctx, '#8f74e8', [[1.4, 0.75], [5, 0.22]], () => {
+      ctx.beginPath(); ctx.arc(x, y, r * 0.995, a0 + 3.1, a0 + 4.6); ctx.stroke();
     });
-    // pontos de luz dentro, poucos: ela absorve, nao brilha
-    for (let i = 0; i < 4; i++) {
-      const an = i * 1.7 + t * 0.2, rr = r * (0.3 + rnd(i * 5.5) * 0.45);
-      ctx.fillStyle = u.rgba('#d9ccff', 0.5 * k);
-      ctx.beginPath(); ctx.arc(x + Math.cos(an) * rr, y + Math.sin(an) * rr, 1.6, 0, TAU); ctx.fill();
+    const a1 = a0 + 2.6 + Math.sin(t * 0.9) * 0.25;
+    bloom(ctx, '#ffffff', [[1.1, 0.5 * (0.5 + 0.5 * Math.sin(t * 1.4))]], () => {
+      ctx.beginPath(); ctx.arc(x, y, r * 0.995, a1, a1 + 0.42); ctx.stroke();
+    });
+    ctx.restore();
+
+    // pouquissimos pontos dentro: ela absorve, nao brilha
+    for (let i = 0; i < 3; i++) {
+      const an = i * 2.2 + t * 0.18, rr = r * (0.28 + rnd(i * 5.5) * 0.4);
+      ctx.fillStyle = u.rgba('#d9ccff', 0.42 * k);
+      ctx.beginPath(); ctx.arc(x + Math.cos(an) * rr, y + Math.sin(an) * rr, 1.5, 0, TAU); ctx.fill();
     }
   }
 
@@ -237,39 +277,47 @@ window.HR = window.HR || {};
     gc.addColorStop(0, claro); gc.addColorStop(1, claro2);
     ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
 
-    // metade escura: o S classico, desenhado por cima
+    // a divisa: uma onda livre do topo ao fundo. Nao e o S de compasso do
+    // taijitu — os dois lados tem curvatura diferente e ela respira.
+    const onda = Math.sin(t * 0.55) * 0.07;
+    const c1x = r * (0.88 + onda), c1y = -r * 0.58;
+    const c2x = -r * (0.74 - onda), c2y = r * 0.24;
+    const divisa = () => {
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.bezierCurveTo(c1x, c1y, c2x, c2y, r * 0.06, r);
+    };
+
+    // metade escura: a onda, fechada pelo lado direito do disco
     const ge = ctx.createLinearGradient(-r * 0.4, -r, r, r);
     ge.addColorStop(0, escuro2); ge.addColorStop(1, escuro);
     ctx.fillStyle = ge;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, -Math.PI / 2, Math.PI / 2, false);
-    ctx.arc(0, r / 2, r / 2, Math.PI / 2, -Math.PI / 2, true);
-    ctx.arc(0, -r / 2, r / 2, Math.PI / 2, -Math.PI / 2, false);
+    divisa();
+    ctx.arc(0, 0, r, Math.PI / 2, -Math.PI / 2, true);
     ctx.closePath(); ctx.fill();
 
-    // a divisa acesa: o fio de luz que percorre o S
+    // o fio de luz correndo pela divisa: a "mistura"
     ctx.save();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    const divisa = () => {
-      ctx.beginPath();
-      ctx.arc(0, r / 2, r / 2, Math.PI / 2, -Math.PI / 2, true);
-      ctx.arc(0, -r / 2, r / 2, Math.PI / 2, -Math.PI / 2, false);
-    };
     ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = u.rgba('#9fe8ff', 0.25 * (1 - L * 0.7)); ctx.lineWidth = r * 0.13; divisa(); ctx.stroke();
-    ctx.strokeStyle = u.rgba('#ffffff', 0.55 * (1 - L * 0.6)); ctx.lineWidth = r * 0.035; divisa(); ctx.stroke();
+    ctx.strokeStyle = u.rgba('#9fe8ff', 0.22 * (1 - L * 0.7)); ctx.lineWidth = r * 0.15; divisa(); ctx.stroke();
+    ctx.strokeStyle = u.rgba('#ffffff', 0.6 * (1 - L * 0.6)); ctx.lineWidth = r * 0.03; divisa(); ctx.stroke();
     ctx.restore();
 
-    // as duas manchas: cada metade carrega um pedaco da outra
-    const olho = (cy, cor, corAro, forca) => {
-      const g = ctx.createRadialGradient(-r * 0.05, cy - r * 0.06, 0, 0, cy, r * 0.17);
-      g.addColorStop(0, u.rgba(cor, 1)); g.addColorStop(1, u.rgba(corAro, 1));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, cy, r * 0.17, 0, TAU); ctx.fill();
-      ctx.strokeStyle = u.rgba('#ffffff', forca); ctx.lineWidth = r * 0.02;
-      ctx.beginPath(); ctx.arc(0, cy, r * 0.17, 0, TAU); ctx.stroke();
+    // as duas marcas: borroes com halo, na barriga de cada metade.
+    // Nao sao circulos recortados — sao manchas, como tinta que passou.
+    const mancha = (mx, my, cor, forca, tam) => {
+      const g = ctx.createRadialGradient(mx - r * 0.04, my - r * 0.05, 0, mx, my, r * tam);
+      g.addColorStop(0, u.rgba(cor, 1));
+      g.addColorStop(0.62, u.rgba(cor, 0.88));
+      g.addColorStop(0.85, u.rgba(cor, 0.45));
+      g.addColorStop(1, u.rgba(cor, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(mx, my, r * tam, 0, TAU); ctx.fill();
+      ctx.strokeStyle = u.rgba('#ffffff', forca); ctx.lineWidth = r * 0.016;
+      ctx.beginPath(); ctx.arc(mx, my, r * tam * 0.62, 0, TAU); ctx.stroke();
     };
-    olho(-r / 2, escuro2, escuro, 0.22 * (1 - L));          // mancha escura no lado claro
-    olho(r / 2, '#ffffff', claro2, 0.5 * (1 - L * 0.5));    // mancha clara no lado escuro
+    mancha(r * 0.34, -r * 0.30, '#f4f8ff', 0.45 * (1 - L * 0.5), 0.185);  // clara, dentro do escuro
+    mancha(-r * 0.31, r * 0.33, u.mix('#120d24', '#454550', L), 0.16 * (1 - L), 0.215);  // escura, dentro do claro
 
     // volume: uma luz so, de cima a esquerda, por cima de tudo
     const vol = ctx.createRadialGradient(-r * 0.36, -r * 0.42, r * 0.04, 0, 0, r * 1.05);

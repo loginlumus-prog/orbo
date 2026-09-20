@@ -1197,14 +1197,15 @@ HR.Game = class {
     const accent = this.showcaseAccent();
     const fy = Math.sin(t * 1.5) * s.r * 0.22;
     const ring = { x: s.x, y: s.y, r: s.r * 1.9, tilt: Math.sin(t * 0.45) * 0.6, accent, color: accent, flash: 0, hit: false, type: 'plain' };
-    HR.Render.drawRing(ctx, ring, 'back', { t });
+    const comArco = !(HR.Store.data.settings && HR.Store.data.settings.hideShowcaseRing);
+    if (comArco) HR.Render.drawRing(ctx, ring, 'back', { t });
     if (this.trail !== 'none') {
       const pts = [];
       for (let i = 0; i < 16; i++) { const k = 16 - i; pts.push({ x: s.x - k * s.r * 0.2, y: s.y + Math.sin(t * 1.5 - k * 0.24) * s.r * 0.22, t: t - k * 0.03 }); }
       HR.Render.drawTrail(ctx, this.trail, pts, skin, t, 0);
     }
     HR.Render.drawBall(ctx, s.x, s.y + fy, s.r, skin, t, { vy: Math.cos(t * 1.5) * s.r * 10 });
-    HR.Render.drawRing(ctx, ring, 'front', { t });
+    if (comArco) HR.Render.drawRing(ctx, ring, 'front', { t });
   }
 
   /* ---------------- desenho ---------------- */

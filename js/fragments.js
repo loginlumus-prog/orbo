@@ -113,6 +113,7 @@ HR.Frag = {
 
 /* ---------------- texto ---------------- */
 Object.assign(HR.I18N.pt, {
+  alb_frags: 'Fragmentos',
   frag_titulo: 'Fragmentos', frag_sub: 'O que ela lembra',
   frag_de: '{a} de {b}', frag_novo: 'FRAGMENTO', frag_onde: 'Onde',
   frag_bloq: 'Ainda não lembra', frag_segredo: 'Nada aqui',
@@ -191,6 +192,7 @@ Object.assign(HR.I18N.pt, {
 });
 
 Object.assign(HR.I18N.en, {
+  alb_frags: 'Fragments',
   frag_titulo: 'Fragments', frag_sub: 'What she remembers',
   frag_de: '{a} of {b}', frag_novo: 'FRAGMENT', frag_onde: 'Where',
   frag_bloq: 'She does not remember yet', frag_segredo: 'Nothing here',
@@ -269,6 +271,7 @@ Object.assign(HR.I18N.en, {
 });
 
 Object.assign(HR.I18N.es, {
+  alb_frags: 'Fragmentos',
   frag_titulo: 'Fragmentos', frag_sub: 'Lo que ella recuerda',
   frag_de: '{a} de {b}', frag_novo: 'FRAGMENTO', frag_onde: 'Dónde',
   frag_bloq: 'Todavía no recuerda', frag_segredo: 'Nada aquí',
