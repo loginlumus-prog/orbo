@@ -127,7 +127,7 @@
       if (HR.UI.hudPerks) HR.UI.hudPerks(game.run);
     });
     // item novo descoberto: só um selo discreto durante a partida (o álbum guarda o resto)
-    game.on('discover', () => { if (inRun()) mini('bag', '+1'); });
+    game.on('discover', () => { if (inRun()) mini('bag', '+1'); }); guard();
     // toque duplo (ou clique duplo) usa a Égide
     HR.Input.onDoubleTap = () => {
       if (HR.UI.current !== 'hud' || openNow) return;
@@ -155,10 +155,43 @@
     const g = HR.game;
     return HR.UI.current === 'hud' && g && ['playing', 'ready', 'transition', 'perk', 'paused', 'dying'].indexOf(g.state) >= 0;
   };
+  // um cartão pode ter entrado na fila fora da partida e só aparecer depois, já no jogo:
+  // aqui ele é retirado na hora e guardado para o fim
+  const recent = [];
+  function guard() {
+    const host = document.getElementById('trophy-host');
+    if (!host || host.dataset.v56 || !window.MutationObserver) return;
+    host.dataset.v56 = '1';
+    new MutationObserver(() => {
+      if (!inRun()) return;
+      const pops = host.querySelectorAll('.trophy-pop');
+      if (!pops.length) return;
+      pops.forEach(() => { const a = recent.shift(); if (a) pending.push(a); });
+      host.innerHTML = '';
+      mini();
+    }).observe(host, { childList: true });
+  }
+
+  // varre a cada quadro do HUD: pega até o cartão que já estava na tela quando a partida começou
+  function sweep() {
+    const h = document.getElementById('trophy-host');
+    if (!h || !h.firstElementChild || !inRun()) return;
+    const k = h.querySelectorAll('.trophy-pop').length;
+    for (let i = 0; i < k; i++) { const a = recent.shift(); if (a) pending.push(a); }
+    h.innerHTML = '';
+    mini();
+  }
+  const origHudPowers = HR.UI.hudPowers;
+  if (typeof origHudPowers === 'function') {
+    HR.UI.hudPowers = function () { const r = origHudPowers.apply(this, arguments); sweep(); return r; };
+  }
+
   const origPopup = HR.UI.trophyPopup;
   if (typeof origPopup === 'function') {
     HR.UI.trophyPopup = function (a) {
+      guard();
       if (inRun()) { pending.push(a); mini(); return; }
+      recent.push(a); if (recent.length > 8) recent.shift();
       return origPopup.call(this, a);
     };
     HR.UI.achToast = function (a) { this.trophyPopup(a); };
