@@ -200,3 +200,8 @@ desce em 3 segundos se travar — comecar baixo deixaria aparelho bom feio para 
 
 Depois de tudo, na fase 1-1-1: Muito bom 59,6 fps (p95 17,8 ms); em retina simulada,
 Muito bom 57,1 e Bom 56,1; Normal e Baixo 60 fps cravados, zero quadro lento.
+
+**v6.4.1** — o automatico guarda o nivel em que se acomodou (`qualityAuto2`). Quem jogou a
+versao lenta ficou com "Baixo" gravado e continuaria no Baixo mesmo depois da otimizacao.
+`HR.Perf.GEN` zera essa memoria uma vez quando o motor muda, para o aparelho ser avaliado
+de novo. A escolha manual de quem mexeu no seletor e respeitada e nao e tocada.

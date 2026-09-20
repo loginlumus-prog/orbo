@@ -25,8 +25,15 @@ HR.Perf = {
   mode: 'auto', level: 2,
   acc: 0, n: 0, slow: 0, bad: 0, suggested: false, lastDrop: 0,
 
+  GEN: 2,   // sobe quando o motor muda a ponto de o nivel aprendido nao valer mais
+
   init() {
     const s = (HR.Store && HR.Store.data && HR.Store.data.settings) || {};
+    // motor novo: o nivel que o automatico tinha aprendido nao vale mais
+    if (s.qualityGen !== this.GEN) {
+      s.qualityGen = this.GEN; delete s.qualityAuto2;
+      if (HR.Store && HR.Store.save) HR.Store.save();
+    }
     // saves antigos: 'high' continua alto, 'low' vira o baixo novo, o resto é automático
     let m = s.quality || 'auto';
     if (this.MODES.indexOf(m) < 0) m = 'auto';
