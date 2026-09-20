@@ -59,13 +59,33 @@ window.HR = window.HR || {};
   }
 
   /* ================= PLANETAS ================= */
+  // Terra: cada continente e um grupo de manchas [lat, lon, tamanho]
+  const EARTH = [
+    { c: '#4e9b46', p: [[52, -105, 0.28], [42, -96, 0.24], [61, -118, 0.17], [31, -101, 0.15], [66, -46, 0.15]] },
+    { c: '#3f8a3c', p: [[11, -84, 0.10], [1, -62, 0.24], [-16, -58, 0.23], [-32, -63, 0.15], [-45, -70, 0.09]] },
+    { c: '#5c9e45', p: [[50, 11, 0.15], [58, 26, 0.13]] },
+    { c: '#b79a5e', p: [[23, 16, 0.21], [6, 20, 0.21], [-11, 25, 0.19], [-27, 26, 0.13]] },
+    { c: '#4e9b46', p: [[51, 62, 0.28], [45, 92, 0.28], [59, 104, 0.24], [30, 78, 0.19], [63, 132, 0.2]] },
+    { c: '#b79a5e', p: [[-25, 134, 0.21], [-20, 119, 0.13]] }
+  ];
   const LANDS = [[45, -100, 0.34], [15, -88, 0.16], [-12, -58, 0.28], [-32, -64, 0.16], [72, -40, 0.14], [8, 20, 0.34], [-18, 26, 0.24], [50, 14, 0.2], [48, 85, 0.44], [26, 78, 0.22], [60, 115, 0.3], [-25, 134, 0.22], [35, 138, 0.1], [-75, 0, 0.3], [-75, 120, 0.3], [-75, -120, 0.3]];
   P.planet = function (ctx, r, sk, t) {
     const rot = t * 0.35, pl = sk.pl;
     switch (pl) {
       case 'earth':
-        LANDS.forEach((L, i) => spot(ctx, r, L[0] * DEG, L[1] * DEG, rot, L[2], i >= 13 ? '#f4f8ff' : (i % 3 === 0 ? '#5c9e45' : i % 3 === 1 ? '#3f8a3c' : '#a38a52'), 0.95));
-        for (let i = 0; i < 10; i++) spot(ctx, r, (hash(i) - 0.5) * 2.4, hash(i + 9) * TAU, rot * 1.3, 0.12 + hash(i + 3) * 0.12, '#ffffff', 0.6);
+        // continentes em grupos de manchas (silhueta mais organica que uma elipse so)
+        EARTH.forEach(C => C.p.forEach(L => spot(ctx, r, L[0] * DEG, L[1] * DEG, rot, L[2], C.c, 0.96)));
+        // calotas polares
+        ctx.fillStyle = 'rgba(240,248,255,0.9)';
+        ctx.beginPath(); ctx.ellipse(0, -r * 0.9, r * 0.6, r * 0.2, 0, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, r * 0.92, r * 0.52, r * 0.17, 0, 0, TAU); ctx.fill();
+        // nuvens: poucas, finas e mais rapidas que o solo
+        for (let i = 0; i < 8; i++) spot(ctx, r, (hash(i) - 0.5) * 2.2, hash(i + 9) * TAU, rot * 1.25, 0.1 + hash(i + 3) * 0.14, '#ffffff', 0.34);
+        {
+          const atm = ctx.createRadialGradient(0, 0, r * 0.74, 0, 0, r);
+          atm.addColorStop(0, 'rgba(130,205,255,0)'); atm.addColorStop(1, 'rgba(150,220,255,0.45)');
+          ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+        }
         break;
       case 'mars':
         [[10, 0, 0.3], [-20, 80, 0.26], [20, 170, 0.34], [-5, 250, 0.22], [30, 300, 0.2]].forEach(L => spot(ctx, r, L[0] * DEG, L[1] * DEG, rot, L[2], '#7a2a12', 0.55));
@@ -79,9 +99,20 @@ window.HR = window.HR || {};
       case 'venus':
         for (let k = 0; k < 6; k++) { ctx.strokeStyle = rgba(k % 2 ? '#fff3c8' : '#d9a760', 0.35); ctx.lineWidth = r * 0.14; ctx.beginPath(); for (let i = 0; i <= 12; i++) { const x = -r + i * r / 6, y = -r * 0.8 + k * r * 0.32 + Math.sin(i * 0.9 + t * 0.4 + k) * r * 0.08; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
         break;
-      case 'mercury': case 'ceres':
-        for (let i = 0; i < 16; i++) spot(ctx, r, (hash(i + 1) - 0.5) * 2.8, hash(i + 20) * TAU, rot * 0.6, 0.06 + hash(i + 5) * 0.12, pl === 'ceres' ? '#4d4a48' : '#6b6259', 0.55);
-        if (pl === 'ceres') { spot(ctx, r, 20 * DEG, 40 * DEG, rot * 0.6, 0.07, '#ffffff', 1); spot(ctx, r, 24 * DEG, 52 * DEG, rot * 0.6, 0.04, '#ffffff', 1); }
+      case 'mercury':
+        // muita cratera pequena, com borda iluminada
+        for (let i = 0; i < 20; i++) {
+          const x = (hash(i + 1) - 0.5) * r * 1.5, y = (hash(i + 20) - 0.5) * r * 1.5, rr = r * (0.07 + hash(i + 5) * 0.14);
+          circle(ctx, x, y, rr, 'rgba(48,42,36,0.55)');
+          circle(ctx, x - rr * 0.2, y - rr * 0.22, rr * 0.7, 'rgba(255,255,255,0.22)');
+          circle(ctx, x + rr * 0.08, y + rr * 0.1, rr * 0.4, 'rgba(30,26,22,0.4)');
+        }
+        break;
+      case 'ceres':
+        // poucas manchas largas e os dois pontos brancos da cratera Occator
+        for (let i = 0; i < 9; i++) spot(ctx, r, (hash(i + 1) - 0.5) * 2.6, hash(i + 20) * TAU, rot * 0.6, 0.1 + hash(i + 5) * 0.12, '#443f3a', 0.6);
+        spot(ctx, r, 20 * DEG, 40 * DEG, rot * 0.6, 0.08, '#ffffff', 1);
+        spot(ctx, r, 24 * DEG, 52 * DEG, rot * 0.6, 0.045, '#ffffff', 1);
         break;
       case 'uranus':
         bands(ctx, r, [[-0.4, 'rgba(200,245,255,0.35)', 0.1], [0.1, 'rgba(120,200,220,0.25)', 0.12], [0.5, 'rgba(210,250,255,0.3)', 0.1]], t, 0.01);
@@ -98,8 +129,14 @@ window.HR = window.HR || {};
         for (let i = 0; i < 14; i++) spot(ctx, r, (hash(i + 3) - 0.5) * 2.6, hash(i + 40) * TAU, rot, 0.05 + hash(i) * 0.1, i % 3 ? '#e2791d' : '#2b1a0a', 0.8);
         break;
       case 'europa':
-        ctx.strokeStyle = 'rgba(150,80,50,0.55)'; ctx.lineWidth = r * 0.05;
-        for (let i = 0; i < 7; i++) { const a0 = hash(i) * TAU + rot * 0.3; ctx.beginPath(); ctx.arc(Math.cos(a0) * r * 1.3, Math.sin(a0) * r * 1.3, r * (1 + hash(i + 7) * 0.8), 0, TAU); ctx.stroke(); }
+        ctx.save(); ctx.rotate(rot * 0.2); ctx.lineCap = 'round';
+        for (let i = 0; i < 6; i++) {
+          const y = (hash(i) - 0.5) * r * 1.5, a = (hash(i + 3) - 0.5) * 0.5, len = r * (0.7 + hash(i + 6) * 0.7);
+          ctx.strokeStyle = 'rgba(158,92,58,' + (0.3 + hash(i + 8) * 0.25).toFixed(2) + ')';
+          ctx.lineWidth = r * (0.016 + hash(i + 4) * 0.018);
+          ctx.beginPath(); ctx.moveTo(-len, y - a * len); ctx.quadraticCurveTo(0, y + a * r * 0.3, len, y + a * len); ctx.stroke();
+        }
+        ctx.restore();
         break;
       case 'titan':
         bands(ctx, r, [[-0.9, 'rgba(255,220,150,0.3)', 0.3], [-0.2, 'rgba(210,140,60,0.25)', 0.25], [0.4, 'rgba(255,200,120,0.3)', 0.3]], t, 0.03);
@@ -325,6 +362,26 @@ window.HR = window.HR || {};
         break;
     }
   };
+  // anel: por fora da bola aparece inteiro; por cima da bola só a metade da frente
+  D.planetRing = function (ctx, r, sk) {
+    const tilt = sk.ringTilt == null ? -0.3 : sk.ringTilt, w = (sk.ringW || 0.15) * r;
+    const col = sk.ringColor || sk.glow || '#ffe1a8', a = sk.ringA == null ? 0.85 : sk.ringA;
+    const rx = r * (sk.ringR || 1.45), ry = rx * (sk.ringFlat == null ? 0.29 : sk.ringFlat);
+    ctx.save(); ctx.rotate(tilt);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(-r * 3, -r * 3, r * 6, r * 6); ctx.arc(0, 0, r * 1.01, 0, TAU);
+    ctx.clip('evenodd');
+    ctx.strokeStyle = rgba(col, a); ctx.lineWidth = w;
+    ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = rgba(sk.dark || '#a0612c', a * 0.5); ctx.lineWidth = w * 0.3;
+    ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.9, ry * 0.9, 0, 0, TAU); ctx.stroke();
+    ctx.restore();
+    if (sk.ringFront !== false) {
+      ctx.strokeStyle = rgba(col, a); ctx.lineWidth = w;
+      ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0.15, Math.PI - 0.15); ctx.stroke();
+    }
+    ctx.restore();
+  };
   D.ears = function (ctx, r, sk) {
     const col = sk.earColor || sk.dark;
     if (sk.ears === 'cat') [-1, 1].forEach(s => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(s * r * 0.28, -r * 0.88); ctx.lineTo(s * r * 0.72, -r * 1.3); ctx.lineTo(s * r * 0.82, -r * 0.55); ctx.fill(); ctx.fillStyle = '#ff9fbf'; ctx.beginPath(); ctx.moveTo(s * r * 0.4, -r * 0.84); ctx.lineTo(s * r * 0.68, -r * 1.12); ctx.lineTo(s * r * 0.74, -r * 0.66); ctx.fill(); });
@@ -353,9 +410,15 @@ window.HR = window.HR || {};
         break;
       }
       case 'rock':
-        ctx.strokeStyle = 'rgba(30,24,20,0.55)'; ctx.lineWidth = r * 0.05; ctx.rotate(rot * 0.2);
-        for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo((hash(i) - 0.5) * r * 1.8, (hash(i + 1) - 0.5) * r * 1.8); ctx.lineTo((hash(i + 2) - 0.5) * r * 1.8, (hash(i + 3) - 0.5) * r * 1.8); ctx.lineTo((hash(i + 4) - 0.5) * r * 1.8, (hash(i + 5) - 0.5) * r * 1.8); ctx.stroke(); }
-        for (let i = 0; i < 18; i++) circle(ctx, (hash(i + 9) - 0.5) * r * 1.8, (hash(i + 19) - 0.5) * r * 1.8, r * 0.035, i % 3 ? 'rgba(255,255,255,0.18)' : 'rgba(90,160,80,0.5)');
+        ctx.rotate(rot * 0.2);
+        // crateras: buraco escuro com a borda iluminada
+        for (let i = 0; i < 11; i++) {
+          const x = (hash(i + 9) - 0.5) * r * 1.45, y = (hash(i + 19) - 0.5) * r * 1.45, rr = r * (0.1 + hash(i + 29) * 0.16);
+          circle(ctx, x, y, rr, 'rgba(18,14,11,0.55)');
+          circle(ctx, x - rr * 0.2, y - rr * 0.22, rr * 0.7, 'rgba(255,255,255,0.16)');
+          circle(ctx, x + rr * 0.1, y + rr * 0.12, rr * 0.45, 'rgba(12,9,7,0.4)');
+        }
+        for (let i = 0; i < 10; i++) circle(ctx, (hash(i + 40) - 0.5) * r * 1.7, (hash(i + 50) - 0.5) * r * 1.7, r * 0.025, 'rgba(255,255,255,0.2)');
         break;
       case 'wind':
         ctx.rotate(t * 1.2);
@@ -487,13 +550,26 @@ window.HR = window.HR || {};
         ctx.restore(); break;
       }
       case 'marble':
-        ctx.rotate(t * 0.8);
-        ['#e63946', '#4361ee', '#ffcf4a'].forEach((c, i) => { ctx.strokeStyle = rgba(c, 0.75); ctx.lineWidth = r * 0.16; ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(Math.cos(i * 2.1) * r * 0.9, Math.sin(i * 2.1) * r * 0.9, Math.cos(i * 2.1 + 1.4) * r * 0.2, Math.sin(i * 2.1 + 1.4) * r * 0.2, Math.cos(i * 2.1 + 1) * r, Math.sin(i * 2.1 + 1) * r); ctx.stroke(); });
+        ctx.rotate(t * 0.4);
+        // faixa de vidro torcida atravessando a bola (olho-de-gato)
+        ctx.lineCap = 'round';
+        ['#e63946', '#ffcf4a', '#4361ee'].forEach((c, i) => {
+          const off = (i - 1) * r * 0.26;
+          ctx.strokeStyle = rgba(c, 0.9); ctx.lineWidth = r * 0.24;
+          ctx.beginPath();
+          ctx.moveTo(-r * 0.95, off * 0.6);
+          ctx.bezierCurveTo(-r * 0.3, off - r * 0.3, r * 0.3, off + r * 0.3, r * 0.95, off * 0.6);
+          ctx.stroke();
+        });
+        ctx.lineCap = 'butt';
+        circle(ctx, -r * 0.34, -r * 0.36, r * 0.2, 'rgba(255,255,255,0.45)');
         break;
       case 'cookie':
         ctx.rotate(rot * 0.2);
         for (let i = 0; i < 9; i++) { ctx.fillStyle = '#3b1d0a'; ctx.beginPath(); ctx.ellipse((hash(i) - 0.5) * r * 1.5, (hash(i + 5) - 0.5) * r * 1.5, r * 0.12, r * 0.09, hash(i + 2) * 3, 0, TAU); ctx.fill(); }
-        ctx.strokeStyle = 'rgba(90,50,20,0.35)'; ctx.lineWidth = r * 0.03; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo((hash(i + 30) - 0.5) * r, (hash(i + 40) - 0.5) * r); ctx.lineTo((hash(i + 50) - 0.5) * r * 1.6, (hash(i + 60) - 0.5) * r * 1.6); ctx.stroke(); }
+        // sem riscos: so as gotas, com brilho em cima para parecer chocolate
+        for (let i = 0; i < 9; i++) { ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.ellipse((hash(i) - 0.5) * r * 1.5 - r * 0.03, (hash(i + 5) - 0.5) * r * 1.5 - r * 0.03, r * 0.05, r * 0.035, hash(i + 2) * 3, 0, TAU); ctx.fill(); }
+        for (let i = 0; i < 7; i++) { ctx.fillStyle = 'rgba(120,72,30,0.35)'; ctx.beginPath(); ctx.arc((hash(i + 70) - 0.5) * r * 1.4, (hash(i + 80) - 0.5) * r * 1.4, r * 0.035, 0, TAU); ctx.fill(); }
         break;
       case 'candy':
         ctx.rotate(t * 1.4);

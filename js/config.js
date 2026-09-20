@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '5.9.3',
+  VERSION: '6.0.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -183,7 +183,7 @@ HR.CONFIG = {
     { id: 'bee',     price: 700,  cur: 'coins', lvl: 3,  base: '#ffd93d', dark: '#2b2410', glow: '#ffe27a', pattern: 'stripes', stripe: '#1b1a12' },
     { id: 'sun',     price: 900,  cur: 'coins', lvl: 4,  base: '#fff0a0', dark: '#ff7a1a', glow: '#ffb347', pattern: 'corona' },
     { id: 'toxic',   price: 1000, cur: 'coins', lvl: 5,  base: '#7cff6b', dark: '#0e4a1c', glow: '#35e29a', pattern: 'toxic' },
-    { id: 'saturn',  price: 70,   cur: 'gems',  lvl: 6,  base: '#ffe1a8', dark: '#a0612c', glow: '#ffcf4a', pattern: 'saturn' },
+    { id: 'saturn',  price: 70,   cur: 'gems',  lvl: 6,  base: '#ffe1a8', dark: '#a0612c', glow: '#ffcf4a', pattern: 'saturn', decor: 'planetRing', ringR: 1.5, ringW: 0.17 },
     { id: 'pearl',   price: 80,   cur: 'gems',  lvl: 7,  base: '#fff5fb', dark: '#b7a7d6', glow: '#ffd6f2', pattern: 'pearl' },
     { id: 'void',    price: 110,  cur: 'gems',  lvl: 9,  base: '#2a1b4a', dark: '#05030d', glow: '#8f6bff', pattern: 'void' },
     { id: 'comet',   price: 0,    cur: 'iap',   lvl: 1,  base: '#e9fbff', dark: '#3b8cff', glow: '#9be7ff', pattern: 'comet', product: 'skin_comet' },

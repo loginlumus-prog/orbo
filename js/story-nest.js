@@ -12,7 +12,7 @@
   if (HR.CONFIG && HR.CONFIG.SKINS && !HR.CONFIG.SKINS.some(s => s.id === 'poeira')) {
     HR.CONFIG.SKINS.push({
       id: 'poeira', col: 'classic', rar: 'legendary', lvl: 1, cur: 'reward', price: 0, gems: 0,
-      base: '#2b2c36', dark: '#0a0a10', glow: '#e6d8ff', pattern: 'rock', nest: true
+      base: '#55515f', dark: '#1a1720', glow: '#cfc2ff', pattern: 'element', el: 'rock', nest: true
     });
   }
 

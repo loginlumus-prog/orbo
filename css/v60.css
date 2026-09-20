@@ -1,0 +1,84 @@
+/* =====================================================================
+   ORBO v6.0: ícones redondos e vazados, botão de voltar maior e a loja com
+   palco por coleção (a bola passa a ter fundo em vez de flutuar no vazio).
+   ===================================================================== */
+
+/* ---------- ícone nunca mais quadrado ---------- */
+.ic.ic-live { border-radius: 50%; }
+
+/* botões redondos (voltar, ajustes, pausa): sem placa, só o símbolo vazado e o anel */
+.btn-icon > .ic.ic-live {
+  width: 26px; height: 26px; background: none; box-shadow: none;
+  color: var(--ic, var(--accent));
+}
+.btn-icon > .ic.ic-live svg { width: 100%; height: 100%; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--ic) 45%, transparent)); }
+.btn-icon > .ic.ic-live::after { inset: -9px; opacity: 0.5; }
+.btn-icon:active > .ic.ic-live { box-shadow: none; }
+/* o botão em si ganha a cor do símbolo */
+.btn-icon:has(> .ic-live) { box-shadow: 0 3px 0 rgba(0,0,0,0.45), inset 0 0 0 1.5px color-mix(in srgb, var(--ic, var(--stroke)) 38%, var(--stroke)), inset 0 1px 0 rgba(255,255,255,0.12); }
+
+/* voltar: símbolo maior e bem no centro (o botão continua do mesmo tamanho,
+   senão o título do painel perde espaço no celular) */
+.panel-head .btn-icon > .ic.ic-live, .screen-head .btn-icon > .ic.ic-live { width: 28px; height: 28px; }
+.btn-icon > .ic { display: inline-flex; align-items: center; justify-content: center; }
+
+/* o voltar de dentro do mapa (galáxia/sistema) também cresce */
+.sv-back { min-height: 34px; padding: 0 14px 0 9px; font-size: 13px; }
+.sv-back .i { width: 17px; height: 17px; }
+
+/* ---------- loja: abas e filtros com mais vida ---------- */
+.tabs-ic .tab .i { width: 20px; height: 20px; }
+.tabs-ic .tab.active .i { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tc) 60%, transparent)); }
+.col-chip .i { width: 16px; height: 16px; }
+.col-chip.on .i { filter: drop-shadow(0 0 7px currentColor); }
+.col-chip.col-planets { --cc: #7cc4ff; } .col-chip.col-stars { --cc: #ffd76a; }
+.col-chip.col-nebulae { --cc: #c08bff; } .col-chip.col-blackholes { --cc: #8f7dff; }
+.col-chip.col-gems { --cc: #ff7ad9; } .col-chip.col-sports { --cc: #7cff6b; }
+.col-chip.col-creatures { --cc: #ffb347; } .col-chip.col-elements { --cc: #ff8a5a; }
+.col-chip.col-tech { --cc: #4cf0ff; } .col-chip.col-arts { --cc: #ff9ad2; }
+.col-chip.col-sweets { --cc: #ffb3d9; } .col-chip.col-season { --cc: #ffd23f; }
+.col-chip.col-galaxies { --cc: #8fa6ff; } .col-chip.col-archons { --cc: #ffffff; }
+.col-chip.col-classic { --cc: #9fd9ff; } .col-chip.col-all { --cc: #9fb0d8; }
+.col-chip .i { color: var(--cc, var(--muted)); }
+.col-chip.on { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cc, var(--accent)) 60%, transparent); }
+
+/* ---------- o palco: cada coleção tem o seu céu ---------- */
+.shop-stage {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; overflow: hidden; --s1: #16203f; --s2: #070b1a;
+  background: radial-gradient(circle at 50% 38%, var(--s1) 0%, var(--s2) 72%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 -10px 24px rgba(0,0,0,0.45);
+}
+.shop-stage::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background-image: var(--sp, none); background-size: var(--ss, auto); opacity: var(--so, 0.5);
+}
+.shop-stage::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(circle at 34% 24%, rgba(255,255,255,0.14), transparent 46%);
+}
+.shop-stage .shop-preview { position: relative; z-index: 1; }
+.shop-card.locked .shop-stage { filter: grayscale(0.6) brightness(0.65); }
+
+/* poeira de estrelas usada por várias coleções */
+.stage-classic { --s1: #1b2b55; --s2: #060a18; --sp: radial-gradient(1.4px 1.4px at 22% 30%, #fff, transparent), radial-gradient(1.2px 1.2px at 74% 22%, #cfe4ff, transparent), radial-gradient(1.6px 1.6px at 60% 76%, #fff, transparent); --so: 0.75; }
+.stage-planets { --s1: #123a63; --s2: #050c1c; --sp: linear-gradient(180deg, transparent 58%, rgba(124,196,255,0.22) 59%, transparent 62%), radial-gradient(1.3px 1.3px at 18% 24%, #fff, transparent), radial-gradient(1.1px 1.1px at 82% 34%, #bfe0ff, transparent); --so: 0.8; }
+.stage-stars { --s1: #3a2a12; --s2: #0a0806; --sp: radial-gradient(2px 2px at 30% 28%, #ffe7a8, transparent), radial-gradient(1.4px 1.4px at 70% 60%, #fff, transparent), radial-gradient(1.6px 1.6px at 46% 80%, #ffd76a, transparent), radial-gradient(1.2px 1.2px at 82% 20%, #fff, transparent); --so: 0.9; }
+.stage-nebulae { --s1: #3a1c56; --s2: #0b0618; --sp: radial-gradient(60% 45% at 26% 70%, rgba(255,122,217,0.35), transparent), radial-gradient(55% 40% at 76% 30%, rgba(76,240,255,0.25), transparent); --so: 0.9; }
+.stage-blackholes { --s1: #120e2e; --s2: #000000; --sp: radial-gradient(closest-side, transparent 52%, rgba(143,125,255,0.45) 56%, transparent 62%); --so: 0.85; }
+.stage-gems { --s1: #3d1040; --s2: #0b0412; --sp: repeating-linear-gradient(60deg, rgba(255,255,255,0.07) 0 6px, transparent 6px 16px), repeating-linear-gradient(-60deg, rgba(255,255,255,0.05) 0 6px, transparent 6px 18px); --so: 0.8; }
+.stage-sports { --s1: #10502e; --s2: #04160d; --sp: repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 2px, transparent 2px 26px), radial-gradient(closest-side, transparent 60%, rgba(255,255,255,0.12) 61%, transparent 64%); --so: 0.7; }
+.stage-creatures { --s1: #4a2a12; --s2: #120a04; --sp: radial-gradient(26% 20% at 24% 76%, rgba(255,179,71,0.4), transparent), radial-gradient(22% 18% at 74% 82%, rgba(255,138,61,0.3), transparent); --so: 0.9; }
+.stage-elements { --s1: #4a1c10; --s2: #06121c; --sp: linear-gradient(105deg, rgba(255,120,60,0.35) 0 45%, transparent 55%), linear-gradient(285deg, rgba(76,240,255,0.3) 0 42%, transparent 52%); --so: 0.85; }
+.stage-tech { --s1: #0b2e3d; --s2: #030b12; --sp: repeating-linear-gradient(0deg, rgba(76,240,255,0.16) 0 1px, transparent 1px 14px), repeating-linear-gradient(90deg, rgba(76,240,255,0.16) 0 1px, transparent 1px 14px); --so: 0.7; }
+.stage-arts { --s1: #40204a; --s2: #100818; --sp: conic-gradient(from 20deg, rgba(255,154,210,0.25), rgba(124,196,255,0.2), rgba(255,210,63,0.22), rgba(255,154,210,0.25)); --so: 0.55; }
+.stage-sweets { --s1: #5a2244; --s2: #17060f; --sp: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0 8px, transparent 8px 20px); --so: 0.7; }
+.stage-season { --s1: #4a3a10; --s2: #120c04; --sp: radial-gradient(1.6px 1.6px at 26% 30%, #fff6c8, transparent), radial-gradient(1.4px 1.4px at 68% 26%, #fff, transparent), radial-gradient(1.8px 1.8px at 50% 74%, #ffd23f, transparent); --so: 0.85; }
+.stage-galaxies { --s1: #241a52; --s2: #04030e; --sp: conic-gradient(from 210deg at 50% 50%, rgba(143,166,255,0.28), transparent 35%, rgba(255,122,217,0.2) 60%, transparent 85%); --so: 0.9; }
+.stage-archons { --s1: #2a2a3e; --s2: #07070d; --sp: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.14) 0deg 3deg, transparent 3deg 18deg); --so: 0.55; }
+.stage-trail { --s1: #131c38; --s2: #05070f; --sp: radial-gradient(1.3px 1.3px at 20% 28%, #fff, transparent), radial-gradient(1.1px 1.1px at 78% 66%, #cfe4ff, transparent); --so: 0.6; }
+
+/* o destaque do dia fica mais cheio */
+.shop-featured-art .shop-stage { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.1), inset 0 -14px 30px rgba(0,0,0,0.5), 0 10px 26px rgba(0,0,0,0.45); }
+
+@media (prefers-reduced-motion: reduce) { .shop-stage::before { opacity: calc(var(--so, 0.5) * 0.8); } }

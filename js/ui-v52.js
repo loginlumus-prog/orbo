@@ -102,7 +102,7 @@
       const T = TAB[t.getAttribute('data-tab')]; if (!T) return;
       const key = t.getAttribute('data-i18n');
       t.style.setProperty('--tc', T[1]);
-      t.innerHTML = HR.icon(T[0]) + '<span' + (key ? ' data-i18n="' + key + '"' : '') + '>' + t.textContent + '</span>';
+      t.innerHTML = (HR.glyph ? HR.glyph(T[0]) : HR.icon(T[0])) + '<span' + (key ? ' data-i18n="' + key + '"' : '') + '>' + t.textContent + '</span>';
       t.removeAttribute('data-i18n');
     });
   }

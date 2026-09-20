@@ -124,11 +124,18 @@
     if (type === 'themes' && !HR.Render.Background) return themeSwatch(item, big);
     const cv = makeCanvas(size); addPreview(cv, type, item, { big }); cv.className = 'shop-preview'; return cv;
   }
+  // v6.0: fundo por coleção atrás da bola — dá contraste e diz de onde ela é
+  function stage(type, item, cv) {
+    if (type !== 'skins' && type !== 'trails') return cv;
+    const box = HR.U.el('span', 'shop-stage stage-' + (type === 'trails' ? 'trail' : (item.col || 'classic')));
+    box.appendChild(cv);
+    return box;
+  }
   function card(type, item) {
     const st = itemState(type, item), rar = rarity(type, item.id);
     const el = HR.U.el('div', 'shop-card rar-' + rar + (st.equipped ? ' equipped' : '') + (st.locked ? ' locked' : ''));
     el.style.setProperty('--rc', rarColor(rar));
-    el.appendChild(previewFor(type, item, 120, false));
+    el.appendChild(stage(type, item, previewFor(type, item, 120, false)));
     const tags = HR.U.el('div', 'shop-tags');
     if (st.locked) tags.appendChild(HR.U.el('span', 'shop-tag lock', HR.icon('lock') + ' ' + HR.t('locked_lvl', { n: item.lvl })));
     else if (item.season && !st.owned) tags.appendChild(HR.U.el('span', 'shop-tag season', HR.t('season_tag')));
@@ -150,7 +157,7 @@
     const item = pool.length ? pool[seed % pool.length] : list.find(i => i.id === HR.Unlocks.equipped(type)) || list[0];
     const st = itemState(type, item), rar = rarity(type, item.id);
     const el = HR.U.el('div', 'shop-featured rar-' + rar); el.style.setProperty('--rc', rarColor(rar));
-    const left = HR.U.el('div', 'shop-featured-art'); left.appendChild(previewFor(type, item, 150, true)); el.appendChild(left);
+    const left = HR.U.el('div', 'shop-featured-art'); left.appendChild(stage(type, item, previewFor(type, item, 150, true))); el.appendChild(left);
     const info = HR.U.el('div', 'shop-featured-info');
     info.innerHTML = '<span class="shop-kicker">' + HR.t(pool.length ? 'shop_featured' : 'equipped') + '</span><b class="shop-featured-name">' + HR.t(PREFIX[type] + item.id) + '</b><span class="shop-rar">' + HR.t('rarity_' + rar) + '</span><p class="shop-flavor">' + HR.t(FLAVOR[type] + item.id) + '</p>';
     const btn = HR.U.el('button', 'btn shop-price' + (st.equipped ? ' is-on' : st.owned ? ' is-owned' : ''));
@@ -168,7 +175,7 @@
       [{ id: 'all', icon: 'layers' }].concat(HR.COLLECTIONS || []).forEach(c => {
         const items = c.id === 'all' ? list : list.filter(i => i.col === c.id); if (!items.length) return;
         const own = items.filter(i => HR.Unlocks.owned('skins', i.id)).length;
-        const b = HR.U.el('button', 'col-chip' + (col === c.id ? ' on' : ''), HR.icon(c.icon) + '<span>' + HR.t('col_' + c.id) + '</span><b>' + own + '/' + items.length + '</b>');
+        const b = HR.U.el('button', 'col-chip col-' + c.id + (col === c.id ? ' on' : ''), (HR.glyph ? HR.glyph(c.icon) : HR.icon(c.icon)) + '<span>' + HR.t('col_' + c.id) + '</span><b>' + own + '/' + items.length + '</b>');
         b.setAttribute('data-tip', HR.t('col_' + c.id)); b.setAttribute('data-tip-d', HR.t('col_progress', { a: own, b: items.length }));
         b.addEventListener('click', e => { e.stopPropagation(); HR.UI.shopCol = c.id; HR.Audio.sfx('click'); renderShop(); });
         chips.appendChild(b);
