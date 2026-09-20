@@ -205,3 +205,37 @@ Muito bom 57,1 e Bom 56,1; Normal e Baixo 60 fps cravados, zero quadro lento.
 versao lenta ficou com "Baixo" gravado e continuaria no Baixo mesmo depois da otimizacao.
 `HR.Perf.GEN` zera essa memoria uma vez quando o motor muda, para o aparelho ser avaliado
 de novo. A escolha manual de quem mexeu no seletor e respeitada e nao e tocada.
+
+## v6.5 (2026-09-23) — etapas 1 e 2
+
+**Etapa 1 — o que estava sem efeito.**
+- Quatro jatos (Violeta, Menta, Poente e Espectro) entraram na v6.0 sem o campo `style`,
+  entao caiam no desenho generico e ficavam iguais entre si. Ganharam desenho proprio:
+  fitas cruzadas, folhas que giram, leque de raios e sopros translucidos. Conferido pixel a
+  pixel: 21 jatos, 21 assinaturas diferentes.
+- O rastro voltava ao desenho simples no nivel Baixo (trava que eu mesmo pus na v6.2). Custa
+  menos de 0,05 ms por quadro e e justamente o item que a pessoa comprou. A trava saiu:
+  os 43 rastros agora desenham igual no Baixo e no Muito bom.
+
+**Etapa 2 — o Corredor do Jato.** O jato nao atravessa mais arcos. Enquanto esta ligado nao
+existe arco nenhum: abre um corredor de tres faixas (alta, do meio, baixa) e a pessoa escolhe
+por onde voar. Uma faixa e sempre a rica e vai trocando, entao ha uma decisao a cada poucos
+segundos. Quando o corredor fecha, a fase comeca INTEIRA — nenhum arco e gasto.
+
+Cinco graus, subindo a cada ~8 s e parando no 5:
+
+| grau | nome | troca de faixa | moeda comum | moeda rica | caminho |
+|---|---|---|---|---|---|
+| 1 | Subida | 8 passos | 2 | 5 | simples |
+| 2 | Corrente | 6 | 3 | 8 | + rampas entre faixas |
+| 3 | Enxame | 4 | 4 | 12 | + colunas inteiras |
+| 4 | Turbilhao | 3 | 6 | 18 | rampas e colunas |
+| 5 | Chuva de Ouro | 2 | 9 | 26 | as tres faixas cheias |
+
+Da para empilhar ate **cinco** jatos no mesmo corredor. Empilhar nao acelera a subida: compra
+tempo no topo. Um Jato sozinho percorre os graus 1 a 3 (~20 s); cinco Jatos dao ~1min40;
+cinco Mega Jatos dao ~3min45, com quase tres minutos no grau 5.
+
+Tecnico: `run.jetLeft` deixou de ser "arcos restantes" e passou a ser "passos de corredor
+restantes", descontado por distancia — todo o resto do jogo, que so pergunta `jetLeft > 0`,
+continua valendo, e a barra do HUD anda liso. Arquivos: js/fx-v65.js e js/jet-lanes.js.

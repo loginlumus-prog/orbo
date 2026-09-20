@@ -79,7 +79,7 @@ HR.Gear = {
 /* ---------------- textos ---------------- */
 Object.assign(HR.I18N.pt, {
   aegis: 'Égide', aegis_d: 'Uma bolha envolve a bola por 30 s. O primeiro erro quebra a Égide e você continua. Recarga de 30 s. Use quantas tiver.',
-  jet: 'Jato', jet_d: 'Só no começo: a bola dispara e atravessa 25 arcos voando, pegando as moedas.', megajet: 'Mega Jato', megajet_d: 'Só no começo: atravessa 60 arcos voando, bem mais rápido.',
+  jet: 'Jato', jet_d: 'Só no começo: abre um corredor de três faixas por ~20 s. Sem arcos — escolha a faixa e colha. Dá para usar até 5 no mesmo corredor, e a fase começa inteira depois.', megajet: 'Mega Jato', megajet_d: 'O mesmo corredor, mas ~45 s por unidade e mais rápido. Cinco deles passam quase três minutos no grau 5.',
   tab_gear: 'Itens', gear_consumables: 'Consumíveis', gear_consumables_d: 'Só com moedas: é mecânica. Na partida, a Égide fica no botão ao lado das habilidades e os Jatos aparecem antes do 1º arco.',
   gear_aegis_skins: 'Visuais da Égide', gear_jet_skins: 'Chamas do Jato', gear_owned_n: 'Você tem {n}', gear_bundle: 'Pacote ×{n}', gear_buy_one: 'Comprar 1', gear_equip: 'Usar', gear_cosmetic_note: 'Visuais são só estética: moedas ou gemas.',
   aegis_on: 'ÉGIDE ATIVA', aegis_broken: 'ÉGIDE QUEBROU', aegis_end: 'ÉGIDE ACABOU', aegis_none: 'Sem Égides. Compre na loja (Itens).', aegis_cd: 'Recarga da Égide: {n} s', aegis_blocked: 'O Arconte não aceita a Égide neste caminho.',
@@ -89,7 +89,7 @@ Object.assign(HR.I18N.pt, {
 });
 Object.assign(HR.I18N.en, {
   aegis: 'Aegis', aegis_d: 'A bubble wraps the ball for 30 s. The first mistake breaks the Aegis and you keep going. 30 s cooldown. Use as many as you own.',
-  jet: 'Jet', jet_d: 'Start only: the ball blasts off and flies through 25 rings, grabbing the coins.', megajet: 'Mega Jet', megajet_d: 'Start only: flies through 60 rings, much faster.',
+  jet: 'Jet', jet_d: 'Start only: opens a three-lane corridor for ~20 s. No rings — pick a lane and collect. Up to 5 in the same corridor, and the level starts whole afterwards.', megajet: 'Mega Jet', megajet_d: 'The same corridor, but ~45 s per unit and faster. Five of them spend almost three minutes at grade 5.',
   tab_gear: 'Items', gear_consumables: 'Consumables', gear_consumables_d: 'Coins only: it is a mechanic. In a run, the Aegis sits next to the abilities and Jets show up before the 1st ring.',
   gear_aegis_skins: 'Aegis looks', gear_jet_skins: 'Jet flames', gear_owned_n: 'You have {n}', gear_bundle: 'Bundle ×{n}', gear_buy_one: 'Buy 1', gear_equip: 'Use', gear_cosmetic_note: 'Looks are cosmetic only: coins or gems.',
   aegis_on: 'AEGIS ON', aegis_broken: 'AEGIS BROKEN', aegis_end: 'AEGIS ENDED', aegis_none: 'No Aegis left. Buy more in the shop (Items).', aegis_cd: 'Aegis cooldown: {n} s', aegis_blocked: 'The Archon refuses the Aegis on this path.',
@@ -99,7 +99,7 @@ Object.assign(HR.I18N.en, {
 });
 Object.assign(HR.I18N.es, {
   aegis: 'Égida', aegis_d: 'Una burbuja envuelve la bola por 30 s. El primer error rompe la Égida y sigues. Recarga de 30 s. Usa todas las que tengas.',
-  jet: 'Propulsor', jet_d: 'Solo al inicio: la bola sale disparada y atraviesa 25 aros volando, recogiendo las monedas.', megajet: 'Mega Propulsor', megajet_d: 'Solo al inicio: atraviesa 60 aros volando, mucho más rápido.',
+  jet: 'Propulsor', jet_d: 'Solo al inicio: abre un pasillo de tres carriles por ~20 s. Sin aros — elige el carril y recoge. Hasta 5 en el mismo pasillo, y el nivel empieza entero después.', megajet: 'Mega Propulsor', megajet_d: 'El mismo pasillo, pero ~45 s por unidad y más rápido. Cinco de ellos pasan casi tres minutos en el grado 5.',
   tab_gear: 'Objetos', gear_consumables: 'Consumibles', gear_consumables_d: 'Solo con monedas: es mecánica. En la partida, la Égida está junto a las habilidades y los Propulsores aparecen antes del 1.er aro.',
   gear_aegis_skins: 'Estilos de Égida', gear_jet_skins: 'Llamas del Propulsor', gear_owned_n: 'Tienes {n}', gear_bundle: 'Paquete ×{n}', gear_buy_one: 'Comprar 1', gear_equip: 'Usar', gear_cosmetic_note: 'Los estilos son solo estéticos: monedas o gemas.',
   aegis_on: 'ÉGIDA ACTIVA', aegis_broken: 'ÉGIDA ROTA', aegis_end: 'ÉGIDA TERMINADA', aegis_none: 'Sin Égidas. Compra en la tienda (Objetos).', aegis_cd: 'Recarga de la Égida: {n} s', aegis_blocked: 'El Arconte no acepta la Égida en este camino.',

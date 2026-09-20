@@ -445,7 +445,7 @@ HR.Game = class {
     this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: col, size: 50, life: 0.7, type: 'wave' });
     this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 30, speed: 520, color: [col, sk.color2, '#ffffff'], size: 6, life: 0.8, type: 'spark' });
     HR.Audio.sfx('levelup'); HR.U.vibrate([20, 30, 60]);
-    this.emit('banner', { title: HR.t(kind === 'megajet' ? 'megajet_go' : 'jet_go'), sub: HR.t('rings_n', { n: run.jetLeft }), color: col });
+    this.emit('banner', { title: HR.t(kind === 'megajet' ? 'megajet_go' : 'jet_go'), sub: HR.t('jet_track'), color: col });
     this.emit('gear', { kind: 'jet' });
     return true;
   }

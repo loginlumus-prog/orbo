@@ -373,7 +373,9 @@ window.HR = window.HR || {};
   HR.Render.TRAILS = T;
   const base = HR.Render.drawTrail;
   HR.Render.drawTrail = function (ctx, trailId, pts, skin, t, heat) {
-    const f = (HR.Perf && HR.Perf.trailFx && !HR.Perf.trailFx()) ? null : T[trailId];
+    // v6.5: o rastro vale em todo nivel. Custa menos de 0,05 ms por quadro e e o
+    // item que a pessoa comprou — cortar isso era tirar o que ela mais ve.
+    const f = T[trailId];
     if (!f) return base.apply(this, arguments);
     if (!pts || pts.length < 3) return;
     ctx.save(); f(ctx, pts, skin, t, heat || 0); ctx.restore();
