@@ -81,3 +81,9 @@ Ajustes pedidos depois (2026-09-14):
 - HUD menor: pontuacao 64 -> 40 px, combo e nome da fase menores, barra de progresso mais estreita.
 - Conquista durante a partida vira um selo discreto no canto; o cartao completo aparece ao sair da partida. Item novo do album segue a mesma regra.
 - Atalhos: Espaco pausa e despausa no computador; toque duplo (ou clique duplo) usa a Egide.
+
+## v5.7: um controle so (2026-09-20)
+
+- O analogico e o "seguir o dedo" foram removidos: no computador e no celular o jogo usa so o relativo (arrastar). game.controlMode() devolve sempre relative.
+- Saem o botao de troca no HUD, o seletor na pausa, o analogico desenhado na tela e a linha de controle nos Ajustes (a sensibilidade continua).
+- Atalhos seguem: Espaco pausa no computador, toque duplo ou clique duplo usa a Egide.

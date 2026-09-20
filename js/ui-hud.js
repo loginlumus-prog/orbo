@@ -262,7 +262,7 @@
     },
 
     // v5.1: troca de controle sem sair da partida (botão no HUD, tecla C e seletor na pausa)
-    CONTROLS: [['stick', 'ctrlStick'], ['relative', 'ctrlDrag'], ['absolute', 'ctrlFollow']],
+    CONTROLS: [['relative', 'ctrlDrag']],
     setControl(mode, silent) {
       const d = HR.Store.data; d.settings.control = mode;
       if (d.stats5) { d.stats5.controlsUsed = d.stats5.controlsUsed || []; if (!d.stats5.controlsUsed.includes(mode)) d.stats5.controlsUsed.push(mode); }

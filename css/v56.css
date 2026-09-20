@@ -91,3 +91,6 @@
 .ach-mini .i { width: 15px; height: 15px; color: var(--gold); }
 .ach-mini b { font-family: var(--display); font-size: 12px; font-weight: 600; color: var(--gold); }
 @media (max-height: 720px) { .ach-mini { top: calc(100px + var(--sat)); } }
+
+/* ---------- v5.7: um controle só (relativo): sem botão de troca e sem analógico na tela ---------- */
+#btn-ctrl, #pause-ctrl, .hud-stick { display: none !important; }

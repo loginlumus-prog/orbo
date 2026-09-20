@@ -607,8 +607,6 @@ HR.UI = {
     row('sliders', HR.t('music_vol'), '', slider('musicVol', 0, 1, 0.05, () => HR.Audio.applySettings()));
     if (navigator.vibrate) row('pulse', HR.t('vibration'), '', toggle('vibration'));
     body.appendChild(HR.U.el('div', 'section-title', HR.t('control')));
-    const curControl = s.control === 'auto' ? this.game.controlMode() : s.control;
-    row('compass', HR.t('control'), HR.t('control_d'), seg([{ v: 'stick', l: HR.t('control_stick') }, { v: 'relative', l: HR.t('control_relative') }, { v: 'absolute', l: HR.t('control_absolute') }], curControl, v => { s.control = v; HR.Store.save(); })).classList.add('setting-stack');
     row('target', HR.t('sensitivity'), '', slider('sensitivity', 0.5, 2, 0.1));
     row('sparkle', HR.t('perk_auto'), HR.t('perk_auto_d'), toggle('autoPerk'));
     row('hourglass', HR.t('adapt_slowmo'), HR.t('adapt_slowmo_d'), toggle('adaptSlowmo'));

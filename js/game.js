@@ -759,9 +759,8 @@ HR.Game = class {
   }
 
   controlMode() {
-    const c = HR.Store.data.settings.control;
-    if (c === 'relative' || c === 'absolute' || c === 'stick') return c;
-    return (HR.Input.lastPointerType === 'mouse' && HR.Input.hasHover) ? 'absolute' : 'stick';
+    // v5.7: só o relativo (arrastar). O analógico e o "seguir o dedo" foram removidos.
+    return 'relative';
   }
 
   updateBall(sdt, dt) {
