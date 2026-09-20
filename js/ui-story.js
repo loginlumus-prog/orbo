@@ -192,7 +192,7 @@
 
   /* ---------------- o anel de Vela: selo de moeda extra no Infinito ---------------- */
   after(HR.UI, 'refreshMenu', function () {
-    const btn = $('.mode-btn[data-mode="endless"]'); if (!btn) return;
+    const btn = $('.mode-btn[data-mode="endless"]'); if (!btn || HR.Rifts) return;
     const pct = HR.Story.endlessBonusPct();
     let tag = $('.mode-bonus', btn);
     if (pct <= 0) { if (tag) tag.remove(); return; }
