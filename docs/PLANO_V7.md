@@ -1,0 +1,215 @@
+# ORBO v7 — "A Origem"
+
+Plano completo da reescrita. Este documento manda; `docs/HISTORIA.md` passa a ser o
+texto antigo e vai ser substituido por partes conforme cada etapa entra.
+
+---
+
+## 0. A regra de ouro
+
+A historia inteira e opcional. Quem escolher "Historia: desligada" joga exatamente o
+mesmo jogo, com a mesma dificuldade, os mesmos premios e os mesmos finais de partida.
+Nada do que esta aqui pode virar obstaculo.
+
+A segunda regra: **assunto fundo, palavra simples**. Nenhuma fala passa de duas linhas
+curtas. Nenhuma resposta passa de sete palavras. A profundidade vem do que a frase
+implica, nunca do tamanho dela.
+
+---
+
+## 1. A premissa nova
+
+Antes de existir espaco, havia dois: um branco, aceso por dentro, em camadas de luz; e
+uma preta, funda, acesa nas bordas — onde ele tem miolo, ela tem contorno. Os dois se
+encontraram e ficaram juntos tanto tempo que viraram uma coisa so.
+
+Para a filha existir, o que era um teve de virar dois.
+
+**O nascimento de Faisca e a separacao.** Nao e consequencia dela: e ela. E o vao que se
+abriu entre os dois, no instante em que ela apareceu, e o espaco onde as dez galaxias
+couberam. Tudo que existe, existe porque ela nasceu — e dentro do rasgo que ela abriu.
+
+Os dois ficaram do lado de fora, cada um segurando uma borda. Faisca ficou dentro. Ela
+nao esta atravessando o universo para chegar num buraco negro: ela esta tentando **sair**.
+
+A analogia fica so na forma. Nenhuma palavra do jogo encosta nela.
+
+### O elenco
+
+| quem | era | e agora |
+|---|---|---|
+| **Faisca** | a filha | a filha, e a causa. Preta e branca misturadas: por isso a bola inicial e o que e |
+| **o pai** (Vela) | mae | pai. Branco, aceso por dentro, camadas e filamentos, miolo que pulsa |
+| **a mae** (Ancora) | pai | mae. Preta profunda, bordas acesas, absorve onde ele brilha |
+| **Casco** | o velho | igual. Mas o que ele le nos aneis muda de sentido |
+| **Iris, Poeira, Cardume** | iguais | iguais |
+
+A troca de papeis entre Vela e Ancora e so de genero e de descricao visual; os textos
+que ja existem sao reaproveitados com a troca feita, nao jogados fora.
+
+---
+
+## 2. Revisao de tudo que ja esta escrito
+
+60 cenas, galaxias 1 a 5, tres idiomas. Cada uma passa por tres filtros:
+
+1. **Causa.** Onde o texto diz "voces foram puxados" ou "o ceu abriu", passa a dizer o
+   que realmente houve — sem explicar tudo de uma vez. Na galaxia 1 Faisca so sabe que
+   esta sozinha. A palavra "culpa" nunca aparece; o que aparece e a pergunta "por que eu?".
+2. **Escada.** Cada galaxia ganha mais um pedaco da mesma descoberta: este lugar nasceu
+   do rasgo dela. Um pedaco por galaxia, nunca dois.
+3. **Corte.** Toda fala com mais de duas linhas e cortada. Toda resposta com mais de
+   sete palavras e reescrita.
+
+### A escada da descoberta (um degrau por galaxia)
+
+| galaxia | o degrau | a virtude |
+|---|---|---|
+| 1 Berco | "Eu estava sozinha desde sempre?" | coragem |
+| 2 Mare | alguem diz que o lugar e novo — mais novo que ela | paciencia |
+| 3 Jardim | as coisas daqui nasceram todas no mesmo instante | cuidado |
+| 4 Forja | o instante tem nome, e o nome e o dia em que ela apareceu | esforco |
+| 5 Nevoa | ela ve o rasgo pela primeira vez, de longe, e nao entende | duvida |
+| 6 Via Lactea | encontra quem consegue olhar para tudo isso e entender | contemplacao |
+| 7 Tempestade | descobre que o rasgo esta se fechando devagar | escolha |
+| 8 Abismo | Casco le os aneis: as marcas sao das maos dos dois | verdade |
+| 9 Vortice | ela entende que fechar o rasgo apaga tudo | responsabilidade |
+| 10 Horizonte | a porta, e os dois do outro lado | graca |
+
+---
+
+## 3. Galaxia 6 vira a Via Lactea
+
+`HR.REGIONS[5]` troca `gal: 'pinwheel'` por `gal: 'milkyway'`. E espiral gigante como a
+nossa, entao a mecanica de rotacao continua valendo. O bioma "Cristal" vira **"Espiral"**.
+Textos novos em PT/EN/ES para nome, catalogo e descricao.
+
+### O easter egg: A Contemplacao
+
+Num sistema da galaxia 6 ha uma fase quieta: poucos aneis, velocidade baixa, sem eventos.
+Ao fundo, longe, um ponto azul.
+
+**O gatilho e olhar.** Se a pessoa ficar parada — sem mover a bola — por 15 segundos
+seguidos, a camera se afasta devagar e o ponto azul cresce. Nenhum aviso, nenhuma dica.
+Quem passa correndo nunca descobre que a fase tinha isso.
+
+O que acontece la: Faisca encontra o unico lugar do caminho onde os habitantes nao podem
+ajudar em nada. Nao voam, nao lutam, nao seguram porta nenhuma. Mas **olham para cima** —
+e conseguem guardar o que viram. Sao os unicos que poderiam saber que tudo isso aconteceu,
+e por que.
+
+Quatro falas, no maximo. Nenhuma delas diz "humano", "Terra" ou "consciencia".
+
+Recompensa: a skin **Ponto Azul** e a conquista **A Contemplacao** (categoria secreta).
+
+---
+
+## 4. Os quatro finais
+
+O final sai da soma do jogo: 90 chefes de sistema (+1) e 10 chefes de galaxia (+3), cada
+um com tres respostas nos eixos **U** (entregar-se), **Q** (perguntar) e **F** (forcar).
+
+| final | eixo | o que Faisca faz | o preco |
+|---|---|---|---|
+| **A Passagem** | U | fica dentro do vao, virando a fronteira que mantem os dois separados | nunca mais sai; e o unico lugar onde toca os dois |
+| **A Pergunta** | Q | pergunta se eles quiseram — e descobre que sim, de proposito | nada se resolve; ela larga a culpa |
+| **A Porta Quebrada** | F | junta os dois a forca | as dez galaxias se dobram; ela tambem, porque so existia havendo dois |
+| **Muitas Maos** | recolhido | chega acompanhada de tudo que ajudou, e eles seguram o rasgo por ela | nenhum, e por isso e o mais dificil |
+
+Detalhes de encenacao, imagem final e o que fica depois estao em `docs/FINAIS.md`
+(escrito junto com a etapa 10). Os quatro continuam acessiveis: a porta fica aberta.
+O premio misterioso passa a ser dado por ver os quatro.
+
+Os 11 Arcontes da Singularidade viram os que chegaram na porta antes dela e nao
+conseguiram decidir — cada um travado num dos tres impulsos.
+
+---
+
+## 5. Musicas
+
+- **Lobby:** refeito, bem mais baixo e vazio. Sem bateria, sem arpejo, sem motivo. Pad
+  longo, baixo em nota pedal e um sino raro. Ganho reduzido de 0,35 para ~0,18.
+- **Afinacao:** a base sai de 440 Hz para **432 Hz** em todo o jogo, e os acordes usam
+  intervalos justos. Nao ha evidencia de que isso "ajude na evolucao" e o jogo nao vai
+  afirmar nada disso — e escolha estetica: o conjunto fica menos aspero, sem batimento.
+- **Identidade por galaxia:** as dez ja tem andamento e escala proprios. Ganham duas
+  coisas novas: o **motivo ORBO** aparece transposto em todas (a familia se reconhece) e
+  cada galaxia recebe um timbre assinatura (sino, sopro, corda, ruido).
+- **A Via Lactea** tem a unica musica do jogo com silencio de verdade no meio.
+
+---
+
+## 6. Eventos novos
+
+O asteroide e o melhor que existe porque e concreto: uma coisa vem, voce desvia. Os novos
+seguem a mesma regra — objeto visivel, regra de uma frase, duracao curta.
+
+| evento | o que acontece | onde |
+|---|---|---|
+| **Chuva de cauda** | rastro de poeira atravessa a tela em diagonal; atravessar rende moeda, bater custa | a partir da galaxia 2 |
+| **Eco** | um anel fantasma repete o seu ultimo movimento 1 s depois; encostar nele quebra a sequencia | galaxia 5+ |
+| **Mare de luz** | a tela escurece e so o que esta perto do anel fica visivel; dura 8 s | galaxia 5+ |
+| **Costura** | dois aneis aparecem ligados por um fio; passar pelos dois na ordem da bonus triplo | galaxia 3+ |
+| **Silencio** | a musica para; nada muda na jogabilidade; quem terminar o trecho sem errar ganha a conquista | raro, qualquer galaxia |
+
+---
+
+## 7. Minigames
+
+Tres, todos curtos e todos ligados a historia.
+
+1. **O Corredor** (ja existe) — o jato virou minigame de verdade: tres faixas, cinco graus.
+2. **O Ninho** (ja existe) — perder de proposito. Fica como esta.
+3. **A Contemplacao** (novo) — ficar parado e olhar. E o easter egg da Via Lactea.
+4. **A Costura** (novo) — fase-bonus rara: sem aneis, so um fio que atravessa a tela em
+   curva; seguir o fio sem sair dele por 20 s rende muito. Uma por galaxia, escondida.
+
+---
+
+## 8. Conteudo novo
+
+- **Conquistas:** +24. Cobrem o corredor (faixa rica, grau 5, pilha de cinco), os eventos
+  novos, os quatro finais, a Contemplacao e a Costura. Duas secretas sem dica nenhuma.
+- **Missoes:** +12 contratos, incluindo os primeiros ligados ao corredor.
+- **Loja:** +10 skins (entre elas **Ponto Azul**, **Pai** e **Mae** — as duas ultimas so
+  depois do final), +6 rastros, +8 temas (o tema **Espiral**, da Via Lactea), +4 egides,
+  +4 jatos.
+- **Temas:** o pedido antigo continua valendo — tema e o que tem menos variedade.
+
+---
+
+## 9. Ordem de execucao
+
+| etapa | o que | estado |
+|---|---|---|
+| 1 | jatos e rastros sem efeito | **feito** (v6.5) |
+| 2 | Corredor do Jato | **feito** (v6.5.6) |
+| 3 | direcao das fases e A/D | **feito** (v6.6) |
+| 4 | premissa nova: abertura + galaxia 1 reescritas | a fazer |
+| 5 | revisao das galaxias 2 a 5 | a fazer |
+| 6 | galaxias 6 a 10 escritas de uma vez, ja na chave nova | a fazer |
+| 7 | Via Lactea + A Contemplacao | a fazer |
+| 8 | apresentacao animada da historia | a fazer |
+| 9 | musicas | a fazer |
+| 10 | os quatro finais + Singularidade religada | a fazer |
+| 11 | eventos e minigames novos | a fazer |
+| 12 | conquistas, missoes, loja, temas | a fazer |
+| 13 | revisao completa funcao a funcao | a fazer |
+
+Cada etapa entra no ar sozinha, testada, sem quebrar a anterior.
+
+---
+
+## 10. Como a apresentacao da historia vai ficar (etapa 8)
+
+Hoje a cena e um cartao com texto. Passa a ter, atras do texto, uma ilustracao em canvas
+que reage ao que esta sendo dito:
+
+- **O rasgo:** duas luzes, uma branca e uma preta, e a linha entre elas.
+- **O nascimento:** as duas se afastam e no meio aparece um ponto misturado.
+- **Cada galaxia:** o desenho da galaxia girando devagar, na cor dela.
+- **As cartas:** a marca do anel aparecendo tracada, como se alguem estivesse escrevendo.
+- **A porta:** o circulo abrindo, e atras dele duas luzes paradas.
+
+Tudo em canvas, com o mesmo teto de desempenho do resto: no nivel Baixo, quadro parado.
+As falas entram uma a uma, com o tempo de leitura, e o botao de pular continua no canto.
