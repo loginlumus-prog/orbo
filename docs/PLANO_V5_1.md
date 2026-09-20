@@ -138,3 +138,16 @@ esses canvas passam a respeitar `HR.Perf.dprCap()`.
 Medido no navegador, parado no mapa da galaxia 1: 156 chamadas de quadro por segundo no muito
 bom contra 60 no baixo (so o laco do proprio jogo). Na loja, bolas desenhadas por segundo:
 168 no muito bom contra 60 no baixo. Revisao (tools/audit.js): 0 erros, 0 avisos.
+
+## v6.3.1 (2026-09-22) — a engrenagem que nao abria
+
+Causa achada com `document.elementFromPoint` no centro do botao: quem estava ali era o
+**botao de pausa do HUD**. `.screen.hud button { pointer-events: auto }` valia mesmo com o
+HUD escondido, entao a pausa (invisivel, no mesmo canto) recebia o clique da engrenagem do
+menu. O mesmo valia para Egide, Jatos, habilidades e talentos do HUD.
+
+Correcao de uma linha, valendo para qualquer tela: `.screen:not(.visible), .screen:not(.visible) *`
+tem `pointer-events: none !important`. Tela escondida nao recebe toque nenhum, nem nos filhos.
+Conferido: durante a partida os cinco botoes do HUD continuam clicaveis e o HUD segue deixando
+o toque passar para o jogo; com o menu na frente, nenhum dos botoes das cinco telas escondidas
+recebe toque.

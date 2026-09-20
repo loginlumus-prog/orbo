@@ -61,6 +61,10 @@ h3 { font-family: var(--display); font-size: 20px; font-weight: 600; }
   transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .screen.visible { opacity: 1; pointer-events: auto; transform: none; }
+/* Tela escondida nao recebe toque NENHUM, nem nos filhos. Sem isto o botao de pausa do
+   HUD (invisivel, mas com pointer-events: auto) ficava por cima da engrenagem do menu e
+   comia o clique — "clico em configuracao e nao vai". */
+.screen:not(.visible), .screen:not(.visible) * { pointer-events: none !important; }
 .screen-center { align-items: center; justify-content: center; text-align: center; }
 .screen.dim { background: rgba(4, 6, 14, 0.66); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .screen.hud { pointer-events: none; }
