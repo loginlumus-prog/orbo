@@ -84,7 +84,7 @@
       h += '<span class="sg-layer-side"' + HR.tip(HR.t('sg_ecos'), s.ecosCount(i) + '/5') + '>' + HR.icon('eco') + '<b>' + s.ecosCount(i) + '/5</b></span></button>';
     });
     h += '</div>';
-    h += '<button type="button" class="btn btn-ghost" id="sg-endless"><span class="ic">' + HR.icon('infinity') + '</span><span class="btn-label">' + esc(HR.t('sg_endless')) + '</span></button>';
+    h += '<button type="button" class="btn btn-ghost" id="sg-endless"><span class="ic" data-icon="infinity">' + HR.icon('infinity') + '</span><span class="btn-label">' + esc(HR.t('sg_endless')) + '</span></button>';
     h += '</div>';
     body.innerHTML = h; body.scrollTop = 0;
     startHero();
@@ -118,12 +118,12 @@
     if (l.passed) h += '<p class="lv-boss-desc gold">' + HR.icon('light') + ' ' + esc(HR.t('sg_after_' + i + '_' + l.path)) + '</p>';
     else if (!s.passageDone(i)) h += '<p class="lb-note">' + esc(HR.t('sg_need_passage')) + '</p>';
     else {
-      if (s.canTalk(i)) h += '<button type="button" class="btn btn-gem" id="sg-talk"><span class="ic">' + HR.icon('dialogue') + '</span><span class="btn-label">' + esc(HR.t(l.path ? 'sg_talk_again' : 'sg_talk')) + '</span></button>';
+      if (s.canTalk(i)) h += '<button type="button" class="btn btn-gem" id="sg-talk"><span class="ic" data-icon="dialogue">' + HR.icon('dialogue') + '</span><span class="btn-label">' + esc(HR.t(l.path ? 'sg_talk_again' : 'sg_talk')) + '</span></button>';
       if (l.path) {
         const P = HR.SG.paths[l.path], tr = s.trialReady(i), lv = s.level('S-' + (i + 1) + '-T');
         h += '<div class="lv-chips"><span class="reg-chip"' + HR.tip(HR.t('camp_waves_n', { n: P.waves })) + '>' + HR.icon('layers') + ' ' + P.waves + '</span><span class="reg-chip"' + HR.tip(HR.t('rings_n', { n: lv.rings })) + '>' + HR.icon('ring') + ' ' + lv.rings + '</span>' + HR.UI.speedChip(lv) + '<span class="reg-chip"' + HR.tip(HR.t('star_finish')) + '>' + HR.icon('target') + ' ' + Math.round(P.pass * 100) + '%</span>' + (P.grace ? '<span class="reg-chip"' + HR.tip(HR.t('sg_grace')) + '>' + HR.icon('shieldPlus') + '</span>' : '') + (P.noAegis ? '<span class="reg-chip"' + HR.tip(HR.t('aegis_blocked')) + '>' + HR.icon('aegis') + ' ✕</span>' : '') + '</div>';
         if (!tr.ok && tr.items.length) { h += '<div class="gate-list"><p class="lb-note">' + esc(HR.t('sg_trial_req')) + '</p>'; tr.items.forEach(it => { h += '<span class="gate' + (it.ok ? ' ok' : '') + '"><span class="gate-ic">' + HR.icon(it.ok ? 'check' : it.id === 'core' ? 'core' : 'rank') + '</span><span class="gate-txt">' + esc(HR.t('gate_' + it.id, { n: it.b })) + '</span><b>' + it.a + '/' + it.b + '</b></span>'; }); h += '</div>'; }
-        h += '<button type="button" class="btn btn-play" id="sg-trial"' + (tr.ok ? '' : ' disabled') + '><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('sg_go_trial')) + '</span></button>';
+        h += '<button type="button" class="btn btn-play" id="sg-trial"' + (tr.ok ? '' : ' disabled') + '><span class="ic" data-icon="play">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('sg_go_trial')) + '</span></button>';
         if (!s.canTalk(i)) { const left = s.reconcileLeft(i); h += '<p class="lb-note">' + esc(HR.t('sg_reconcile', { d: left.days, f: left.fails })) + '</p>'; }
         else h += '<p class="lb-note">' + esc(HR.t('sg_reconcile_ready')) + '</p>';
       }
@@ -143,7 +143,7 @@
     if (dlg) return dlg;
     dlg = HR.U.el('div', 'modal sg-dialog');
     dlg.id = 'sg-dialog';
-    dlg.innerHTML = '<div class="sg-dlg-card"><canvas class="sg-dlg-cv"></canvas><span class="kicker sg-dlg-kicker"></span><p class="sg-dlg-line"></p><div class="sg-dlg-opts"></div><form class="sg-dlg-msg" hidden><input type="text" maxlength="90" autocomplete="off"><button type="submit" class="btn btn-play sg-dlg-send"><span class="ic">' + HR.icon('send') + '</span></button></form><div class="sg-dlg-compose" hidden></div><button type="button" class="btn sg-dlg-next"><span class="btn-label"></span></button><button type="button" class="sg-dlg-x" aria-label="close">' + HR.icon('close') + '</button></div>';
+    dlg.innerHTML = '<div class="sg-dlg-card"><canvas class="sg-dlg-cv"></canvas><span class="kicker sg-dlg-kicker"></span><p class="sg-dlg-line"></p><div class="sg-dlg-opts"></div><form class="sg-dlg-msg" hidden><input type="text" maxlength="90" autocomplete="off"><button type="submit" class="btn btn-play sg-dlg-send"><span class="ic" data-icon="send">' + HR.icon('send') + '</span></button></form><div class="sg-dlg-compose" hidden></div><button type="button" class="btn sg-dlg-next"><span class="btn-label"></span></button><button type="button" class="sg-dlg-x" aria-label="close">' + HR.icon('close') + '</button></div>';
     ($('#app') || document.body).appendChild(dlg);
     return dlg;
   }

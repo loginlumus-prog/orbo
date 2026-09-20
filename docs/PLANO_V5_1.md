@@ -87,3 +87,12 @@ Ajustes pedidos depois (2026-09-14):
 - O analogico e o "seguir o dedo" foram removidos: no computador e no celular o jogo usa so o relativo (arrastar). game.controlMode() devolve sempre relative.
 - Saem o botao de troca no HUD, o seletor na pausa, o analogico desenhado na tela e a linha de controle nos Ajustes (a sensibilidade continua).
 - Atalhos seguem: Espaco pausa no computador, toque duplo ou clique duplo usa a Egide.
+
+## v5.8: icones vivos e talentos com cor de arvore (2026-09-20)
+
+- HR.glyph(nome) (js/ui-glyph-v58.js): o mesmo desenho do HR.icon com uma animacao curta (g-pop, g-turn, g-spin, g-beat, g-bob, g-left/right, g-rise, g-breathe, g-flick, g-flip, g-shake, g-twinkle) e cor propria por assunto (HR.glyphColor). Os oito icones do menu reaproveitam os glifos ricos do v5.2 (HR.GLYPH52).
+- Botoes do jogo (pausa, fim de fase, fim de jogo, paineis, voltar, modos, ajustes) ganham a placa colorida com anel fino girando, no estilo dos botoes da orbita. Botoes de cor forte (jogar, anuncio, gema) recebem so a animacao.
+- Comeco da partida: os jatos viraram fichas pequenas (simbolo + quantidade + tecla J no computador), abaixo do "toque para comecar" e centralizadas. O nome e a descricao ficam na dica.
+- Talentos: cada arvore tem cor, glifo e barra de progresso; o talento apagado mantem um tom da arvore, entao da para ver a categoria de relance. Na pausa cada selo da faixa usa a cor da sua arvore e os cartoes de escolha ganham o selo da arvore no canto.
+- Correcao: as regras .perk-card do v5.6 estavam pegando tambem os cartoes de escolha da partida (alinhavam a esquerda e esticavam). Agora sao .perk-modal .perk-card.
+- Arquivos: js/ui-glyph-v58.js, css/v58.css. Ajustes em js/ui.js, js/ui-galaxy.js, js/ui-singularity.js (data-icon nos botoes), js/ui-lean-v55.js, js/ui-perks-v56.js, js/ui-v52.js.

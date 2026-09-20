@@ -60,7 +60,8 @@
       const ic = ROW_IC[key]; if (!ic) return;
       const label = HR.t(key);
       first.removeAttribute('data-i18n');
-      first.innerHTML = '<span class="lean-ic">' + HR.icon(ic, '', ic === 'coin') + '</span>';
+      const gc = HR.glyphColor && HR.glyphColor(ic), draw = HR.glyph || HR.icon;
+      first.innerHTML = '<span class="lean-ic"' + (gc ? ' style="--ic:' + gc + '"' : '') + '>' + draw(ic, '', ic === 'coin') + '</span>';
       first.setAttribute('data-tip', label); first.setAttribute('data-tip-tap', '1');
       row.classList.add('lean-row');
     });
@@ -80,7 +81,7 @@
     CRIT.forEach((c, i) => {
       h += '<span class="lean-crit-item' + (i < on ? ' on' : '') + '" data-tip="' + esc(HR.t('camp_criteria')) + '" data-tip-d="' + esc(HR.t(c.k)) + '" data-tip-tap="1">' +
         '<span class="lean-crit-star">' + HR.icon('star', '', true) + '</span>' +
-        '<span class="lean-crit-ic">' + HR.icon(c.ic) + '</span>' +
+        '<span class="lean-crit-ic" style="--ic:' + (HR.glyphColor ? HR.glyphColor(c.ic) : '') + '">' + (HR.glyph ? HR.glyph(c.ic) : HR.icon(c.ic)) + '</span>' +
         '<b>' + esc(HR.t(c.s)) + '</b></span>';
     });
     box.innerHTML = h + '</div>';

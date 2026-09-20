@@ -28,6 +28,7 @@
     trophies: '<defs><clipPath id="ogCupClip"><path d="M7 3.5h10v5.5a5 5 0 0 1-10 0Z"/></clipPath></defs><path class="b" d="M7 3.5h10v5.5a5 5 0 0 1-10 0Z"/><path d="M7 5H4.5v1.2A3.2 3.2 0 0 0 7.4 9.4M17 5h2.5v1.2a3.2 3.2 0 0 1-2.9 3.2"/><path d="M12 14v3.5M8.5 20.5h7M9.6 20.5l.7-3h3.4l.7 3"/><g clip-path="url(#ogCupClip)"><path class="og-shine" d="M9 16 15 1" stroke="#fff" stroke-width="2.6"/></g><path class="w og-twinkle" d="' + starD(12, 8.3, 2.5, 1.05, 5) + '"/>'
   };
   const COLOR = { shop: '#ff5fc8', missions: '#ff9a3d', daily: '#ff5d6c', leaderboard: '#35d6ff', galaxy: '#6f8bff', abilities: '#3ee89a', trophies: '#ffc53d', collection: '#a78bfa' };
+  HR.GLYPH52 = GLYPH; HR.GLYPH52C = COLOR;   // v5.8: os mesmos desenhos nos botões do jogo
   const SPIN = { shop: 11, missions: 9, daily: 13, leaderboard: 10, galaxy: 15, abilities: 8, trophies: 12, collection: 14 };
   const RING = '<svg class="ob-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="t" cx="50" cy="50" r="47"/><circle class="a" cx="50" cy="50" r="47" stroke-dasharray="46 249"/><circle class="m" cx="50" cy="3" r="3.4"/></svg>';
   const COMET = '<svg class="orbit-comet" aria-hidden="true"><ellipse class="oc-tail" data-ph="0"/><ellipse class="oc-head" data-ph="0"/><ellipse class="oc-tail dim" data-ph="0.5"/><ellipse class="oc-head dim" data-ph="0.5"/></svg>';

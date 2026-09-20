@@ -252,7 +252,7 @@
     const regionDone = C.regionCleared(level.ri) && gate != null;
     foot.innerHTML = '<div class="gx-foot-card" style="' + accentVars(HR.REGIONS[level.ri].accent) + '">' +
       '<div class="gx-foot-main"><span class="kicker gx-kicker"' + HR.tip(HR.t('levels') + ' · ' + HR.t('stars'), HR.U.fmt(done) + ' / ' + HR.U.fmt(1000) + ' · ' + HR.U.fmt(C.totalStars()) + ' / ' + HR.U.fmt(3000)) + '>' + HR.icon('flag', 'gk-flag') + ' ' + HR.U.fmt(done) + '<i class="gk-sep"></i>' + HR.icon('star', '', true) + ' ' + HR.U.fmt(C.totalStars()) + portalTxt + '</span><b>' + esc(complete ? HR.t('camp_complete') : regionDone ? HR.t('portal') + ': ' + galName(HR.REGIONS[nextRi]) + ' ' + gate.open + '/5' : HR.t('continue_campaign', { n: level.id }) + ' · ' + galName(HR.REGIONS[level.ri])) + '</b></div>' +
-      '<button type="button" class="btn btn-play small-btn" id="gx-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t(complete ? 'levels' : 'play_mode')) + '</span></button></div>';
+      '<button type="button" class="btn btn-play small-btn" id="gx-continue"><span class="ic" data-icon="play">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t(complete ? 'levels' : 'play_mode')) + '</span></button></div>';
     if (!body.dataset.bound) {
       body.dataset.bound = '1';
       host.addEventListener('click', e => {
@@ -447,7 +447,7 @@
     h += pathHtml(systemNodes(ri), body.clientWidth - 4);
     const cur = C.currentLevel();
     const contInGalaxy = unlocked && cur && cur.ri === ri && C.stars(cur.id) === 0;
-    if (contInGalaxy) h += '<button type="button" class="btn btn-play" id="reg-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: cur.id })) + '</span></button>';
+    if (contInGalaxy) h += '<button type="button" class="btn btn-play" id="reg-continue"><span class="ic" data-icon="play">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: cur.id })) + '</span></button>';
     else if (cleared) h += '<p class="lb-note">' + esc(HR.t('world_progress', { a: stars, b: 300 })) + '</p>';
     // 5) contratos (no fim)
     if (unlocked) h += contractsHtml(ri);
@@ -506,7 +506,7 @@
     h += '<div class="section-title">' + HR.icon('flag') + ' ' + esc(HR.t('levels')) + ' <span class="muted">' + done + '/10</span></div>';
     h += pathHtml(stageNodes(ri, si), body.clientWidth - 4);
     const next = levels.find(l => C.stars(l.id) === 0 && C.isUnlocked(l.id));
-    if (next) h += '<button type="button" class="btn btn-play" id="sys-continue"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: next.id })) + '</span></button>';
+    if (next) h += '<button type="button" class="btn btn-play" id="sys-continue"><span class="ic" data-icon="play">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('continue_campaign', { n: next.id })) + '</span></button>';
     else if (done === 10) h += '<p class="lb-note">' + esc(HR.t('world_progress', { a: stars, b: 30 })) + '</p>';
     h += '</div>';
     body.innerHTML = h;
@@ -559,7 +559,7 @@
     if (firstClear && fr.aegis) rv += ' <span class="lv-reward-item"' + HR.tip(HR.t('aegis'), HR.t('system_reward_aegis')) + '>' + HR.icon('aegis') + ' +1</span>';
     if (firstClear && level.galaxyBoss) rv += ' <span class="lv-reward-item">' + HR.icon('gift') + ' ' + esc(cosmeticName(R.reward)) + '</span>';
     h += '<div class="lv-reward"><span class="lv-reward-label">' + esc(HR.t(firstClear ? 'camp_first_clear' : 'camp_replay_reward')) + '</span><span class="lv-reward-vals">' + rv + '</span></div>';
-    h += '<button type="button" class="btn btn-play" id="lv-btn-play"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_mode')) + '</span></button>';
+    h += '<button type="button" class="btn btn-play" id="lv-btn-play"><span class="ic" data-icon="play">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_mode')) + '</span></button>';
     h += '<button type="button" class="btn btn-ghost" id="lv-btn-close"><span class="btn-label">' + esc(HR.t('close')) + '</span></button>';
     host.innerHTML = h;
     host.className = 'modal-card item-detail lv-detail';
@@ -576,7 +576,7 @@
     let h = '<div class="lv-detail-head"><span class="sg-core">' + HR.icon('blackhole') + '</span><span class="kicker">' + esc(HR.t('bh_sub')) + '</span><h3 class="lv-detail-title">' + esc(HR.t('bh_name')) + '</h3><span class="lv-detail-sub">' + esc(HR.t('singularity_d')) + '</span></div><p class="reg-gal-fact">' + HR.icon('galaxy') + ' <span>' + esc(HR.t('bh_d')) + '</span></p>';
     h += '<div class="lv-chips"><span class="reg-chip">' + HR.icon('trophy') + ' ' + esc(HR.t('best')) + ' <b>' + HR.U.fmt(d.best) + '</b></span><span class="reg-chip">' + HR.icon('layers') + ' ' + esc(HR.t('phase_reached')) + ' <b>' + d.bestPhase + '</b></span></div>';
     h += open ? '<p class="lv-boss-desc gold">' + HR.icon('crown') + ' ' + esc(HR.t('singularity_mastered')) + '</p>' : '<p class="lb-note">' + esc(HR.t('singularity_hint')) + '</p>';
-    h += '<button type="button" class="btn btn-play" id="sg-play"><span class="ic">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_endless')) + '</span></button>';
+    h += '<button type="button" class="btn btn-play" id="sg-play"><span class="ic" data-icon="play">' + HR.icon('play') + '</span><span class="btn-label">' + esc(HR.t('play_endless')) + '</span></button>';
     h += '<button type="button" class="btn btn-ghost" id="sg-close"><span class="btn-label">' + esc(HR.t('close')) + '</span></button>';
     host.innerHTML = h; host.className = 'modal-card item-detail lv-detail sg-detail'; host.style.cssText = accentVars('#ffcf4a');
     $('#sg-play', host).addEventListener('click', e => { e.stopPropagation(); sfx('click'); closeLevelDetail(); HR.Store.data.mode = 'endless'; HR.Store.save(); HR.UI.startGame('endless'); });

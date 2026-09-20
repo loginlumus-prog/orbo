@@ -1,0 +1,132 @@
+/* =====================================================================
+   ORBO v5.8: ícones vivos nos botões, talentos com cor de árvore e
+   começo de partida sem texto em cima de texto.
+   ===================================================================== */
+
+/* ---------- animações curtas dos glifos (nunca em texto) ---------- */
+.g58 > g { transform-box: view-box; transform-origin: 12px 12px; }
+.g58 .g-pop { animation: g58-pop 4.2s ease-in-out infinite; }
+.g58 .g-turn { animation: g58-turn 6s cubic-bezier(0.45,0,0.2,1) infinite; }
+.g58 .g-spin { animation: g58-spin 9s linear infinite; }
+.g58 .g-beat { animation: g58-beat 2.8s ease-in-out infinite; }
+.g58 .g-bob { animation: g58-bob 3.2s ease-in-out infinite; }
+.g58 .g-left { animation: g58-left 2.8s ease-in-out infinite; }
+.g58 .g-right { animation: g58-right 2.8s ease-in-out infinite; }
+.g58 .g-rise { animation: g58-rise 3.4s ease-in-out infinite; }
+.g58 .g-breathe { animation: g58-breathe 3.6s ease-in-out infinite; }
+.g58 .g-flick { animation: g58-flick 2.2s ease-in-out infinite; }
+.g58 .g-flip { animation: g58-flip 5.5s ease-in-out infinite; }
+.g58 .g-shake { animation: g58-shake 5s ease-in-out infinite; }
+.g58 .g-twinkle { animation: g58-twinkle 3.6s ease-in-out infinite; }
+
+@keyframes g58-pop { 0%, 84%, 100% { transform: scale(1); } 91% { transform: scale(1.16); } }
+@keyframes g58-turn { 0%, 66% { transform: rotate(0deg); } 88%, 100% { transform: rotate(360deg); } }
+@keyframes g58-spin { to { transform: rotate(360deg); } }
+@keyframes g58-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+@keyframes g58-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.1px); } }
+@keyframes g58-left { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-1.5px); } }
+@keyframes g58-right { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(1.5px); } }
+@keyframes g58-rise { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
+@keyframes g58-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes g58-flick { 0%, 100% { transform: scaleY(1) translateY(0); } 50% { transform: scaleY(1.08) translateY(-0.6px); } }
+@keyframes g58-flip { 0%, 72%, 100% { transform: scaleX(1); } 82% { transform: scaleX(0.14); } 92% { transform: scaleX(1); } }
+@keyframes g58-shake { 0%, 86%, 100% { transform: rotate(0deg); } 90% { transform: rotate(-7deg); } 94% { transform: rotate(6deg); } }
+@keyframes g58-twinkle { 0%, 76%, 100% { transform: scale(1) rotate(0deg); } 84% { transform: scale(1.22) rotate(22deg); } 92% { transform: scale(0.95) rotate(0deg); } }
+@keyframes g58-ring { to { transform: rotate(360deg); } }
+
+/* ---------- botões: ícone em placa colorida, como na órbita do menu ---------- */
+.btn > .ic.ic-live, .btn-icon > .ic.ic-live, .mode-btn > .ic.ic-live, .hero-arrow > .ic.ic-live {
+  color: var(--ic, var(--accent));
+  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic) 34%, transparent) 0%, rgba(5,8,20,0.55) 72%);
+  box-shadow: inset 0 0 0 1.4px color-mix(in srgb, var(--ic) 46%, transparent), inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px color-mix(in srgb, var(--ic) 20%, transparent);
+}
+.btn > .ic.ic-live svg, .btn-icon > .ic.ic-live svg { width: 66%; height: 66%; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ic) 55%, transparent)); }
+/* anel fino girando: o mesmo gesto do anel dos botões do menu */
+.btn > .ic.ic-live::after, .btn-icon > .ic.ic-live::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%; pointer-events: none; opacity: 0.7;
+  background: conic-gradient(from 0deg, color-mix(in srgb, var(--ic) 90%, transparent) 0deg 42deg, transparent 42deg 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 79%, #000 80%);
+  mask: radial-gradient(closest-side, transparent 79%, #000 80%);
+  animation: g58-ring 9s linear infinite;
+}
+.btn:active > .ic.ic-live, .btn-icon:active > .ic.ic-live { box-shadow: inset 0 0 0 1.6px var(--ic), 0 0 20px color-mix(in srgb, var(--ic) 42%, transparent); }
+.btn-ghost .ic.ic-live { background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic) 28%, transparent) 0%, rgba(255,255,255,0.05) 72%); }
+.mode-btn > .ic.ic-live { color: var(--ic); }
+.mode-btn.active > .ic.ic-live { box-shadow: inset 0 0 0 1.5px var(--ic), 0 0 16px color-mix(in srgb, var(--ic) 35%, transparent); }
+
+/* ---------- começo da partida: o jato é símbolo + quantidade, abaixo do aviso ---------- */
+.hud-ready { bottom: max(22%, calc(150px + var(--sab))); }
+.hud-jets { bottom: calc(96px + var(--sab)); gap: 10px; }
+.jet-btn.jet-chip { padding: 4px 12px 4px 4px; gap: 7px; }
+.jet-chip .plate.sm { width: 30px; height: 30px; border-radius: 50%; }
+.jet-chip .jet-n { font-family: var(--display); font-size: 15px; font-weight: 700; line-height: 1; color: var(--ac); }
+.jet-chip kbd { margin-left: 1px; }
+@media (max-height: 720px) { .hud-jets { bottom: calc(88px + var(--sab)); } .hud-ready { bottom: max(22%, calc(140px + var(--sab))); } }
+
+/* ---------- números da partida (pausa e ficha): cada um com a sua cor ---------- */
+.pz-tile { --tc: #9fb0d8; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); }
+.pz-tile .pz-ic, .perk-stat .ps-ic {
+  width: 26px; height: 26px; color: var(--tc, var(--accent));
+  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--tc) 32%, transparent) 0%, rgba(5,8,20,0.5) 74%);
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--tc) 42%, transparent), 0 0 12px color-mix(in srgb, var(--tc) 18%, transparent);
+}
+.pz-tile .pz-ic .i, .perk-stat .ps-ic .i { width: 15px; height: 15px; }
+.perk-stat { padding: 4px 11px 4px 4px; background: rgba(255,255,255,0.05); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 26%, rgba(255,255,255,0.08)); }
+.perk-stat b { color: var(--text); }
+
+/* ---------- talentos: a cor da árvore diz a categoria ---------- */
+.perk-modal .perk-tree { gap: 7px; padding: 9px 10px 11px; border-radius: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 10%, transparent), rgba(255,255,255,0.02)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 24%, transparent); }
+.perk-tree-head { gap: 8px; }
+.pt-ic {
+  width: 28px; height: 28px; border-radius: 10px; color: var(--tc);
+  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--tc) 38%, transparent) 0%, rgba(5,8,20,0.5) 74%);
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--tc) 48%, transparent), 0 0 14px color-mix(in srgb, var(--tc) 22%, transparent);
+}
+.pt-ic .i { width: 16px; height: 16px; }
+.pt-bar { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; }
+.pt-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 55%, transparent), var(--tc)); box-shadow: 0 0 10px color-mix(in srgb, var(--tc) 55%, transparent); transition: width 0.3s; }
+
+.perk-node {
+  width: 48px; height: 48px; opacity: 1; color: color-mix(in srgb, var(--tc) 62%, #7a86a8);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 9%, rgba(255,255,255,0.03)), rgba(255,255,255,0.02));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 20%, transparent);
+}
+.perk-node .pn-ic { opacity: 0.55; }
+.perk-node.on { color: #fff; background: radial-gradient(120% 120% at 32% 14%, color-mix(in srgb, var(--tc) 38%, transparent) 0%, rgba(5,8,20,0.5) 76%); box-shadow: inset 0 0 0 1.6px var(--tc), 0 0 14px color-mix(in srgb, var(--tc) 34%, transparent); }
+.perk-node.on .pn-ic { opacity: 1; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--tc) 60%, transparent)); }
+.perk-node.rar-legendary.on { box-shadow: inset 0 0 0 1.6px var(--gold), 0 0 20px rgba(255,207,74,0.45); }
+.perk-node.rar-mythic.on { box-shadow: inset 0 0 0 1.6px #ff8a3d, 0 0 20px rgba(255,138,61,0.45); }
+.pn-pips i.on { box-shadow: 0 0 6px var(--tc); }
+
+/* talentos na pausa: cada selo com a cor da sua árvore */
+.pz-perk { --tc: #9fb0d8; color: color-mix(in srgb, var(--tc) 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 20%, rgba(255,255,255,0.04)), rgba(255,255,255,0.03)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 45%, transparent); }
+.pz-perk.rar-legendary { box-shadow: inset 0 0 0 1.2px var(--gold); }
+.pz-perk.rar-mythic { box-shadow: inset 0 0 0 1.2px #ff8a3d; }
+.pz-build { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); }
+
+/* cartões de escolha: selo da árvore no canto (o v5.6 tinha alargado o cartão sem querer) */
+#perk-cards .perk-card { max-width: none; max-height: none; width: auto; text-align: center; align-items: center; gap: 6px; padding: 14px 8px 12px; }
+#perk-cards .perk-card.has-tree { box-shadow: inset 0 0 0 1.5px var(--rc, var(--stroke)), inset 0 -3px 0 color-mix(in srgb, var(--tc) 55%, transparent); }
+.pc-tree { position: absolute; left: 7px; top: 7px; width: 22px; height: 22px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: var(--tc); background: color-mix(in srgb, var(--tc) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 42%, transparent); }
+.pc-tree .i { width: 13px; height: 13px; }
+
+/* ---------- ajustes: o ícone da linha também ganha cor ---------- */
+.setting .s-ic {
+  color: var(--ic, var(--accent));
+  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic, var(--accent)) 26%, transparent) 0%, rgba(5,8,20,0.45) 74%);
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--ic, var(--accent)) 34%, transparent), inset 0 1px 0 rgba(255,255,255,0.14);
+}
+
+/* ---------- fim de fase: o ícone da linha com a cor do assunto ---------- */
+.stat-row .lean-ic, .lean-crit-ic {
+  color: var(--ic, var(--muted));
+  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic, #9fb0d8) 28%, transparent) 0%, rgba(5,8,20,0.45) 74%);
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--ic, #9fb0d8) 34%, transparent);
+}
+.lean-crit-ic { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; }
+.lean-crit-ic .i { color: var(--ic, var(--muted)); }
+.lean-crit-item.on .lean-crit-ic .i { color: #fff; }
+
+/* ---------- aparelho fraco ou quem pediu menos movimento ---------- */
+.fx-low .g58 *, .fx-low .ic-live::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .g58 *, .ic-live::after { animation: none !important; } }

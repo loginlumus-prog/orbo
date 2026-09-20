@@ -9,6 +9,10 @@
   const $ = (s, r) => HR.U.$(s, r), $$ = (s, r) => HR.U.$$(s, r);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+  const gl = (n, c, f) => (HR.glyph ? HR.glyph(n, c, f) : HR.icon(n, c, f));
+  const gc = n => (HR.glyphColor ? HR.glyphColor(n) : '');
+  const tcs = n => { const c = gc(n); return c ? ' style="--tc:' + c + '"' : ''; };
+
   const TREES = [
     { id: 'guard', icon: 'shield', color: '#4cf0ff', ids: ['shield', 'hull', 'bulwark', 'life', 'streakshield', 'secondchance', 'guardianangel'] },
     { id: 'aim', icon: 'target', color: '#35e29a', ids: ['bigrings', 'eagle', 'microball', 'risky', 'reflex', 'resonance', 'tempo'] },
@@ -16,6 +20,8 @@
     { id: 'gold', icon: 'coins', color: '#ffcf4a', ids: ['magnet', 'magnetfield', 'coinsx2', 'coinstorm', 'stardust', 'scavenger', 'goldring', 'greedy', 'lucky', 'combo3', 'prismatic'] },
     { id: 'asc', icon: 'sparkle', color: '#ff8a3d', ids: ['autoflow', 'regen', 'intangible', 'overclock', 'momentum'] }
   ];
+  const treeOf = id => { for (let i = 0; i < TREES.length; i++) if (TREES[i].ids.indexOf(id) >= 0) return TREES[i]; return null; };
+  HR.PERK_TREES = TREES;   // v5.8: a cor da árvore também aparece nos cartões de escolha
   // status no estilo ficha de RPG: só aparece o que mudou
   const STATS = [
     { k: 'lives', icon: 'heart', get: r => r.lives, always: true, fmt: v => String(v) },
@@ -54,16 +60,16 @@
     { k: 'hits', icon: 'close', get: r => r.hits }
   ];
   const tilesHtml = run => '<div class="pz-tiles">' + TILES.map(t =>
-    '<span class="pz-tile t-' + t.k + '" data-tip="' + esc(HR.t('pk_ti_' + t.k)) + '" data-tip-tap="1"><span class="pz-ic">' +
-    HR.icon(t.icon, '', t.icon === 'star' || t.icon === 'coin') + '</span><b>' + HR.U.fmt(t.get(run) || 0) + '</b></span>').join('') + '</div>';
+    '<span class="pz-tile t-' + t.k + '"' + tcs(t.icon) + ' data-tip="' + esc(HR.t('pk_ti_' + t.k)) + '" data-tip-tap="1"><span class="pz-ic">' +
+    gl(t.icon, '', t.icon === 'star' || t.icon === 'coin') + '</span><b>' + HR.U.fmt(t.get(run) || 0) + '</b></span>').join('') + '</div>';
 
   const statsHtml = run => {
     let h = '<div class="perk-stats">';
     STATS.forEach(s => {
       const v = s.get(run), base = s.base != null ? s.base : 0;
       if (!s.always && Math.abs(v - base) < 0.001) return;
-      h += '<span class="perk-stat" data-tip="' + esc(HR.t('pk_st_' + s.k)) + '" data-tip-tap="1">' +
-        '<span class="ps-ic">' + HR.icon(s.icon, '', s.icon === 'star' || s.icon === 'coin') + '</span><b>' + esc(s.fmt(v)) + '</b></span>';
+      h += '<span class="perk-stat"' + tcs(s.icon) + ' data-tip="' + esc(HR.t('pk_st_' + s.k)) + '" data-tip-tap="1">' +
+        '<span class="ps-ic">' + gl(s.icon, '', s.icon === 'star' || s.icon === 'coin') + '</span><b>' + esc(s.fmt(v)) + '</b></span>';
     });
     return h + '</div>';
   };
@@ -78,13 +84,14 @@
     TREES.forEach(tree => {
       const taken = tree.ids.filter(id => run.perks && run.perks[id]).length;
       h += '<div class="perk-tree" style="--tc:' + tree.color + '">';
-      h += '<div class="perk-tree-head"><span class="pt-ic">' + HR.icon(tree.icon) + '</span><b>' + esc(HR.t('pk_tree_' + tree.id)) + '</b><i>' + taken + '/' + tree.ids.length + '</i></div>';
+      h += '<div class="perk-tree-head"><span class="pt-ic">' + gl(tree.icon) + '</span><b>' + esc(HR.t('pk_tree_' + tree.id)) + '</b><i>' + taken + '/' + tree.ids.length + '</i></div>';
+      h += '<div class="pt-bar"><span style="width:' + Math.round(taken / tree.ids.length * 100) + '%"></span></div>';
       h += '<div class="perk-row">';
       tree.ids.forEach(id => {
         const def = HR.Perks.def(id); if (!def) return;
         const lv = (run.perks && run.perks[id]) || 0;
         h += '<button type="button" class="perk-node rar-' + def.rarity + (lv ? ' on' : '') + '" data-tip="' + esc(HR.Perks.name(id)) + '" data-tip-d="' + esc(HR.Perks.desc(id)) + '" data-tip-tap="1">' +
-          '<span class="pn-ic">' + HR.icon(def.icon) + '</span>';
+          '<span class="pn-ic">' + gl(def.icon) + '</span>';
         if (def.max > 1) { h += '<span class="pn-pips">'; for (let k = 0; k < def.max; k++) h += '<i' + (k < lv ? ' class="on"' : '') + '></i>'; h += '</span>'; }
         else if (lv) h += '<span class="pn-check">' + HR.icon('check') + '</span>';
         h += '</button>';
@@ -150,12 +157,12 @@
     }
     const ids = Object.keys(run.perks || {});
     let strip = '';
-    ids.slice(0, 7).forEach(id => { const d = HR.Perks.def(id); if (d) strip += '<span class="pz-perk rar-' + d.rarity + '">' + HR.icon(d.icon) + (run.perks[id] > 1 ? '<i>' + run.perks[id] + '</i>' : '') + '</span>'; });
+    ids.slice(0, 7).forEach(id => { const d = HR.Perks.def(id); if (!d) return; const t = treeOf(id); strip += '<span class="pz-perk rar-' + d.rarity + '"' + (t ? ' style="--tc:' + t.color + '"' : '') + '>' + gl(d.icon) + (run.perks[id] > 1 ? '<i>' + run.perks[id] + '</i>' : '') + '</span>'; });
     if (ids.length > 7) strip += '<span class="pz-perk more">+' + (ids.length - 7) + '</span>';
-    if (!ids.length) strip = '<span class="pz-perk empty">' + HR.icon('sparkle') + '</span>';
+    if (!ids.length) strip = '<span class="pz-perk empty">' + gl('sparkle') + '</span>';
     box.innerHTML = tilesHtml(run) + statsHtml(run) +
       '<button type="button" class="pz-build"><span class="pz-strip">' + strip + '</span>' +
-      '<span class="pz-count">' + ids.length + '</span><span class="pz-go">' + HR.icon('chevronRight') + '</span></button>';
+      '<span class="pz-count">' + ids.length + '</span><span class="pz-go">' + gl('chevronRight') + '</span></button>';
     const b = box.querySelector('.pz-build');
     if (b) b.addEventListener('click', e => { e.stopPropagation(); open(); });
   }

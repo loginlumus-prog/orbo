@@ -210,9 +210,9 @@ HR.UI = {
       const id = eq[i], def = id ? HR.Abilities.def(id) : null;
       const locked = i >= slots;
       const el = HR.U.el('button', 'slot' + (def ? ' filled' : '') + (locked ? ' locked' : ''));
-      if (locked) { el.innerHTML = '<span class="ic">' + HR.icon('lock') + '</span>'; el.title = HR.t('slot_locked_lvl', { n: HR.ABILITY_UPGRADE.secondSlotLevel }); el.addEventListener('click', e => { e.stopPropagation(); this.toast(HR.icon('lock') + ' ' + HR.t('slot_locked_lvl', { n: HR.ABILITY_UPGRADE.secondSlotLevel })); }); }
+      if (locked) { el.innerHTML = '<span class="ic" data-icon="lock">' + HR.icon('lock') + '</span>'; el.title = HR.t('slot_locked_lvl', { n: HR.ABILITY_UPGRADE.secondSlotLevel }); el.addEventListener('click', e => { e.stopPropagation(); this.toast(HR.icon('lock') + ' ' + HR.t('slot_locked_lvl', { n: HR.ABILITY_UPGRADE.secondSlotLevel })); }); }
       else if (def) { el.style.setProperty('--ac', def.color); el.innerHTML = '<span class="ic">' + HR.icon(def.icon) + '</span><span class="slot-lv">' + HR.Abilities.level(id) + '</span>'; el.title = HR.Abilities.name(id); el.addEventListener('click', e => { e.stopPropagation(); HR.Audio.sfx('click'); this.openAbilityPicker(i); }); }
-      else { el.innerHTML = '<span class="ic">' + HR.icon('plus') + '</span>'; el.title = HR.t('ability_slot_empty'); el.addEventListener('click', e => { e.stopPropagation(); HR.Audio.sfx('click'); this.openAbilityPicker(i); }); }
+      else { el.innerHTML = '<span class="ic" data-icon="plus">' + HR.icon('plus') + '</span>'; el.title = HR.t('ability_slot_empty'); el.addEventListener('click', e => { e.stopPropagation(); HR.Audio.sfx('click'); this.openAbilityPicker(i); }); }
       host.appendChild(el);
     }
   },
@@ -228,7 +228,7 @@ HR.UI = {
     });
     if (eq[slot]) { const none = HR.U.el('button', 'ab-row', '<span class="ab-row-ic">' + HR.icon('x') + '</span><span class="ab-row-info"><span class="ab-row-name">' + HR.t('cancel') + '</span></span>'); none.addEventListener('click', () => { HR.Abilities.equip(slot, null); this.closeAbilityPicker(); this.renderSlots(); if (this.stack.includes('abilities') && this.renderAbilities) this.renderAbilities(); }); host.appendChild(none); }
     if (!this.stack.includes('abilities')) {
-      const shop = HR.U.el('button', 'btn btn-gem', '<span class="ic">' + HR.icon('zap') + '</span><span class="btn-label">' + HR.t('abilities') + '</span>');
+      const shop = HR.U.el('button', 'btn btn-gem', '<span class="ic" data-icon="zap">' + HR.icon('zap') + '</span><span class="btn-label">' + HR.t('abilities') + '</span>');
       shop.addEventListener('click', () => { this.closeAbilityPicker(); this.open('abilities'); });
       host.appendChild(shop);
     }
@@ -528,7 +528,7 @@ HR.UI = {
       el.innerHTML = '<span class="d-num">' + HR.t('day') + ' ' + (i + 1) + '</span>' + val;
       grid.appendChild(el);
     });
-    const btn = HR.U.el('button', 'btn btn-reward', '<span class="ic">' + HR.icon('gift') + '</span><span class="btn-label">' + (st.canClaim ? HR.t('claim') : HR.t('claimed')) + '</span>');
+    const btn = HR.U.el('button', 'btn btn-reward', '<span class="ic" data-icon="gift">' + HR.icon('gift') + '</span><span class="btn-label">' + (st.canClaim ? HR.t('claim') : HR.t('claimed')) + '</span>');
     btn.disabled = !st.canClaim;
     btn.addEventListener('click', () => {
       const r = HR.Daily.claim(); if (!r) return;
@@ -540,7 +540,7 @@ HR.UI = {
     body.appendChild(btn);
     if (HR.Store.data.vip) {
       const p = HR.CONFIG.PRODUCTS.find(x => x.id === 'vip');
-      const vb = HR.U.el('button', 'btn btn-gem', '<span class="ic">' + HR.icon('crown') + '</span><span class="btn-label">' + HR.t('daily_bonus_vip') + ' · ' + p.gemsDaily + ' <i class="ic-gem"></i> ' + p.coinsDaily + ' <i class="ic-coin"></i></span>');
+      const vb = HR.U.el('button', 'btn btn-gem', '<span class="ic" data-icon="crown">' + HR.icon('crown') + '</span><span class="btn-label">' + HR.t('daily_bonus_vip') + ' · ' + p.gemsDaily + ' <i class="ic-gem"></i> ' + p.coinsDaily + ' <i class="ic-coin"></i></span>');
       vb.style.marginTop = '10px'; vb.disabled = !st.vipToday;
       vb.addEventListener('click', () => { const r = HR.Daily.claimVip(); if (r) { HR.Audio.sfx('reward'); this.renderDaily(); this.refreshMenu(); } });
       body.appendChild(vb);
@@ -596,7 +596,7 @@ HR.UI = {
   renderSettings() {
     const body = $('#settings-body'); body.innerHTML = '';
     const s = HR.Store.data.settings, d = HR.Store.data;
-    const row = (icon, label, sub, control) => { const r = HR.U.el('div', 'setting'); r.innerHTML = '<div class="s-main"><span class="s-ic">' + HR.icon(icon) + '</span><div class="s-label">' + label + (sub ? '<small>' + sub + '</small>' : '') + '</div></div>'; const c = HR.U.el('div', 's-ctl'); c.appendChild(control); r.appendChild(c); body.appendChild(r); return r; };
+    const row = (icon, label, sub, control) => { const r = HR.U.el('div', 'setting'); const gc = HR.glyphColor && HR.glyphColor(icon); r.innerHTML = '<div class="s-main"><span class="s-ic"' + (gc ? ' style="--ic:' + gc + '"' : '') + '>' + (HR.glyph ? HR.glyph(icon) : HR.icon(icon)) + '</span><div class="s-label">' + label + (sub ? '<small>' + sub + '</small>' : '') + '</div></div>'; const c = HR.U.el('div', 's-ctl'); c.appendChild(control); r.appendChild(c); body.appendChild(r); return r; };
     const toggle = key => { const t = HR.U.el('button', 'toggle' + (s[key] ? ' on' : '')); t.setAttribute('aria-label', key); t.addEventListener('click', () => { this.toggleSetting(key); t.classList.toggle('on', s[key]); }); return t; };
     const slider = (key, min, max, step, cb) => { const r = HR.U.el('input'); r.type = 'range'; r.min = min; r.max = max; r.step = step; r.value = s[key]; r.addEventListener('input', () => { s[key] = parseFloat(r.value); HR.Store.save(); if (cb) cb(); }); return r; };
     const seg = (opts, cur, cb) => { const g = HR.U.el('div', 'seg'); opts.forEach(o => { const b = HR.U.el('button', o.v === cur ? 'active' : '', o.l); b.addEventListener('click', () => { HR.Audio.sfx('click'); cb(o.v); $$('button', g).forEach(x => x.classList.toggle('active', x === b)); }); g.appendChild(b); }); return g; };
