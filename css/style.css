@@ -19,6 +19,10 @@
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* iPhone na tela de início: a barra de status (hora, bateria) fica por cima do jogo e
+   aparelho sem entalhe devolve safe-area 0. Um respiro mínimo no topo resolve. */
+html.ios-app { --sat: max(env(safe-area-inset-top, 0px), 26px); }
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   margin: 0; padding: 0; height: 100%; width: 100%;
@@ -39,8 +43,10 @@ h3 { font-family: var(--display); font-size: 20px; font-weight: 600; }
 .num { font-family: var(--display); font-weight: 600; }
 
 /* ---------- App container (retrato, centralizado no desktop) ---------- */
+/* fixed, nao absolute: se a pagina rolar por qualquer motivo (o iPhone rola por
+   codigo mesmo com overflow hidden), o jogo nao acompanha e o toque nao sai do lugar. */
 .app {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: 100%; height: 100%; overflow: hidden;
   background: radial-gradient(120% 80% at 50% 0%, var(--bg2), var(--bg0));
   box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 120px rgba(0,0,0,0.6);

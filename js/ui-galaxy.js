@@ -12,6 +12,7 @@
   const $ = (s, r) => HR.U.$(s, r), $$ = (s, r) => HR.U.$$(s, r);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const sfx = n => { if (HR.Audio && HR.Audio.sfx) HR.Audio.sfx(n); };
+  const lite = () => !!(HR.Perf && HR.Perf.lite && HR.Perf.lite());
   const accentVars = hex => '--wa:' + hex + ';--wa-28:' + HR.U.rgba(hex, 0.28) + ';--wa-14:' + HR.U.rgba(hex, 0.14) + ';--wa-glow:' + HR.U.rgba(hex, 0.45) + ';--rb1:' + HR.U.mix(hex, '#ffffff', 0.55) + ';--rb2:' + hex + ';';
   const starsHtml = (n, cls) => { let h = '<span class="lv-stars' + (cls ? ' ' + cls : '') + '" aria-hidden="true">'; for (let i = 0; i < 3; i++) h += '<span class="lv-star' + (i < n ? ' on' : '') + '">' + HR.icon('star', '', true) + '</span>'; return h + '</span>'; };
   const regionName = R => HR.t('reg_' + R.id);
@@ -222,12 +223,13 @@
     const body = $('#galaxy-body'), cv = $('#galaxy-canvas'), host = $('#galaxy-nodes'); if (!body || !cv) return;
     const C = HR.Campaign;
     const r = body.getBoundingClientRect(); if (!r.width || !r.height) { setTimeout(renderGalaxy, 60); return; }
-    const W = Math.round(r.width), H = Math.round(r.height), dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.round(r.width), H = Math.round(r.height), dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     const geo = geometry(W, H);
     if (gxRaf) cancelAnimationFrame(gxRaf);
-    const loop = () => { if (!HR.UI.stack.includes('galaxy')) { gxRaf = null; return; } drawGalaxy(cv, geo, W, H, performance.now() / 1000); gxRaf = requestAnimationFrame(loop); };
-    loop();
+    gxRaf = null;
+    if (lite()) drawGalaxy(cv, geo, W, H, 1.2);          // um quadro só: navegar não pode pesar
+    else { const loop = () => { if (!HR.UI.stack.includes('galaxy')) { gxRaf = null; return; } drawGalaxy(cv, geo, W, H, performance.now() / 1000); gxRaf = requestAnimationFrame(loop); }; loop(); }
     HR.UI.bind('starsTotal', C.totalStars());
     const cur = C.currentRegion();
     let h = '';
@@ -381,7 +383,7 @@
   function startHero(cvId, panel, R, ri, si) {
     const cv = $('#' + cvId); if (!cv) return;
     const host = cv.parentElement, rect = host.getBoundingClientRect();
-    const W = Math.round(rect.width) || 340, H = Math.round(rect.height) || 150, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = Math.round(rect.width) || 340, H = Math.round(rect.height) || 150, dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     const ctx = cv.getContext('2d');
     const bg = new HR.Render.Background(); bg.resize(W, H); bg.setTheme({ colors: R.colors, shapes: R.shapes, stars: R.stars, fx: R.fx }); bg.setFx(R.fx || null); bg.setTint(R.accent);
@@ -403,6 +405,8 @@
       ctx.fillStyle = sh; ctx.fillRect(0, 0, W * 0.7, H);
     };
     if (heroRafs[panel]) cancelAnimationFrame(heroRafs[panel]);
+    heroRafs[panel] = null;
+    if (lite()) { draw(performance.now()); return; }
     const loop = now => { if (!HR.UI.stack.includes(panel) || !cv.isConnected) { heroRafs[panel] = null; return; } draw(now); heroRafs[panel] = requestAnimationFrame(loop); };
     loop(performance.now());
   }

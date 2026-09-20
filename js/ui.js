@@ -105,8 +105,19 @@ HR.UI = {
     if (id !== 'hud' && this.stopHud) this.stopHud();
   },
   closePanels() { this.PANELS.forEach(s => this.hideScreen(s)); this.stack = []; this.stopPreviews(); },
+  // a pilha de painéis pode sair de sincronia com o que está na tela; sem isso o
+  // botão do painel some em silêncio e só volta ao trocar de tela
+  syncStack() {
+    const vis = id => { const el = $('#screen-' + id); return !!el && el.classList.contains('visible'); };
+    if (this.stack.some(p => !vis(p))) this.stack = this.stack.filter(vis);
+    if (!['menu', 'over', 'levelend'].includes(this.current)) {
+      const base = ['menu', 'levelend', 'over'].find(vis);
+      if (base && !vis('hud')) this.current = base;
+    }
+  },
   // open(panel, arg): arg = aba (loja/missões) ou índice da região
   open(panel, arg) {
+    this.syncStack();
     if (!['menu', 'over', 'levelend'].includes(this.current)) return;
     if (this.stack.includes(panel) && panel !== 'region' && panel !== 'system') return;
     if (panel === 'shop' && arg) { this.shopTab = arg; this.setTab('shop-tabs', arg); }
@@ -119,6 +130,7 @@ HR.UI = {
     HR.Analytics.log('open_' + panel, panel === 'region' ? { ri: arg } : undefined);
   },
   back() {
+    this.syncStack();
     const p = this.stack.pop(); if (p) this.hideScreen(p);
     this.stopPreviews();
     if (p === 'missions') { clearInterval(this.missionTimerInt); this.missionTimerInt = null; }

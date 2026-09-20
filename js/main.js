@@ -31,11 +31,28 @@
     HR.UI.bind('tagline', (C.TAGLINE && C.TAGLINE[HR.lang]) || C.TAGLINE.pt);
     HR.UI.layoutShowcase();
 
+    // iPhone adicionado à tela de início: a barra de status fica POR CIMA do jogo e
+    // aparelho sem entalhe devolve safe-area 0. Garante um respiro no topo.
+    const standalone = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (standalone && /iPad|iPhone|iPod/.test(navigator.userAgent || '')) document.documentElement.classList.add('ios-app');
+
+    // a página nunca rola: rolando, tudo "sobe" e o toque cai no lugar errado
+    const unscroll = () => {
+      const de = document.documentElement;
+      if (window.scrollY || de.scrollTop || document.body.scrollTop) {
+        try { window.scrollTo(0, 0); } catch (_) { /* nada */ }
+        de.scrollTop = 0; document.body.scrollTop = 0;
+      }
+    };
+    window.addEventListener('scroll', unscroll, { passive: true });
+    document.addEventListener('focusin', () => setTimeout(unscroll, 0));
+
     const relayout = () => { layout(); game.resize(); HR.UI.layoutShowcase(); setTimeout(() => HR.UI.layoutShowcase(), 160); if (HR.UI.stack.includes('galaxy') && HR.UI.renderGalaxy) HR.UI.renderGalaxy(); };
     window.addEventListener('resize', relayout);
     window.addEventListener('orientationchange', () => setTimeout(relayout, 250));
     let lastVw = window.innerWidth, lastVh = window.innerHeight;
     setInterval(() => {
+      unscroll();
       if (window.innerWidth !== lastVw || window.innerHeight !== lastVh) { lastVw = window.innerWidth; lastVh = window.innerHeight; relayout(); }
     }, 250);
 

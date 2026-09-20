@@ -46,7 +46,7 @@
 
   /* ---------------- previews (um único rAF) ---------------- */
   function makeCanvas(size) {
-    const cv = document.createElement('canvas'); const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cv = document.createElement('canvas'); const dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     cv.width = size * dpr; cv.height = size * dpr; cv.style.width = size + 'px'; cv.style.height = size + 'px';
     cv._size = size; cv._dpr = dpr; return cv;
   }
@@ -89,7 +89,15 @@
   }
   function startPreviews() {
     if (HR.UI.previewRaf || !HR.UI.previews.length) return;
-    const loop = () => { const t = performance.now() / 1000; HR.UI.previews.forEach(p => { if (p.cv.isConnected && (p.vis !== false || !p.drawn)) { drawPreview(p, t); p.drawn = true; } }); HR.UI.previewRaf = requestAnimationFrame(loop); };
+    // no Normal e no Baixo cada bola da loja é desenhada uma vez, quando entra na tela
+    const loop = () => {
+      const still = !!(HR.Perf && HR.Perf.lite && HR.Perf.lite()), t = still ? 0.7 : performance.now() / 1000;
+      HR.UI.previews.forEach(p => {
+        if (!p.cv.isConnected || (still && p.drawn)) return;
+        if (p.vis !== false || !p.drawn) { drawPreview(p, t); p.drawn = true; }
+      });
+      HR.UI.previewRaf = requestAnimationFrame(loop);
+    };
     HR.UI.previewRaf = requestAnimationFrame(loop);
   }
   function stopPreviews() { if (HR.UI.previewRaf) cancelAnimationFrame(HR.UI.previewRaf); HR.UI.previewRaf = null; HR.UI.previews = []; if (io) { io.disconnect(); io = null; } }

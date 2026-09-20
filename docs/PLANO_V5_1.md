@@ -107,3 +107,34 @@ Ajustes pedidos depois (2026-09-14):
 
 Medido no navegador (fase 9-9-9, 255 quadros): render 0,83 ms no muito bom e 0,44 ms no baixo; quadros acima de 22 ms cairam de 30 para 4.
 Revisao completa (tools/audit.js): 0 erros e 0 avisos — 151 bolas, 43 rastros, 45 temas, 1.000 fases, 60 cenas de historia, 199 conquistas e 2.808 chaves de texto com PT/EN/ES iguais.
+
+## v6.3 (2026-09-22) — o que o teste no iPhone 7 revelou
+
+Quatro defeitos reais, achados a partir do relato de quem jogou:
+
+1. **O clique que sumia.** A dica de toque longo (js/tips.js) marcava `suppress = true` para
+   engolir o clique que o navegador manda depois do toque longo — e so desmarcava QUANDO
+   esse clique chegava. Toque longo que termina sem clique (o caso comum) deixava a marca
+   ligada para sempre, engolindo o proximo clique da tela, qualquer que fosse ele. Dai o
+   "so funciona no segundo clique". Agora a marca vale um clique e cai sozinha em 400 ms,
+   e todo gesto novo comeca limpando o que sobrou do anterior.
+2. **A tela que subia (iPhone).** `wrap.scrollIntoView` no mapa das fases rola TODO ancestral
+   rolavel, e a pagina e rolavel por codigo mesmo com `overflow: hidden`. No iPhone isso
+   levantava o jogo inteiro: o topo saia da tela e o toque passava a cair fora do botao.
+   Agora o mapa rola so o proprio painel, o `#app` e `position: fixed` (nao acompanha rolagem
+   nenhuma) e um guarda devolve a janela para o zero se algo tentar rolar.
+3. **O topo cortado na tela de inicio.** Em PWA no iOS a barra de status fica POR CIMA do jogo e
+   aparelho sem entalhe devolve `safe-area-inset-top: 0`. `html.ios-app` garante 26 px de
+   respiro no topo: fase, pausa e vidas nao caem mais em cima da hora e da bateria.
+4. **O painel que parava de abrir.** `HR.UI.open` desiste em silencio se o painel ja esta na
+   pilha. Quando pilha e tela saiam de sincronia o botao ficava morto ate trocar de tela.
+   `HR.UI.syncStack()` confere a pilha contra o que esta na tela antes de decidir.
+
+Navegacao leve nos niveis Normal e Baixo (`HR.Perf.lite()`): mapa da galaxia, mapa do sistema,
+destaque dos paineis, pre-visualizacoes da loja, fendas e singularidade desenham UM quadro
+parado em vez de um laco a 60 fps; a camera que aproxima o sistema tambem e pulada e todos
+esses canvas passam a respeitar `HR.Perf.dprCap()`.
+
+Medido no navegador, parado no mapa da galaxia 1: 156 chamadas de quadro por segundo no muito
+bom contra 60 no baixo (so o laco do proprio jogo). Na loja, bolas desenhadas por segundo:
+168 no muito bom contra 60 no baixo. Revisao (tools/audit.js): 0 erros, 0 avisos.

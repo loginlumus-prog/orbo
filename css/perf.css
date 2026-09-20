@@ -33,6 +33,12 @@
 /* ---------- normal: o fundo do menu fica mais simples ---------- */
 .perf-1 .ob-ring .a, .perf-1 .ob-ring .m { display: none; }
 
+/* ---------- mapas: no Normal e no Baixo a navegação não anima ---------- */
+.perf-1 .gx-node.is-current::before, .perf-0 .gx-node.is-current::before,
+.perf-1 .lv-halo, .perf-0 .lv-halo,
+.perf-1 .sv-node.is-current::before, .perf-0 .sv-node.is-current::before { animation: none !important; }
+.perf-0 .gx-node .gx-disc::after { display: none; }
+
 /* ---------- aviso de travamento ---------- */
 .perf-ask {
   position: fixed; left: 50%; bottom: calc(18px + var(--sab)); transform: translateX(-50%) translateY(8px);

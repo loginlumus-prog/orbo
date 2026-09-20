@@ -18,6 +18,7 @@
 
   const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const perfLow = () => !!(HR.Perf && HR.Perf.level === 0);
+  const perfLite = () => !!(HR.Perf && HR.Perf.lite && HR.Perf.lite());
   const ease = k => 1 - Math.pow(1 - k, 3);
 
   function skinFrom(cols, seedStr, i) {
@@ -233,7 +234,7 @@
     const cv = wrap.querySelector('.sv-cv'), nodes = wrap.querySelector('.sv-nodes');
     cv.width = W * dpr; cv.height = L.H * dpr; cv.style.width = W + 'px'; cv.style.height = L.H + 'px';
     nodes.innerHTML = items.map((it, i) => nodeHtml(it, L.pts[i], i)).join('');
-    const still = reduceMotion();
+    const still = reduceMotion() || perfLite();   // v6.3: no Normal e no Baixo o mapa é um quadro parado
     view = {
       screen, wrap, cv, nodes, ctx: cv.getContext('2d'), W, H: L.H, dpr, cx: L.cx, cy: L.cy, Rr: L.Rr,
       pts: L.pts, items, R, still, ballSkin: equippedSkin(),
@@ -264,11 +265,18 @@
       HR.UI.back();
     });
     if (onNode) wrap.addEventListener('click', onNode, true);
-    // o mapa entra no campo de visão: sem isso a animação acontecia abaixo da dobra
+    // o mapa entra no campo de visão. Rola só o painel: no iPhone o scrollIntoView
+    // levantava a página inteira e o toque passava a cair no lugar errado.
     requestAnimationFrame(() => {
-      if (!wrap.isConnected || !wrap.scrollIntoView) return;
-      try { wrap.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' }); }
-      catch (_) { wrap.scrollIntoView(); }
+      if (!wrap.isConnected) return;
+      let sc = wrap.parentNode;
+      while (sc && sc !== document.body && sc.scrollHeight <= sc.clientHeight + 2) sc = sc.parentNode;
+      if (!sc || sc === document.body || sc === document.documentElement) return;
+      const top = sc.scrollTop + wrap.getBoundingClientRect().top - sc.getBoundingClientRect().top
+        - Math.max(0, (sc.clientHeight - wrap.offsetHeight) / 2);
+      const smooth = !reduceMotion() && !perfLite();
+      try { sc.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' }); }
+      catch (_) { sc.scrollTop = Math.max(0, top); }
     });
     if (ro) { ro.disconnect(); ro = null; }
     if ('ResizeObserver' in window) {

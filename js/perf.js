@@ -65,6 +65,8 @@ HR.Perf = {
   anims() { return this.T().anims; },
   trailFx() { return this.T().trail; },
   flowLayers() { return this.T().flow; },
+  // "leve": menus e mapas desenham um quadro parado em vez de um laço a 60 fps
+  lite() { return this.level <= 1; },
   name(lv) { return HR.t('quality_l' + (lv == null ? this.level : lv)); },
 
   // marca o nível no <html>: o CSS desliga o que custa caro

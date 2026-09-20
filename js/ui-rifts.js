@@ -45,7 +45,8 @@
       HR.Render.drawBall(ctx, w / 2, h / 2, w * 0.3, c.skin, t, {});
       ctx.globalAlpha = 1;
     });
-    raf = requestAnimationFrame(loop);
+    if (!(HR.Perf && HR.Perf.lite && HR.Perf.lite())) raf = requestAnimationFrame(loop);
+    else raf = null;
   }
 
   function card(n) {

@@ -6,7 +6,9 @@
 window.HR = window.HR || {};
 
 (function () {
-  let host = null, cur = null, hoverT = null, lpT = null, hideT = null, suppress = false, sx = 0, sy = 0;
+  let host = null, cur = null, hoverT = null, lpT = null, hideT = null, supT = null, suppress = false, sx = 0, sy = 0;
+  // a marca de "engolir o clique" vale para UM clique e só por um instante
+  function unsuppress() { clearTimeout(supT); supT = null; suppress = false; }
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const find = e => (e.target && e.target.closest) ? e.target.closest('[data-tip]') : null;
   function ensure() {
@@ -49,6 +51,7 @@ window.HR = window.HR || {};
     clearTimeout(hoverT); if (cur === el) hide();
   });
   document.addEventListener('pointerdown', e => {
+    unsuppress();                                   // gesto novo: nada de sobra do anterior
     if (e.pointerType !== 'touch') { clearTimeout(hoverT); hide(); return; }
     const el = find(e); if (cur && cur !== el) hide();
     if (!el) return;
@@ -56,10 +59,15 @@ window.HR = window.HR || {};
     lpT = setTimeout(() => { lpT = null; suppress = true; show(el, 2600); if (HR.U && HR.U.vibrate) HR.U.vibrate(8); }, 380);
   }, true);
   document.addEventListener('pointermove', e => { if (lpT && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) { clearTimeout(lpT); lpT = null; } }, true);
-  document.addEventListener('pointerup', () => { clearTimeout(lpT); lpT = null; }, true);
-  document.addEventListener('pointercancel', () => { clearTimeout(lpT); lpT = null; }, true);
+  const endPress = () => {
+    clearTimeout(lpT); lpT = null;
+    // o clique do toque longo chega logo depois; passado isso, a marca cai sozinha
+    if (suppress) { clearTimeout(supT); supT = setTimeout(unsuppress, 400); }
+  };
+  document.addEventListener('pointerup', endPress, true);
+  document.addEventListener('pointercancel', endPress, true);
   document.addEventListener('click', e => {
-    if (suppress) { suppress = false; e.stopPropagation(); e.preventDefault(); return; }
+    if (suppress) { unsuppress(); e.stopPropagation(); e.preventDefault(); return; }
     const el = find(e);
     if (el && el.hasAttribute('data-tip-tap')) { e.stopPropagation(); if (cur === el) hide(); else show(el, 2600); }
   }, true);

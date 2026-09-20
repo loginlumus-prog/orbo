@@ -15,7 +15,7 @@
   let heroRaf = null;
   function startHero() {
     const cv = $('#sg-hero-cv'); if (!cv) return;
-    const rect = cv.parentElement.getBoundingClientRect(), W = Math.round(rect.width) || 340, H = Math.round(rect.height) || 180, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const rect = cv.parentElement.getBoundingClientRect(), W = Math.round(rect.width) || 340, H = Math.round(rect.height) || 180, dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
     const ctx = cv.getContext('2d'), stars = []; for (let i = 0; i < 90; i++) stars.push([Math.random() * W, Math.random() * H, Math.random() * 1.3 + 0.3, Math.random() * 6.28]);
     const bh = { base: '#000', dark: '#000', glow: '#ffcf4a', bh: 'ton618', disk: ['#fffbe6', '#ffcf4a', '#ff5e3d'] };
@@ -39,6 +39,7 @@
       const sh = ctx.createLinearGradient(0, 0, W * 0.6, 0); sh.addColorStop(0, 'rgba(4,6,14,0.72)'); sh.addColorStop(1, 'rgba(4,6,14,0)'); ctx.fillStyle = sh; ctx.fillRect(0, 0, W * 0.6, H);
     };
     if (heroRaf) cancelAnimationFrame(heroRaf);
+    if (HR.Perf && HR.Perf.lite && HR.Perf.lite()) { draw(performance.now()); heroRaf = null; return; }
     const loop = now => { if (!HR.UI.stack.includes('singularity') || !cv.isConnected) { heroRaf = null; return; } draw(now); heroRaf = requestAnimationFrame(loop); };
     loop(performance.now());
   }
@@ -148,7 +149,7 @@
     return dlg;
   }
   function holo(cv, A, t) {
-    const r = cv.getBoundingClientRect(), W = Math.round(r.width) || 120, H = Math.round(r.height) || 120, dpr = Math.min(2, window.devicePixelRatio || 1);
+    const r = cv.getBoundingClientRect(), W = Math.round(r.width) || 120, H = Math.round(r.height) || 120, dpr = Math.min(HR.Perf ? HR.Perf.dprCap() : 2, window.devicePixelRatio || 1);
     if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr; }
     const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     const cx = W / 2, cy = H / 2, U = HR.U;
@@ -198,6 +199,7 @@
     hideAll(); setLine(D.intro); showNext(HR.t('sg_continue'), () => exchange(0));
     el.classList.add('visible');
     if (dlgRaf) cancelAnimationFrame(dlgRaf);
+    if (HR.Perf && HR.Perf.lite && HR.Perf.lite()) { holo(cv, A, 0.8); dlgRaf = null; return; }
     const loop = now => { if (!el.classList.contains('visible')) { dlgRaf = null; return; } holo(cv, A, now / 1000); dlgRaf = requestAnimationFrame(loop); };
     dlgRaf = requestAnimationFrame(loop);
     if (HR.Music && HR.Audio.unlocked) HR.Music.setIntensity(0.15);
