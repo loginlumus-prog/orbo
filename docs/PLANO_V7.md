@@ -340,3 +340,22 @@ vez, agora vai e volta), a bola de "A costura" (chegava no fim do fio e reaparec
 comeco, agora volta pelo fio) e os aros do sono em "Dois" (nasciam e sumiam de repente,
 agora entram e saem em fade).
 
+**v7.1 (2026-09-26) — limpeza do menu.**
+
+Menos texto, mais icone. Os nomes sairam de baixo dos oito botoes da orbita: o
+desenho ja diz o que e, e quem nao souber descobre com um toque longo, porque o
+nome virou a dica do botao e o rotulo de acessibilidade — nada se perdeu, so saiu
+da tela. A fita de modos perdeu a caixa: ficaram tres icones soltos, maiores,
+cada um respirando no seu tempo, o escolhido aceso com uma claridade atras e um
+ponto embaixo, e o NOME do escolhido em cima deles. Assim o texto aparece quando
+serve, e nao o tempo todo. A descricao do modo saiu de vez: ja morava na dica.
+
+A sacola da loja virou carrinho — a sacola parecia lixeira. O carrinho balanca
+devagar e uma estrela cai dentro dele de tempos em tempos.
+
+O selo da fenda era uma linha de texto e virou uma peca: o buraco desenhado a
+esquerda com um satelite dando a volta, o nome no meio com a claridade da fenda
+respirando atras dele, o ouro numa ficha e o progresso numa rosca com o numero
+dentro. Tudo na cor da fenda, entao trocar de fenda troca a peca inteira de cor.
+O texto continua parado: quem anima e a luz atras dele.
+

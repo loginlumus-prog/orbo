@@ -115,12 +115,29 @@
       seg.parentNode.insertBefore(chip, seg.nextSibling);
     }
     chip.hidden = false;
-    const n = R().current();
-    chip.style.setProperty('--rc', R().color(n));
-    chip.innerHTML = '<span class="rc-dot"></span><b>' + esc(R().name(n)) + '</b>' +
-      '<span class="rc-gold">' + HR.icon('coin', '', true) + '×' + R().mul(n).toFixed(2).replace('.00', '') + '</span>' +
-      '<span class="rc-n">' + R().openCount() + '/' + R().N + '</span>' +
+    const n = R().current(), cor = R().color(n);
+    const abertas = R().openCount(), total = R().N;
+    chip.style.setProperty('--rc', cor);
+    // a rosca do progresso: a circunferencia vai calculada na mao, porque
+    // pathLength em <circle> ainda engasga em Safari antigo
+    const raio = 15.5, volta = (2 * Math.PI * raio).toFixed(2);
+    const feito = (volta * abertas / total).toFixed(2);
+    chip.innerHTML =
+      '<i class="rc-aura"></i>' +
+      '<span class="rc-orbe"><i class="rc-anel"></i><i class="rc-nucleo"></i><i class="rc-sat"></i></span>' +
+      '<span class="rc-meio">' +
+        '<b class="rc-nome">' + esc(R().name(n)) + '</b>' +
+        '<span class="rc-ouro">' + HR.icon('coin', '', true) + '<em>×' + R().mul(n).toFixed(2).replace('.00', '') + '</em></span>' +
+      '</span>' +
+      '<span class="rc-prog">' +
+        '<svg class="rc-rosca" viewBox="0 0 36 36" aria-hidden="true">' +
+          '<circle class="t" cx="18" cy="18" r="' + raio + '"/>' +
+          '<circle class="a" cx="18" cy="18" r="' + raio + '" stroke-dasharray="' + feito + ' ' + volta + '"/>' +
+        '</svg>' +
+        '<b>' + abertas + '</b><small>/' + total + '</small>' +
+      '</span>' +
       '<span class="rc-go">' + HR.icon('chevronRight') + '</span>';
+    chip.setAttribute('aria-label', R().name(n) + ' · ' + HR.t('rift_count', { a: abertas, b: total }));
   }
   after(HR.UI, 'refreshMenu', selo);
   after(HR.UI, 'refreshMode', selo);   // é este que roda ao tocar em "Infinito"

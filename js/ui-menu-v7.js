@@ -1,0 +1,56 @@
+/* =====================================================================
+   ORBO v7.1 — limpeza do menu.
+
+   1. Os nomes saem de baixo dos icones da orbita. O desenho ja diz o que e,
+      e quem nao souber descobre com um toque longo: o nome vira a dica do
+      botao e o rotulo de acessibilidade. Nada se perde, so sai da tela.
+
+   2. A fita de modos perde a caixa. Ficam tres icones soltos, o escolhido
+      aceso e com um ponto embaixo, e o NOME do escolhido em cima deles —
+      entao o texto aparece quando serve e nao o tempo todo.
+
+   Sem nenhuma animacao de texto: o nome so troca quando a pessoa toca.
+   ===================================================================== */
+window.HR = window.HR || {};
+
+(function () {
+  const $ = (s, r) => HR.U.$(s, r), $$ = (s, r) => HR.U.$$(s, r);
+
+  const after = (obj, nome, fn) => {
+    const o = obj[nome]; if (typeof o !== 'function') return;
+    obj[nome] = function () { const r = o.apply(this, arguments); try { fn.apply(this, arguments); } catch (_) { /* nada */ } return r; };
+  };
+
+  /* ---------------- 1. o nome do botao vira dica ---------------- */
+  function nomesViramDica() {
+    $$('.orbit-btn').forEach(b => {
+      const l = $('.ob-label', b); if (!l) return;
+      const txt = (l.textContent || '').trim(); if (!txt) return;
+      if (b.getAttribute('data-tip') === txt) return;
+      b.setAttribute('aria-label', txt);
+      b.setAttribute('data-tip', txt);
+    });
+  }
+
+  /* ---------------- 2. o nome do modo, em cima dos icones ---------------- */
+  function placa() {
+    const seg = $('#mode-seg'); if (!seg) return null;
+    let el = $('#mode-name');
+    if (!el) {
+      el = HR.U.el('b', 'mode-name'); el.id = 'mode-name';
+      el.setAttribute('data-bind', 'modeName');
+      seg.parentNode.insertBefore(el, seg);
+    }
+    return el;
+  }
+  function nomeDoModo() {
+    if (!placa()) return;
+    const m = (HR.Store.data && HR.Store.data.mode) || 'endless';
+    HR.UI.bind('modeName', HR.t('mode_' + m));
+  }
+
+  after(HR.UI, 'refreshMenu', function () { nomesViramDica(); nomeDoModo(); });
+  after(HR.UI, 'refreshMode', nomeDoModo);
+  after(HR, 'applyI18n', function () { nomesViramDica(); nomeDoModo(); });
+  setTimeout(() => { try { nomesViramDica(); nomeDoModo(); } catch (_) { /* nada */ } }, 500);
+})();
