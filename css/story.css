@@ -1,24 +1,98 @@
 /* =====================================================================
-   ORBO v5.9 — a tela da história. Reaproveita o cartão de diálogo da
-   Singularidade e acrescenta narração, botão de pular e o selo do Infinito.
-   ===================================================================== */
-.story-modal { z-index: 28; }
-.story-card { gap: 10px; padding: 16px 16px 18px; }
-.story-cv { width: 108px; height: 108px; }
-.story-who { letter-spacing: 2px; font-size: 11px; }
-.story-line { font-size: 17px; min-height: 66px; display: flex; align-items: center; justify-content: center; }
-.story-line.narr { font-family: var(--font, sans-serif); font-weight: 400; font-size: 15px; font-style: italic; color: var(--muted); }
-.story-opt { text-align: left; line-height: 1.25; }
-.story-next { min-height: 44px; }
+   ORBO v7.1 — a tela da história, em tela cheia.
 
+   Três camadas: o palco (canvas), o véu (o escuro que sobe de baixo para o
+   texto ter onde pousar) e a frente (topo, meio vazio e o bloco de fala).
+   O meio é vazio de propósito: é onde o toque adianta a cena.
+   ===================================================================== */
+.story-modal { z-index: 28; padding: 0; background: rgba(2,4,10,0.72); }
+
+.story-card {
+  --ac: #fff;
+  position: relative; width: min(620px, 100%); height: 100%; overflow: hidden;
+  background: #04060d;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 120px rgba(0,0,0,0.7);
+  opacity: 0; transform: scale(1.03);
+  transition: opacity 0.3s ease-out, transform 0.42s cubic-bezier(0.2,0.8,0.2,1);
+}
+.story-modal.visible .story-card { opacity: 1; transform: none; }
+
+.st-ceu { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.st-veu {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 62%; display: block; pointer-events: none;
+  background: linear-gradient(to top, rgba(2,4,10,0.97) 0%, rgba(2,4,10,0.9) 30%, rgba(2,4,10,0.5) 66%, rgba(2,4,10,0) 100%);
+}
+.st-frente { position: absolute; inset: 0; display: flex; flex-direction: column; }
+
+/* ---------- topo: o nome do capítulo e o pular ---------- */
+.st-topo {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: calc(12px + var(--sat)) calc(14px + var(--sar)) 0 calc(16px + var(--sal));
+}
+.st-cap {
+  flex: 1; min-width: 0; color: var(--ac); font-size: 10.5px; letter-spacing: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(0,0,0,0.8);
+}
 .story-skip {
-  position: absolute; right: 10px; top: 10px; display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 10px 5px 7px; border-radius: 999px; border: none; cursor: pointer;
-  color: var(--muted); background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+  flex: none; display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 11px 6px 8px; border-radius: 999px; border: none; cursor: pointer;
+  color: var(--muted); background: rgba(6,8,18,0.5); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
 }
 .story-skip .i { width: 13px; height: 13px; }
 .story-skip span { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
-.story-skip:active { background: rgba(255,255,255,0.12); }
+.story-skip:active { background: rgba(255,255,255,0.14); }
+
+/* ---------- o meio: só palco. Tocar aqui adianta ---------- */
+.st-meio { flex: 1; min-height: 0; }
+
+/* ---------- o bloco de fala ---------- */
+.st-baixo {
+  flex: none; display: flex; flex-direction: column; gap: 9px; text-align: left;
+  padding: 0 calc(20px + var(--sar)) calc(16px + var(--sab)) calc(20px + var(--sal));
+}
+.st-passos { display: flex; gap: 5px; height: 4px; }
+.st-passos i { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,0.18); transition: background 0.2s, transform 0.2s; }
+.st-passos i.on { background: var(--ac); transform: scale(1.25); }
+
+.st-quem { color: var(--ac); font-size: 11px; letter-spacing: 3px; }
+.st-fala {
+  font-family: var(--display); font-size: 19px; font-weight: 500; line-height: 1.42; color: #fff;
+  min-height: 4.3em; text-shadow: 0 2px 18px rgba(0,0,0,0.9);
+}
+.st-fala.narr { font-family: var(--font, sans-serif); font-weight: 400; font-style: italic; font-size: 16px; line-height: 1.5; color: #c6d0ea; }
+
+.st-opts { display: flex; flex-direction: column; gap: 8px; }
+.st-opts:empty { display: none; }
+.st-opt {
+  display: flex; align-items: flex-start; gap: 11px; width: 100%; padding: 12px 14px;
+  border-radius: 16px; text-align: left; cursor: pointer;
+  font-size: 14.5px; font-weight: 600; line-height: 1.32; color: var(--text);
+  background: rgba(10,14,28,0.72); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.1);
+  transition: background 0.12s, box-shadow 0.12s, transform 0.08s;
+}
+.st-opt i {
+  flex: none; width: 21px; height: 21px; border-radius: 7px; display: grid; place-items: center;
+  font-family: var(--display); font-size: 11.5px; font-weight: 700; font-style: normal;
+  color: var(--ac); background: color-mix(in srgb, var(--ac) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac) 45%, transparent);
+}
+.st-opt span { min-width: 0; }
+.st-opt:hover { background: color-mix(in srgb, var(--ac) 12%, rgba(10,14,28,0.72)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ac) 55%, transparent); }
+.st-opt:active { transform: translateY(2px); }
+
+.st-next { width: 100%; min-height: 48px; opacity: 0.4; transition: opacity 0.22s; }
+.story-card.pronto .st-next { opacity: 1; }
+.st-next[hidden] { display: none !important; }
+
+/* ---------- telas baixas ---------- */
+@media (max-height: 680px) {
+  .st-fala { font-size: 17.5px; min-height: 3.6em; }
+  .st-fala.narr { font-size: 15px; }
+  .st-baixo { gap: 7px; }
+  .st-opt { padding: 10px 12px; font-size: 13.5px; }
+  .st-next { min-height: 44px; }
+}
 
 /* selo do anel de Vela no botão do Infinito */
 .mode-btn { position: relative; }
@@ -27,6 +101,3 @@
   font-family: var(--display); font-size: 10px; font-weight: 700; color: #1b1200;
   background: linear-gradient(180deg, #ffe89a, #ffb92b); box-shadow: 0 2px 0 rgba(0,0,0,0.35);
 }
-
-@media (max-height: 720px) { .story-cv { width: 88px; height: 88px; } .story-line { min-height: 58px; font-size: 16px; } }
-@media (prefers-reduced-motion: reduce) { .story-line.in { animation: none; } }

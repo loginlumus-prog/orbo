@@ -1,5 +1,5 @@
 /* =====================================================================
-   ORBO v7 — mural dos fragmentos, card em tela cheia e o botão do arco.
+   ORBO v7.1 — mural dos fragmentos, card em tela cheia e o botão do arco.
    ===================================================================== */
 
 /* ---------- botão do arco da vitrine ---------- */
@@ -12,9 +12,9 @@
 }
 
 /* ---------- mural ---------- */
-.fr-topo { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 14px; }
-.fr-topo .num { font-family: var(--display); font-size: 34px; font-weight: 700; color: var(--text); line-height: 1; }
-.fr-topo .num small { font-size: 17px; color: var(--muted); font-weight: 600; }
+.fr-topo-mural { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 14px; }
+.fr-topo-mural .num { font-family: var(--display); font-size: 34px; font-weight: 700; color: var(--text); line-height: 1; }
+.fr-topo-mural .num small { font-size: 17px; color: var(--muted); font-weight: 600; }
 .fr-barra { display: block; width: min(260px, 70%); height: 6px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow: hidden; }
 .fr-barra span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4cf0ff, #ffcf4a); transition: width 0.4s cubic-bezier(0.2,0.8,0.2,1); }
 .fr-dica { font-size: 12px; color: var(--muted); text-align: center; max-width: 30ch; }
@@ -43,34 +43,84 @@
   color: #1b1200; background: linear-gradient(180deg, #ffe89a, #ffb92b);
 }
 
+/* ponto na aba quando entrou fragmento novo */
+#ach-tabs .tab.tem-novo { position: relative; }
+#ach-tabs .tab.tem-novo::after {
+  content: ''; position: absolute; right: 4px; top: 4px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--gold); box-shadow: 0 0 0 2px rgba(0,0,0,0.45);
+}
+
 /* ---------- card em tela cheia ---------- */
 .fr-folha {
   position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-  padding: calc(16px + var(--sat)) 16px calc(16px + var(--sab));
-  background: rgba(2,4,10,0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  opacity: 0; pointer-events: none; transition: opacity 0.22s;
+  background: rgba(2,4,10,0.74); opacity: 0; pointer-events: none; transition: opacity 0.24s;
 }
 .fr-folha.show { opacity: 1; pointer-events: auto; }
 .fr-card {
   --fc: #4cf0ff;
-  position: relative; width: min(460px, 100%); max-height: 100%; overflow: auto;
-  display: flex; flex-direction: column; gap: 0; border-radius: 22px;
-  background: linear-gradient(180deg, rgba(22,28,56,0.98), rgba(8,10,24,0.98));
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 0 0 1.5px color-mix(in srgb, var(--fc) 45%, transparent);
-  transform: translateY(10px) scale(0.98); transition: transform 0.28s cubic-bezier(0.2,0.8,0.2,1);
+  position: relative; width: min(620px, 100%); height: 100%; overflow: hidden; background: #04060d;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 40px 120px rgba(0,0,0,0.7),
+              inset 0 0 0 1.5px color-mix(in srgb, var(--fc) 24%, transparent);
+  opacity: 0; transform: scale(1.03);
+  transition: opacity 0.3s ease-out, transform 0.4s cubic-bezier(0.2,0.8,0.2,1);
 }
-.fr-folha.show .fr-card { transform: none; }
-.fr-grande { display: block; width: 100%; aspect-ratio: 10 / 7; border-radius: 22px 22px 0 0; }
-.fr-txt { display: flex; flex-direction: column; gap: 6px; padding: 14px 18px 18px; }
-.fr-tit { font-family: var(--display); font-size: 21px; font-weight: 600; color: var(--text); }
-.fr-txt p { font-size: 14.5px; line-height: 1.45; color: #d7def5; }
-.fr-onde { margin-top: 4px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+.fr-folha.show .fr-card { opacity: 1; transform: none; }
+
+.fr-grande { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.fr-veu {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 60%; display: block; pointer-events: none;
+  background: linear-gradient(to top, rgba(2,4,10,0.97) 0%, rgba(2,4,10,0.9) 32%, rgba(2,4,10,0.45) 70%, rgba(2,4,10,0) 100%);
+}
+.fr-frente { position: absolute; inset: 0; display: flex; flex-direction: column; }
+
+.fr-topo {
+  flex: none; display: flex; align-items: center; gap: 10px;
+  padding: calc(12px + var(--sat)) calc(14px + var(--sar)) 0 calc(18px + var(--sal));
+}
+.fr-ato {
+  flex: 1; min-width: 0; color: var(--fc); font-size: 10.5px; letter-spacing: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 12px rgba(0,0,0,0.85);
+}
 .fr-x {
-  position: absolute; right: 10px; top: 10px; width: 34px; height: 34px; border-radius: 50%;
+  flex: none; width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center; color: #fff;
-  background: rgba(4,6,14,0.55); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.18);
+  background: rgba(6,8,18,0.5); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.18);
 }
 .fr-x .i { width: 17px; height: 17px; }
+.fr-x:active { background: rgba(255,255,255,0.14); }
+
+.fr-meio { flex: 1; min-height: 0; }
+
+.fr-txt { flex: none; display: flex; flex-direction: column; gap: 7px; padding: 0 calc(20px + var(--sar)) 0 calc(20px + var(--sal)); }
+.fr-tit { font-family: var(--display); font-size: 25px; font-weight: 600; line-height: 1.16; color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.9); }
+.fr-txt p { font-size: 15.5px; line-height: 1.5; color: #dae1f7; text-shadow: 0 2px 16px rgba(0,0,0,0.9); }
+.fr-txt p:empty { display: none; }
+.fr-onde { margin-top: 3px; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+
+.fr-navs {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px calc(18px + var(--sar)) calc(16px + var(--sab)) calc(18px + var(--sal));
+}
+.fr-navs.so-um { visibility: hidden; }
+.fr-nav {
+  flex: none; width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; color: #fff;
+  background: rgba(10,14,28,0.7); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.13);
+  transition: background 0.12s, transform 0.08s;
+}
+.fr-nav .i { width: 20px; height: 20px; }
+.fr-nav:active { transform: translateY(2px); background: rgba(255,255,255,0.12); }
+.fr-conta { font-size: 12.5px; letter-spacing: 1.5px; color: var(--muted); }
+
+/* a troca de fragmento: o texto entra de baixo uma vez e para */
+.fr-card.troca .fr-txt { animation: fr-sobe 0.34s ease-out both; }
+@keyframes fr-sobe { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (max-height: 680px) {
+  .fr-tit { font-size: 22px; }
+  .fr-txt p { font-size: 14.5px; line-height: 1.45; }
+  .fr-navs { padding-top: 12px; }
+  .fr-nav { width: 42px; height: 42px; }
+}
 
 /* ---------- aviso de fragmento novo ---------- */
 .fr-pop {
@@ -85,7 +135,8 @@
 .fr-pop-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .fr-pop-k { font-size: 9.5px; font-weight: 800; letter-spacing: 2px; color: var(--fc); }
 .fr-pop b { font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-pop small { font-size: 10.5px; color: var(--dim); }
 .fr-pop.out { animation: tp-out 0.35s ease-in forwards; }
 
 /* nível Baixo: nada anima aqui */
-.perf-0 .fr-pop, .perf-0 .fr-card { animation: none; transition: none; }
+.perf-0 .fr-pop, .perf-0 .fr-card, .perf-0 .fr-card.troca .fr-txt { animation: none; transition: none; }

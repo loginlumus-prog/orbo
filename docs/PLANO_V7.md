@@ -185,11 +185,11 @@ Tres, todos curtos e todos ligados a historia.
 | 1 | jatos e rastros sem efeito | **feito** (v6.5) |
 | 2 | Corredor do Jato | **feito** (v6.5.6) |
 | 3 | direcao das fases e A/D | **feito** (v6.6) |
-| 4 | premissa nova: abertura + galaxia 1 reescritas | a fazer |
+| 4 | premissa nova: abertura + galaxia 1 reescritas | **feito** (v6.8) |
 | 5 | revisao das galaxias 2 a 5 | a fazer |
 | 6 | galaxias 6 a 10 escritas de uma vez, ja na chave nova | a fazer |
 | 7 | Via Lactea + A Contemplacao | a fazer |
-| 8 | apresentacao animada da historia | a fazer |
+| 8 | apresentacao animada da historia | **feito** (v6.9) |
 | 9 | musicas | a fazer |
 | 10 | os quatro finais + Singularidade religada | a fazer |
 | 11 | eventos e minigames novos | a fazer |
@@ -260,3 +260,27 @@ ceu abriu" virou "tem um fora?", porque ela nao sabe nem isso.
 Tambem entrou: o letreiro passou a ser so a palavra (sem arcos, sem bola, sem cor) e a skin
 de Faisca, que nao se compra — ganha-se **respondendo** uma pergunta da historia. Quem pula
 todas joga o jogo inteiro sem ela. Conferido nos dois caminhos.
+
+**v6.9 (2026-09-26) — a cena em tela cheia, e o fragmento tambem.**
+
+A conversa saiu do cartaozinho. Agora a cena ocupa a tela inteira: o ceu da galaxia atras
+(desenhado uma vez e guardado — so o retrato respira), o sigilo de quem fala grande no meio
+com tres aros e reflexo no chao, e a fala embaixo sobre um veu escuro. A frase aparece letra
+por letra, **termina e para**; tocar no palco completa a frase, e tocar de novo adianta. Os
+botoes nao fazem esse meio passo: quem aperta uma resposta ja decidiu. Passos da cena em
+pontinhos no alto do bloco, respostas em cartoes largos numerados, e o "Pular" continua
+sempre visivel. Voltar com a cena aberta nao faz nada: a saida e o Pular.
+
+O card do fragmento seguiu o mesmo caminho: tela cheia, arte de ponta a ponta, texto pousado
+por cima do veu, e setas para passar de um fragmento ao outro sem voltar ao mural (arrastar
+de lado tambem passa). Como as cenas medem tudo pela altura, num quadro alto os arranjos
+estourariam a largura — entao o palco tem proporcao presa (1 : 1,22), fica um pouco acima do
+meio, e as faixas de fora sao a **propria beirada da cena esticada**, sem emenda para o olho
+achar. Voltar com o card aberto fecha so o card.
+
+Dois defeitos reais no caminho: o fragmento ganho ao **abrir o mural** era contado depois da
+grade ja montada, entao aparecia trancado ate sair e voltar (era o "ganhei e nao apareceu na
+colecao"); e nada redesenhava o mural quando um fragmento entrava com ele aberto. Agora a
+contagem vem antes, `unlock` repinta a grade, a aba Fragmentos ganha um ponto e o botao
+Colecao do menu tambem. O aviso de fragmento novo passou a levar para a colecao: fechar o
+card deixa a pessoa no mural, nao no menu.
