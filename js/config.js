@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '7.2.1',
+  VERSION: '7.2.2',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',

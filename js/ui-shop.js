@@ -99,8 +99,12 @@
       // orcamento de estreias por quadro: mesmo sem observador, ninguem
       // paga 152 desenhos de uma vez
       let orcamento = (HR.Perf && HR.Perf.level <= 1) ? 3 : 8;
+      // o observador leva um quadro ou dois para falar. Ate la desenhamos os
+      // primeiros da lista, que sao justamente os de cima — assim nada fica
+      // em branco esperando, e ainda assim ninguem desenha 152 de uma vez.
+      const mudo = !HR.UI.previews.some(p => p.vis);
       HR.UI.previews.forEach(p => {
-        if (!p.cv.isConnected || p.vis === false || (still && p.drawn)) return;
+        if (!p.cv.isConnected || (p.vis === false && !mudo) || (still && p.drawn)) return;
         if (!p.drawn) { if (orcamento <= 0) return; orcamento--; }
         drawPreview(p, t); p.drawn = true;
       });
