@@ -74,11 +74,11 @@
 .st-opt i {
   flex: none; width: 21px; height: 21px; border-radius: 7px; display: grid; place-items: center;
   font-family: var(--display); font-size: 11.5px; font-weight: 700; font-style: normal;
-  color: var(--ac); background: color-mix(in srgb, var(--ac) 16%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac) 45%, transparent);
+  color: var(--ac); background: var(--ac-luz, rgba(255,255,255,0.14));
+  box-shadow: inset 0 0 0 1px var(--ac-aro, rgba(255,255,255,0.4));
 }
 .st-opt span { min-width: 0; }
-.st-opt:hover { background: color-mix(in srgb, var(--ac) 12%, rgba(10,14,28,0.72)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ac) 55%, transparent); }
+.st-opt:hover { background: var(--ac-fundo, rgba(28,36,60,0.8)); box-shadow: inset 0 0 0 1.5px var(--ac-aro, rgba(255,255,255,0.4)); }
 .st-opt:active { transform: translateY(2px); }
 
 .st-next { width: 100%; min-height: 48px; opacity: 0.4; transition: opacity 0.22s; }

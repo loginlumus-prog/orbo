@@ -9,6 +9,10 @@
       aceso e com um ponto embaixo, e o NOME do escolhido em cima deles —
       entao o texto aparece quando serve e nao o tempo todo.
 
+   3. As cores das pecas saem daqui em rgba, e nao de color-mix() no CSS:
+      color-mix so existe do Safari 16.2 para cima, e o iPhone 7 para no
+      iOS 15 — la toda borda e todo brilho feito com ele sumia.
+
    Sem nenhuma animacao de texto: o nome so troca quando a pessoa toca.
    ===================================================================== */
 window.HR = window.HR || {};
@@ -32,7 +36,33 @@ window.HR = window.HR || {};
     });
   }
 
-  /* ---------------- 2. o nome do modo, em cima dos icones ---------------- */
+  /* ---------------- 2. as cores, em rgba ---------------- */
+  /* color-mix() so existe no Safari 16.2 para cima, e o iPhone 7 para no iOS 15.
+     Toda borda e todo brilho feito com ele simplesmente sumia nesses aparelhos.
+     Entao a cor vem pronta daqui, em rgba, que funciona em tudo. */
+  HR.UI.corSelo = function (el, c) {
+    const u = HR.U;
+    el.style.setProperty('--rc', c);
+    el.style.setProperty('--rc-f', u.rgba(u.mix(c, '#0a0e1e', 0.6), 0.9));
+    el.style.setProperty('--rc-aro', u.rgba(c, 0.45));
+    el.style.setProperty('--rc-luz', u.rgba(c, 0.28));
+    el.style.setProperty('--rc-forte', u.rgba(c, 0.75));
+    el.style.setProperty('--rc-claro', u.mix(c, '#ffffff', 0.4));
+  };
+
+  // o --ic mora no <span> do icone; as pecas coloridas do botao estao no botao
+  function coresDoModo() {
+    HR.U.$$('#mode-seg .mode-btn').forEach(b => {
+      const ic = $('.ic', b); if (!ic) return;
+      const c = (ic.style.getPropertyValue('--ic') || '').trim(); if (!c) return;
+      if (b.style.getPropertyValue('--ic') === c) return;
+      b.style.setProperty('--ic', c);
+      b.style.setProperty('--ic-luz', HR.U.rgba(c, 0.26));
+      b.style.setProperty('--ic-forte', HR.U.rgba(c, 0.6));
+    });
+  }
+
+  /* ---------------- 3. o nome do modo, em cima dos icones ---------------- */
   function placa() {
     const seg = $('#mode-seg'); if (!seg) return null;
     let el = $('#mode-name');
@@ -49,8 +79,8 @@ window.HR = window.HR || {};
     HR.UI.bind('modeName', HR.t('mode_' + m));
   }
 
-  after(HR.UI, 'refreshMenu', function () { nomesViramDica(); nomeDoModo(); });
-  after(HR.UI, 'refreshMode', nomeDoModo);
+  after(HR.UI, 'refreshMenu', function () { nomesViramDica(); coresDoModo(); nomeDoModo(); });
+  after(HR.UI, 'refreshMode', function () { coresDoModo(); nomeDoModo(); });
   after(HR, 'applyI18n', function () { nomesViramDica(); nomeDoModo(); });
-  setTimeout(() => { try { nomesViramDica(); nomeDoModo(); } catch (_) { /* nada */ } }, 500);
+  setTimeout(() => { try { nomesViramDica(); coresDoModo(); nomeDoModo(); } catch (_) { /* nada */ } }, 500);
 })();

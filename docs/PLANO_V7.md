@@ -376,3 +376,20 @@ ter classe MAIS elemento pesa mais que uma classe sozinha — estava vencendo o
 white-space e o alinhamento do texto novo, e por isso a dica saia cortada numa linha
 so. Resolvido com duas classes no seletor.
 
+**v7.2.1 (2026-09-26) — dois defeitos que so apareciam no celular.**
+
+**A borda sumia.** `color-mix()` so existe do Safari 16.2 para cima, e o iPhone 7 para
+no iOS 15 — la a declaracao inteira e descartada, entao a borda do selo, o aro do
+buraco, a aura, o halo do modo escolhido e o aro do card do fragmento simplesmente
+nao existiam. As cores agora saem do JS em rgba (`HR.UI.corSelo`, `tintaFrag`, e as
+variaveis do cartao da historia), que funciona em qualquer aparelho. Zero color-mix
+em css/menu-v7.css, css/fragments.css e css/story.css.
+
+**A Colecao travava.** As 152 bolas nascem com `vis` indefinido, e `vis !== false`
+era verdade — entao o PRIMEIRO quadro depois de abrir desenhava as 152 de uma vez.
+No computador sao uns 100 ms; num iPhone 7 sao varios segundos de tela travada.
+Agora cada previa nasce invisivel e o observador acende so o que esta na tela (umas
+dez), com um orcamento de estreias por quadro (8, ou 3 nos niveis Normal e Baixo)
+para ninguem pagar a conta toda de uma vez. Conferido: quadro 1 desenha 0, depois 8
+por quadro, e nada fica em branco.
+

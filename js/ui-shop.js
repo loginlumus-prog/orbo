@@ -53,8 +53,12 @@
   // só anima o que está visível (a loja tem 138 bolas)
   let io = null;
   function addPreview(cv, type, item, opts) {
-    const p = Object.assign({ cv, type, item, seed: Math.random() * 10 }, opts || {}); HR.UI.previews.push(p);
-    if ('IntersectionObserver' in window) {
+    // nasce invisivel: o observador acende o que esta na tela. Sem isso, o
+    // primeiro quadro desenhava TODAS as bolas de uma vez — no celular isso
+    // trava a tela por segundos ao abrir a Colecao.
+    const temIO = 'IntersectionObserver' in window;
+    const p = Object.assign({ cv, type, item, seed: Math.random() * 10, vis: !temIO }, opts || {}); HR.UI.previews.push(p);
+    if (temIO) {
       if (!io) io = new IntersectionObserver(es => es.forEach(e => { const pp = HR.UI.previews.find(x => x.cv === e.target); if (pp) pp.vis = e.isIntersecting; }), { rootMargin: '120px' });
       io.observe(cv);
     }
@@ -92,9 +96,13 @@
     // no Normal e no Baixo cada bola da loja é desenhada uma vez, quando entra na tela
     const loop = () => {
       const still = !!(HR.Perf && HR.Perf.lite && HR.Perf.lite()), t = still ? 0.7 : performance.now() / 1000;
+      // orcamento de estreias por quadro: mesmo sem observador, ninguem
+      // paga 152 desenhos de uma vez
+      let orcamento = (HR.Perf && HR.Perf.level <= 1) ? 3 : 8;
       HR.UI.previews.forEach(p => {
-        if (!p.cv.isConnected || (still && p.drawn)) return;
-        if (p.vis !== false || !p.drawn) { drawPreview(p, t); p.drawn = true; }
+        if (!p.cv.isConnected || p.vis === false || (still && p.drawn)) return;
+        if (!p.drawn) { if (orcamento <= 0) return; orcamento--; }
+        drawPreview(p, t); p.drawn = true;
       });
       HR.UI.previewRaf = requestAnimationFrame(loop);
     };

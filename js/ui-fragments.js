@@ -181,6 +181,14 @@ window.HR = window.HR || {};
     return true;
   }
 
+  // color-mix() so existe do Safari 16.2 para cima, e o iPhone 7 para no iOS 15:
+  // la a borda simplesmente sumia. As cores vao prontas, em rgba.
+  function tintaFrag(el, c) {
+    el.style.setProperty('--fc', c);
+    el.style.setProperty('--fc-aro', HR.U.rgba(c, 0.24));
+    el.style.setProperty('--fc-forte', HR.U.rgba(c, 0.6));
+  }
+
   /* ---------------- o card em tela cheia ---------------- */
   let raf = null, folha = null, atual = null;
 
@@ -280,7 +288,7 @@ window.HR = window.HR || {};
     HR.Frag.verNovo(id);
     const lista = tidos(), k = lista.findIndex(x => x.id === id);
     const card = $('.fr-card', folha);
-    card.style.setProperty('--fc', f.p.cor || '#4cf0ff');
+    tintaFrag(card, f.p.cor || '#4cf0ff');
     card.classList.remove('troca'); void card.offsetWidth; card.classList.add('troca');
     $('.fr-ato', folha).textContent = HR.t('frag_ato' + (f.ato || 1));
     $('.fr-tit', folha).textContent = HR.t('fr_' + id);
@@ -298,7 +306,7 @@ window.HR = window.HR || {};
     let host = $('#trophy-host');
     if (!host) { host = HR.U.el('div', ''); host.id = 'trophy-host'; ($('#app') || document.body).appendChild(host); }
     const el = HR.U.el('button', 'fr-pop'); el.type = 'button';
-    el.style.setProperty('--fc', f.p.cor || '#4cf0ff');
+    tintaFrag(el, f.p.cor || '#4cf0ff');
     el.appendChild(miniatura(f, 74, 10));
     el.insertAdjacentHTML('beforeend',
       '<span class="fr-pop-main"><span class="fr-pop-k">' + esc(HR.t('frag_novo')) + ' ' + HR.Frag.count() + '/' + HR.Frag.TOTAL + '</span>' +

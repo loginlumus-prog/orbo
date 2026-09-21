@@ -117,7 +117,7 @@
     chip.hidden = false;
     const n = R().current(), cor = R().color(n);
     const abertas = R().openCount(), total = R().N;
-    chip.style.setProperty('--rc', cor);
+    if (HR.UI.corSelo) HR.UI.corSelo(chip, cor); else chip.style.setProperty('--rc', cor);
     // a rosca do progresso: a circunferencia vai calculada na mao, porque
     // pathLength em <circle> ainda engasga em Safari antigo
     const raio = 15.5, volta = (2 * Math.PI * raio).toFixed(2);

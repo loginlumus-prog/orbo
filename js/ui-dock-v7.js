@@ -57,6 +57,8 @@ window.HR = window.HR || {};
       '</svg><b>' + feitos + '</b></span>';
   }
 
+  const cor = (el, c) => { if (HR.UI.corSelo) HR.UI.corSelo(el, c); else el.style.setProperty('--rc', c); };
+
   const orbe = () => '<span class="rc-orbe"><i class="rc-anel"></i><i class="rc-nucleo"></i><i class="rc-sat"></i></span>';
 
   function pinta() {
@@ -73,7 +75,7 @@ window.HR = window.HR || {};
       const R = HR.REGIONS[ri] || HR.REGIONS[0];
       let feitos = 0;
       for (let si = 0; si < 10; si++) if (C.systemBossBeaten && C.systemBossBeaten(ri, si)) feitos++;
-      el.style.setProperty('--rc', R.accent);
+      cor(el, R.accent);
       el.innerHTML = '<i class="rc-aura"></i>' + orbe() +
         '<span class="rc-meio">' +
           '<b class="rc-nome">' + esc(HR.t('gal_' + R.gal)) + '</b>' +
@@ -89,7 +91,7 @@ window.HR = window.HR || {};
 
     // treino: uma dica por vez. Sem ficha e sem rotulo — a lampada e o botao
     // de trocar ja dizem o que e, e a dica ganha as duas linhas inteiras.
-    el.style.setProperty('--rc', '#7cff6b');
+    cor(el, '#7cff6b');
     el.innerHTML = '<i class="rc-aura"></i>' + orbe() +
       '<span class="rc-meio rc-meio-dica">' +
         '<b class="rc-nome rc-dica-txt">' + esc(HR.t('dica_' + dica)) + '</b>' +

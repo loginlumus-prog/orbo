@@ -130,7 +130,10 @@
     busy = true;
 
     const box = ensure(), card = $('.story-card', box);
-    card.style.cssText = '--ac:' + sc.who.c;
+    // cores prontas em rgba: color-mix nao existe no Safari 15 (iPhone 7)
+    const u = HR.U, ac = sc.who.c;
+    card.style.cssText = '--ac:' + ac + ';--ac-luz:' + u.rgba(ac, 0.16) +
+      ';--ac-aro:' + u.rgba(ac, 0.45) + ';--ac-fundo:' + u.rgba(u.mix(ac, '#0a0e1c', 0.86), 0.92) + ';';
     const line = $('.st-fala', box), opts = $('.st-opts', box), next = $('.st-next', box);
     const cv = $('.st-ceu', box), passos = $('.st-passos', box), meio = $('.st-meio', box);
     $('.st-cap', box).textContent = sc.kicker || '';
