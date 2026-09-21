@@ -34,7 +34,11 @@ window.HR = window.HR || {};
 
   // bpm, root (MIDI), scale, prog (graus por compasso), bass, arp, lead, drums, timbre, filter (Hz), echo (0..1), swing, gain
   HR.MUSIC_THEMES = {
-    menu:        { bpm: 92,  root: 60, scale: 'lydian',     prog: [0, 5, 3, 4], bass: B.half,  arp: { every: 4, span: 2 }, lead: ORBO, leadAt: 0.0, drums: D.soft,  timbre: { pad: 'triangle', bass: 'sine', arp: 'triangle', lead: 'triangle' }, filter: 1800, echo: 0.35, swing: 0, fixed: 0.35 },
+    // O LOBBY NAO E UMA MUSICA. E o som de um lugar grande e parado: o acorde
+    // demora 6 s para abrir, troca a cada 6 s, e a cada dois compassos cai um
+    // sino de muito longe. Sem baixo, sem arpejo, sem bateria e sem melodia —
+    // quem quiser ouvir o motivo ORBO ouve no fim de fase (sting).
+    menu:        { bpm: 40,  root: 57, scale: 'lydian',     prog: [0, 3, 5, 3], bass: null,    arp: null,                  lead: null,  drums: null,     timbre: { pad: 'sine', bass: 'sine', arp: 'sine', lead: 'sine' }, filter: 560, echo: 0.6,  swing: 0, fixed: 0.1,  vol: 0.55, padA: 1.8, padG: 0.55, sino: { every: 32, graus: [7, 9, 11, 7], g: 0.028 } },
     singularity: { bpm: 104, root: 57, scale: 'minor',      prog: [0, 5, 2, 6], bass: B.walk,  arp: { every: 2, span: 2 }, lead: [[0, 7, 2], [3, 6, 1], [4, 4, 4], [16, 7, 2], [19, 9, 1], [20, 4, 6]], leadAt: 0.6, drums: D.drive, timbre: { pad: 'sawtooth', bass: 'sine', arp: 'triangle', lead: 'square' }, filter: 1200, echo: 0.25, swing: 0 },
     r1:  { bpm: 96,  root: 62, scale: 'lydian',     prog: [0, 1, 4, 0], bass: B.slow,  arp: { every: 4, span: 2 }, lead: [[0, 2, 4], [6, 4, 2], [8, 5, 8], [16, 4, 4], [22, 2, 2], [24, 0, 8]], leadAt: 0.5, drums: D.soft,  timbre: { pad: 'triangle', bass: 'sine', arp: 'sine', lead: 'triangle' }, filter: 2000, echo: 0.4, swing: 0 },
     r2:  { bpm: 100, root: 50, scale: 'dorian',     prog: [0, 3, 0, 6], bass: B.half,  arp: { every: 2, span: 2, shape: 'updown' }, lead: [[0, 4, 3], [4, 5, 3], [8, 4, 6], [16, 2, 3], [20, 4, 3], [24, 0, 8]], leadAt: 0.5, drums: D.basic, timbre: { pad: 'triangle', bass: 'sine', arp: 'triangle', lead: 'sine' }, filter: 1600, echo: 0.5, swing: 0.12 },
@@ -67,7 +71,8 @@ window.HR = window.HR || {};
       const now = A.ctx.currentTime;
       this.voices.forEach(v => { v.fading = true; v.gain.gain.cancelScheduledValues(now); v.gain.gain.setValueAtTime(v.gain.gain.value, now); v.gain.gain.linearRampToValueAtTime(0, now + 1.2); v.endAt = now + 1.3; });
       const theme = this.themeOf(id);
-      const gain = A.ctx.createGain(); gain.gain.setValueAtTime(0.0001, now); gain.gain.linearRampToValueAtTime(1, now + 1.5);
+      const alvo = theme.vol != null ? theme.vol : 1;
+      const gain = A.ctx.createGain(); gain.gain.setValueAtTime(0.0001, now); gain.gain.linearRampToValueAtTime(alvo, now + (theme.vol != null ? 3.5 : 1.5));
       const filter = A.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = theme.filter;
       const delay = A.ctx.createDelay(1.0); delay.delayTime.value = (60 / theme.bpm) * 0.75;
       const fb = A.ctx.createGain(); fb.gain.value = 0.32; const wet = A.ctx.createGain(); wet.gain.value = theme.echo || 0;
@@ -120,14 +125,23 @@ window.HR = window.HR || {};
       const swing = (s16 % 2 === 1 ? (T.swing || 0) * stepDur : 0);
       const rel = t + swing - A.ctx.currentTime;
       // pad (sempre; leve detune para largura)
+      const pg = T.padG != null ? T.padG : 1, pa = T.padA != null ? T.padA : 0.5;
       if (s16 === 0) {
         chord.slice(0, 3).forEach((n, i) => {
-          A.tone({ f: A.midi(n), type: T.timbre.pad, d: stepDur * 16, g: 0.04 + (i === 0 ? 0.01 : 0), a: 0.5, t: rel, bus });
-          A.tone({ f: A.midi(n) * 1.004, type: T.timbre.pad === 'sine' ? 'triangle' : T.timbre.pad, d: stepDur * 16, g: 0.012 + I * 0.012, a: 0.7, t: rel, bus });
+          A.tone({ f: A.midi(n), type: T.timbre.pad, d: stepDur * 17, g: (0.04 + (i === 0 ? 0.01 : 0)) * pg, a: pa, t: rel, bus });
+          A.tone({ f: A.midi(n) * 1.004, type: T.timbre.pad === 'sine' ? 'triangle' : T.timbre.pad, d: stepDur * 17, g: (0.012 + I * 0.012) * pg, a: pa * 1.4, t: rel, bus });
         });
       }
+      // sino: uma nota so, de longe, a cada dois compassos. E o unico "toque"
+      // que o lobby tem — e ele nem sempre esta la.
+      if (T.sino && step % T.sino.every === 0) {
+        const g2 = T.sino.graus, dg = g2[Math.floor(step / T.sino.every) % g2.length];
+        const n = this.degNote(T, T.prog[bar] + dg, T.root + 12);
+        A.tone({ f: A.midi(n), type: 'sine', d: stepDur * 10, g: T.sino.g, a: 0.9, t: rel, bus });
+        A.tone({ f: A.midi(n) * 2, type: 'sine', d: stepDur * 6, g: T.sino.g * 0.35, a: 1.2, t: rel, bus });
+      }
       // baixo
-      const bp = T.bass[s16];
+      const bp = T.bass && T.bass[s16];
       if (bp && I > 0.05) {
         const n = chord[0] - 12 + (bp === 5 ? 7 : bp === 8 ? 12 : 0);
         A.tone({ f: A.midi(n), type: T.timbre.bass, d: stepDur * 3, g: 0.15 + I * 0.04, a: 0.008, t: rel, bus });
@@ -164,9 +178,10 @@ window.HR = window.HR || {};
       }
     },
     // assinatura curta (fim de fase, recorde): o motivo ORBO em 1,2 s
+    // o motivo ORBO nao mora mais no lobby, entao a assinatura guarda o tom dela
     sting() {
       const A = HR.Audio; if (!A.ctx) return;
-      const T = HR.MUSIC_THEMES.menu, root = T.root + 12;
+      const T = { root: 60, scale: 'lydian' }, root = T.root + 12;
       [[0, 4], [0.12, 5], [0.24, 7], [0.48, 2]].forEach(([t, dg], i) => {
         const n = this.degNote(T, dg, root);
         A.tone({ f: A.midi(n), type: 'triangle', d: i === 3 ? 0.7 : 0.3, g: 0.2, a: 0.01, t });

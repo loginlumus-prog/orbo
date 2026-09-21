@@ -393,3 +393,27 @@ dez), com um orcamento de estreias por quadro (8, ou 3 nos niveis Normal e Baixo
 para ninguem pagar a conta toda de uma vez. Conferido: quadro 1 desenha 0, depois 8
 por quadro, e nada fica em branco.
 
+**v7.3 (2026-09-26) — os poderes sumindo, e o lobby que nao e musica.**
+
+**Os perks.** "A cada 10 arcos" estava escrito como um INSTANTE, nao como uma
+divida: a oferta so saia no arco exato (`ringsPassed % 10 === 0`). Se aquele arco
+caisse com o jato ligado — e a regra e nao interromper o corredor — a oferta
+daquela dezena era perdida para sempre, e a proxima so no arco 20. Desde o
+corredor do jato isso passou a acontecer o tempo todo. Agora a conta e por divida:
+assim que o jato acaba, a oferta que ficou devendo aparece.
+
+E `AUTOPERK.afterOffers` estava em **0**, apesar de o proprio comentario e o texto
+do ajuste dizerem "a partir da 4a oferta". Com 0, ligar a escolha automatica tirava
+a tela de perk da partida inteira, da primeira oferta em diante — exatamente o
+"nao aparece para selecionar". Agora e 3: as tres primeiras sao sempre da pessoa.
+
+**O lobby.** Era uma musica inteira tocando no menu: pad, baixo, arpejo, o motivo
+ORBO (que tocava SEMPRE, porque `leadAt: 0`), bumbo e chimbal. Virou ambiente: 40
+bpm, so o acorde, que leva 1,8 s para abrir e troca a cada 6 s, filtro em 560 Hz,
+eco longo, volume em 0,55 — e a cada dois compassos um sino de muito longe. Em 14
+segundos o lobby agenda 13 notas; antes eram centenas. O motivo ORBO continua no
+fim de fase (o sting), que agora guarda o tom dele por conta propria.
+
+As camadas do sequenciador passaram a ser opcionais (`bass`, `arp`, `lead` e
+`drums` podem ser nulos), o que abre caminho para a musica por galaxia da etapa 9.
+

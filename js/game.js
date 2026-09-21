@@ -513,11 +513,16 @@ HR.Game = class {
 
   /* ---------------- perks ---------------- */
   maybeOfferPerk() {
-    if (this.run.jetLeft > 0) return;
+    if (this.run.jetLeft > 0) return;   // no corredor do jato nada interrompe
     const run = this.run, every = 10;
-    if (run.ringsPassed > 0 && run.ringsPassed % every === 0 && run.perksOffered < Math.floor(run.ringsPassed / every)) {
+    // "a cada 10 arcos" e uma DIVIDA, nao um instante. Antes a oferta so saia
+    // no arco exato (ringsPassed % 10 === 0): se aquele arco caisse com o jato
+    // ligado, a oferta daquela dezena era perdida para sempre — e desde o
+    // corredor do jato isso passou a acontecer muito.
+    const devidas = Math.floor(run.ringsPassed / every);
+    if (run.ringsPassed > 0 && run.perksOffered < devidas) {
       if (run.level && run.ringsResolved >= run.level.rings) return;
-      run.perksOffered = Math.floor(run.ringsPassed / every);
+      run.perksOffered = devidas;
       // escolha automática (ligada pelo jogador) a partir da 4ª oferta: não pausa
       if (HR.Store.data.settings.autoPerk && run.perksOffered > HR.CONFIG.AUTOPERK.afterOffers) {
         const id = HR.Perks.autoPick(run);
