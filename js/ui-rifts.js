@@ -129,12 +129,11 @@
         '<b class="rc-nome">' + esc(R().name(n)) + '</b>' +
         '<span class="rc-ouro">' + HR.icon('coin', '', true) + '<em>×' + R().mul(n).toFixed(2).replace('.00', '') + '</em></span>' +
       '</span>' +
-      '<span class="rc-prog">' +
+      '<span class="rc-prog' + (abertas > 9 ? ' dois' : '') + '">' +
         '<svg class="rc-rosca" viewBox="0 0 36 36" aria-hidden="true">' +
           '<circle class="t" cx="18" cy="18" r="' + raio + '"/>' +
           '<circle class="a" cx="18" cy="18" r="' + raio + '" stroke-dasharray="' + feito + ' ' + volta + '"/>' +
-        '</svg>' +
-        '<b>' + abertas + '</b><small>/' + total + '</small>' +
+        '</svg><b>' + abertas + '</b>' +
       '</span>' +
       '<span class="rc-go">' + HR.icon('chevronRight') + '</span>';
     chip.setAttribute('aria-label', R().name(n) + ' · ' + HR.t('rift_count', { a: abertas, b: total }));

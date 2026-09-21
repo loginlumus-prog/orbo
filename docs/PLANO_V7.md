@@ -359,3 +359,20 @@ respirando atras dele, o ouro numa ficha e o progresso numa rosca com o numero
 dentro. Tudo na cor da fenda, entao trocar de fenda troca a peca inteira de cor.
 O texto continua parado: quem anima e a luz atras dele.
 
+**v7.2 (2026-09-26) — o selo do rodape serve aos tres modos.**
+
+So o Infinito tinha selo: ao trocar de modo a peca sumia e o rodape inteiro descia.
+Agora o lugar e sempre o mesmo, com a mesma altura, e so o conteudo muda: no Infinito
+a fenda; na Galaxia, a galaxia onde a pessoa esta, a fase atual e quantos sistemas
+daquela galaxia ja cairam; no Treino, uma dica do jogo por vez, e tocar troca a dica
+(sao 14, nos tres idiomas). A dica NAO troca sozinha — texto que muda sem ninguem
+pedir e ruido.
+
+O numero da rosca perdeu o "/10" que estava apertando o desenho: o arco ja conta o
+resto, e dois digitos entram numa fonte menor.
+
+Defeito de cascata encontrado no caminho: css/rifts.css traz `.rift-chip b`, que por
+ter classe MAIS elemento pesa mais que uma classe sozinha — estava vencendo o
+white-space e o alinhamento do texto novo, e por isso a dica saia cortada numa linha
+so. Resolvido com duas classes no seletor.
+
