@@ -11,7 +11,7 @@ window.HR = window.HR || {};
   const $ = (s, r) => HR.U.$(s, r);
 
   /* ---------------- o arco da vitrine ---------------- */
-  const semArco = () => !!(HR.Store.data.settings && HR.Store.data.settings.hideShowcaseRing);
+  const semArco = () => { const d = HR.Store && HR.Store.data; return !!(d && d.settings && d.settings.hideShowcaseRing); };
 
   // quem pula o arco e o proprio renderShowcase (js/game.js), para os arcos
   // fantasma do fundo continuarem aparecendo

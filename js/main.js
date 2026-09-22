@@ -47,12 +47,37 @@
     window.addEventListener('scroll', unscroll, { passive: true });
     document.addEventListener('focusin', () => setTimeout(unscroll, 0));
 
+    // zoom: o Safari do iPhone ignora user-scalable=no desde o iOS 10. As
+    // travas que ele respeita sao estas: o gesto de pinca e o duplo toque.
+    const semZoom = e => { if (e.cancelable) e.preventDefault(); };
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, semZoom, { passive: false }));
+    document.addEventListener('dblclick', semZoom, { passive: false });
+    document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) semZoom(e); }, { passive: false });
+
+    // e se algum zoom escapar mesmo assim, o jogo volta sozinho para 1x:
+    // mudar o maximum-scale obriga o iOS a reenquadrar a escala.
+    const vv = window.visualViewport;
+    const ampliado = () => !!(vv && vv.scale > 1.01);
+    const vpMeta = document.querySelector('meta[name="viewport"]');
+    const vpBase = vpMeta ? vpMeta.getAttribute('content') : '';
+    let desfazendo = false;
+    const desfazZoom = () => {
+      if (!vpMeta || desfazendo || !ampliado()) return;
+      desfazendo = true;
+      vpMeta.setAttribute('content', vpBase.replace('maximum-scale=1', 'maximum-scale=1.01'));
+      setTimeout(() => { vpMeta.setAttribute('content', vpBase); desfazendo = false; }, 60);
+    };
+    if (vv) { vv.addEventListener('resize', desfazZoom); vv.addEventListener('scroll', desfazZoom); }
+
     const relayout = () => { layout(); game.resize(); HR.UI.layoutShowcase(); setTimeout(() => HR.UI.layoutShowcase(), 160); if (HR.UI.stack.includes('galaxy') && HR.UI.renderGalaxy) HR.UI.renderGalaxy(); };
-    window.addEventListener('resize', relayout);
+    window.addEventListener('resize', () => { if (!ampliado()) relayout(); });
     window.addEventListener('orientationchange', () => setTimeout(relayout, 250));
     let lastVw = window.innerWidth, lastVh = window.innerHeight;
     setInterval(() => {
       unscroll();
+      // com zoom, innerWidth/innerHeight encolhem. Refazer o layout nesse estado
+      // montava o jogo inteiro para uma tela de mentira — era o "bugou tudo".
+      if (ampliado()) { desfazZoom(); return; }
       if (window.innerWidth !== lastVw || window.innerHeight !== lastVh) { lastVw = window.innerWidth; lastVh = window.innerHeight; relayout(); }
     }, 250);
 

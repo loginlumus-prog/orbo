@@ -69,12 +69,20 @@ HR.STORY_CAST = {
     // quem aparece: st_<id>_who ("casco", "vela"…) ou, por padrão, o guardião da galáxia
     who(id) {
       const key = 'st_' + id + '_who', name = has(key) ? HR.t(key) : '';
-      const C = HR.STORY_CAST[name];
-      if (C) return { ic: C.ic, c: C.c, name: HR.t('st_cast_' + name) };
-      const gi = this.galaxyOf(id), R = HR.REGIONS[gi - 1];
-      if (R) return { ic: (HR.BOSSES[R.boss] || {}).icon || 'orbit', c: R.accent, name: HR.t('boss_' + R.boss) };
-      const F = HR.STORY_CAST.faisca;
-      return { ic: F.ic, c: F.c, name: HR.t('st_cast_faisca') };
+      if (HR.STORY_CAST[name]) return this.cast(name);
+      const gi = this.galaxyOf(id);
+      if (HR.REGIONS[gi - 1]) return this.cast('guardiao', gi - 1);
+      return this.cast('faisca');
+    },
+    // quem fala numa linha: um do elenco, ou o guardiao da galaxia ri.
+    // voz e a chave do timbre (js/ui-story.js); vozN afina o guardiao por galaxia.
+    cast(nome, ri) {
+      if (nome === 'guardiao') {
+        const R = HR.REGIONS[ri != null ? ri : 0] || HR.REGIONS[0];
+        return { ic: (HR.BOSSES[R.boss] || {}).icon || 'orbit', c: R.accent, name: HR.t('boss_' + R.boss), voz: 'guardiao', vozN: ri || 0 };
+      }
+      const C = HR.STORY_CAST[nome] || HR.STORY_CAST.faisca, k = HR.STORY_CAST[nome] ? nome : 'faisca';
+      return { ic: C.ic, c: C.c, name: HR.t('st_cast_' + k), voz: k };
     },
 
     scene(id) {

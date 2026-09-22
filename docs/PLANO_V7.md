@@ -186,7 +186,7 @@ Tres, todos curtos e todos ligados a historia.
 | 2 | Corredor do Jato | **feito** (v6.5.6) |
 | 3 | direcao das fases e A/D | **feito** (v6.6) |
 | 4 | premissa nova: abertura + galaxia 1 reescritas | **feito** (v6.8) |
-| 5 | revisao das galaxias 2 a 5 | a fazer |
+| 5 | revisao das galaxias 2 a 5 | **feito** (v7.4) |
 | 6 | galaxias 6 a 10 escritas de uma vez, ja na chave nova | a fazer |
 | 7 | Via Lactea + A Contemplacao | a fazer |
 | 8 | apresentacao animada da historia | **feito** (v6.9) |
@@ -416,4 +416,32 @@ fim de fase (o sting), que agora guarda o tom dele por conta propria.
 
 As camadas do sequenciador passaram a ser opcionais (`bass`, `arp`, `lead` e
 `drums` podem ser nulos), o que abre caminho para a musica por galaxia da etapa 9.
+
+**v7.4 (2026-09-22) — a história reescrita, com voz e diálogo de verdade.**
+
+Crítica completa em `docs/HISTORIA_V7.md`, que passa a ser a bíblia da história. Em
+resumo: a premissa nova só existia nos fragmentos; as cartas eram assinadas pelo pai e
+falavam do pai na terceira pessoa; a Névoa ainda contava a história antiga do céu que
+abriu; os cinco chefes eram o mesmo desenho (pergunta, resposta, amolece); ninguém
+conversava com ninguém porque o motor só permitia um falante por cena.
+
+**O motor ganhou duas coisas.** Voz: como em Celeste, cada letra que aparece solta uma
+sílaba curta com o timbre de quem fala (Casco grave e rouco, Íris aguda e rápida,
+Poeira minúscula, a mãe baixa e macia, o Eco sujo e em coro). A nota sai da própria
+letra, então a mesma frase soa sempre igual: a voz tem sotaque, não sorteio. E fala por
+linha: `@casco texto` faz o Casco dizer aquela linha — o retrato, a cor e a voz trocam
+no meio da cena.
+
+**A história ganhou coluna.** Os anéis são pequenos rasgos: a luz do pai desenha, a
+borda da mãe segura, e o risco no mesmo lugar é a marca do dedo. Ninguém aqui dentro
+conheceu os pais — conhecem o trabalho deles, como quem conhece alguém só por carta. Um
+degrau de descoberta por galáxia, agora dentro das falas: ela dormiu mais que todo mundo
+(g1); é mais velha que a primeira maré (g2); no meio do instante "uma luz saiu andando"
+(g3); o instante tinha um nome pequeno, igual ao dela (g4); ela vê a linha no céu, e o
+Eco diz que foi ela quem abriu (g5). Casco reconhece a letra das cartas: é a mesma dos
+anéis. A Fornalha é Brasa, a companheira de Casco. Poeira diz "mãe" pela primeira vez.
+E na carta da Névoa, embaixo da letra do pai, uma segunda letra, leve: "nunca foi".
+
+76 cenas, três idiomas, 624 chaves por idioma, todas as perguntas com três respostas,
+nenhuma resposta com mais de sete palavras, e "culpa" só na boca do Eco.
 
