@@ -246,7 +246,7 @@ Object.assign(HR.I18N.en, {
   fr_ninho_1: 'There is a place where nothing can go wrong.', fr_ninho_2: 'She stayed longer than she needed to.', fr_ninho_o: '?',
 
   fr_asmarcas: 'The marks',
-  fr_asmarcas_1: 'Husk read the rings out loud.', fr_asmarcas_2: 'They were not obstacles: they were messages.', fr_asmarcas_o: 'System 8-1',
+  fr_asmarcas_1: 'Hull read the rings out loud.', fr_asmarcas_2: 'They were not obstacles: they were messages.', fr_asmarcas_o: 'System 8-1',
   fr_letradele: 'His hand',
   fr_letradele_1: 'The mark on one side is firm and deep.', fr_letradele_2: 'Whoever made it made it with force.', fr_letradele_o: 'System 8-5',
   fr_letradela: 'Her hand',

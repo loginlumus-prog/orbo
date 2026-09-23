@@ -7,12 +7,10 @@ HR.U = {
   // interpolação independente de framerate
   damp(a, b, lambda, dt) { return HR.U.lerp(a, b, 1 - Math.exp(-lambda * dt)); },
   rand(a, b) { return a + Math.random() * (b - a); },
-  randInt(a, b) { return Math.floor(HR.U.rand(a, b + 1)); },
   chance(p) { return Math.random() < p; },
   pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; },
   easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); },
   easeOutBack(t) { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
-  easeInQuad(t) { return t * t; },
 
   fmt(n) {
     n = Math.round(n || 0);
@@ -48,17 +46,37 @@ HR.U = {
   now() { return Date.now(); },
   uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); },
 
+  // Cores: o jogo pede ~200 strings de cor por quadro, quase sempre as mesmas.
+  // Guardamos o resultado. O alfa entra na chave com 2 casas (o olho nao ve
+  // a diferenca e o cache fica pequeno); o t do mix com 3 casas.
+  // O objeto do hexToRgb e compartilhado: quem chamar nao pode alterar.
+  _rgb: {}, _rgba: {}, _mix: {}, _nCache: 0,
   hexToRgb(hex) {
-    hex = hex.replace('#', '');
-    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-    const n = parseInt(hex, 16);
-    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    const M = HR.U._rgb; let c = M[hex]; if (c) return c;
+    let h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map(ch => ch + ch).join('');
+    const n = parseInt(h, 16);
+    c = { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+    M[hex] = c; return c;
   },
-  rgba(hex, a) { const c = HR.U.hexToRgb(hex); return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')'; },
+  rgba(hex, a) {
+    a = Math.round(a * 100) / 100;
+    const U = HR.U; let m = U._rgba[hex]; if (!m) m = U._rgba[hex] = {};
+    let s = m[a];
+    if (s === undefined) {
+      if (++U._nCache > 6000) { U._rgba = {}; U._mix = {}; U._nCache = 0; m = U._rgba[hex] = {}; }
+      const c = U.hexToRgb(hex); s = m[a] = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + a + ')';
+    }
+    return s;
+  },
   mix(h1, h2, t) {
-    const a = HR.U.hexToRgb(h1), b = HR.U.hexToRgb(h2);
+    t = Math.round(t * 1000) / 1000;
+    const U = HR.U, k = h1 + h2 + t; let s = U._mix[k]; if (s !== undefined) return s;
+    if (++U._nCache > 6000) { U._rgba = {}; U._mix = {}; U._nCache = 0; }
+    const a = U.hexToRgb(h1), b = U.hexToRgb(h2);
     const r = Math.round(a.r + (b.r - a.r) * t), g = Math.round(a.g + (b.g - a.g) * t), bl = Math.round(a.b + (b.b - a.b) * t);
-    return '#' + [r, g, bl].map(v => v.toString(16).padStart(2, '0')).join('');
+    s = '#' + [r, g, bl].map(v => v.toString(16).padStart(2, '0')).join('');
+    U._mix[k] = s; return s;
   },
   hsl(h, s, l, a) { return 'hsla(' + h + ',' + s + '%,' + l + '%,' + (a == null ? 1 : a) + ')'; },
 

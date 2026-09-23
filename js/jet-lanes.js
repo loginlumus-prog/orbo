@@ -31,6 +31,8 @@ window.HR = window.HR || {};
   const MAX_PILHA = 5;               // ate cinco jatos no mesmo corredor
   const SOBE_A_CADA = 30;            // passos para subir um grau (~10 s): um Jato sozinho
                                      // ja percorre os graus 1, 2 e 3; empilhar compra tempo no topo
+  // setLineDash aloca um array a cada chamada: estes ficam prontos uma vez so
+  const D_FAIXA = [12, 22], D_SETA = [6, 26], D_OFF = [];
 
   // os cinco graus: de quanto em quanto a faixa rica troca, quanto vale a moeda
   // comum e a rica, de quantos em quantos passos vem um item, e o desenho do caminho
@@ -329,14 +331,14 @@ window.HR = window.HR || {};
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
     // 1. as tres faixas: so uma referencia fraca, para nao competir com a trilha
-    ctx.setLineDash([12, 22]); ctx.lineDashOffset = -desl;
+    ctx.setLineDash(D_FAIXA); ctx.lineDashOffset = -desl;
     ctx.lineWidth = 2;
     for (let i = 0; i < 3; i++) {
       const y = this.Lv * FAIXAS[i];
       ctx.strokeStyle = U.rgba(cor, forca);
       ctx.beginPath(); ctx.moveTo(-40, y); ctx.lineTo(this.Lu + 80, y); ctx.stroke();
     }
-    ctx.setLineDash([]);
+    ctx.setLineDash(D_OFF);
 
     // 2. A TRILHA: costura tudo que vale a pena (moeda rica e poder) numa fita
     //    de luz. E o melhor caminho, desenhado antes de chegar.
@@ -359,9 +361,9 @@ window.HR = window.HR || {};
       ctx.strokeStyle = U.rgba('#ffcf4a', 0.22 + pulso * 0.08); ctx.lineWidth = 8;  curva();
       ctx.strokeStyle = U.rgba('#fff3c2', 0.55 + pulso * 0.2);  ctx.lineWidth = 2.5; curva();
       // setinhas correndo pela trilha, mostrando o sentido
-      ctx.setLineDash([6, 26]); ctx.lineDashOffset = -((t * 420) % 32);
+      ctx.setLineDash(D_SETA); ctx.lineDashOffset = -((t * 420) % 32);
       ctx.strokeStyle = U.rgba('#ffffff', 0.7); ctx.lineWidth = 3; curva();
-      ctx.setLineDash([]);
+      ctx.setLineDash(D_OFF);
     }
 
     // 3. farol em cada poder que esta chegando
@@ -369,10 +371,11 @@ window.HR = window.HR || {};
       if (!p.jet || p.id === 'coins' || p.taken) return;
       const k = 0.5 + 0.5 * Math.sin(t * 4 + p.seed);
       const r = p.r * (1.7 + k * 0.6);
-      const g = ctx.createRadialGradient(p.x, p.baseY, p.r * 0.5, p.x, p.baseY, r);
-      g.addColorStop(0, U.rgba(p.color, 0.35));
-      g.addColorStop(1, U.rgba(p.color, 0));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.baseY, r, 0, Math.PI * 2); ctx.fill();
+      // farol: dois circulos com alpha em vez de um gradiente por item por quadro
+      ctx.fillStyle = U.rgba(p.color, 0.12);
+      ctx.beginPath(); ctx.arc(p.x, p.baseY, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = U.rgba(p.color, 0.2);
+      ctx.beginPath(); ctx.arc(p.x, p.baseY, r * 0.66, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = U.rgba(p.color, 0.5 + k * 0.4); ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(p.x, p.baseY, p.r * (1.3 + k * 0.5), 0, Math.PI * 2); ctx.stroke();
     });

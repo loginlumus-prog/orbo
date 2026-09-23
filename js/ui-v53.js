@@ -70,26 +70,30 @@
   };
 
   // chips: ícone, nome, barra e segundos restantes; pulsam nos últimos 2,5 s
+  // As referências de cada chip ficam guardadas em `chips`: procurar a barra e os
+  // segundos por querySelector, por poder, a cada quadro, era metade do custo do HUD.
+  let chips = [];
   HR.UI.hudPowers = function (run) {
     const host = $('#hud-powers'); if (!host) return;
     const active = this.POWERS.filter(p => run[p[0]] > 0 && !(p[0] === 'autoT' && (run.anomalyActive || run.autoT < 0.2)));
     const key = active.map(p => p[0]).join(',');
     if (host.dataset.key !== key) {
-      host.dataset.key = key; host.innerHTML = '';
+      host.dataset.key = key; host.innerHTML = ''; chips = [];
       active.forEach(p => {
         const el = HR.U.el('span', 'hud-power'); el.dataset.k = p[0]; el.style.setProperty('--c', p[2]);
         el.innerHTML = '<span class="hp-ic">' + HR.icon(p[1]) + '</span><span class="hp-name">' + HR.t(p[3]) + '</span><i class="hp-bar"><span></span></i><b class="hp-sec"></b>';
         host.appendChild(el); this.powerMax[p[0]] = run[p[0]];
+        chips.push({ k: p[0], el, bar: el.querySelector('.hp-bar span'), sec: el.querySelector('.hp-sec') });
       });
       if (call) placeCall(call);
     }
-    active.forEach(p => {
-      const el = host.querySelector('[data-k="' + p[0] + '"]'); if (!el) return;
-      const v = run[p[0]], mx = Math.max(this.powerMax[p[0]] || 0, v); this.powerMax[p[0]] = mx;
-      el.querySelector('.hp-bar span').style.width = (v / mx * 100).toFixed(0) + '%';
-      el.style.setProperty('--p', (v / mx).toFixed(3));
-      const se = el.querySelector('.hp-sec'), txt = String(Math.ceil(v)); if (se.textContent !== txt) se.textContent = txt;
-      el.classList.toggle('ending', p[0] === 'jetLeft' ? v <= 2 : v < 2.5);
+    chips.forEach(c => {
+      const v = run[c.k], mx = Math.max(this.powerMax[c.k] || 0, v); this.powerMax[c.k] = mx;
+      const w = (v / mx * 100).toFixed(0) + '%';
+      if (c.bar._w !== w) { c.bar._w = w; c.bar.style.width = w; }
+      HR.UI.setVar(c.el, '--p', (v / mx).toFixed(3));
+      const txt = String(Math.ceil(v)); if (c.sec.textContent !== txt) c.sec.textContent = txt;
+      c.el.classList.toggle('ending', c.k === 'jetLeft' ? v <= 2 : v < 2.5);
     });
     // aviso "acabando": atualiza a contagem, volta se outro aviso o tapou, some quando acaba
     if (call && endingK) {

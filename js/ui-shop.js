@@ -67,7 +67,16 @@
     const cv = p.cv, S = cv._size, ctx = cv.getContext('2d');
     ctx.setTransform(cv._dpr, 0, 0, cv._dpr, 0, 0); ctx.clearRect(0, 0, S, S);
     if (p.type === 'themes') {
-      if (!p.bg) { p.bg = new HR.Render.Background(); p.bg.resize(S, S); p.bg.setTheme(p.item); p.bg.setFx(p.item.fx || null); p.last = t; }
+      if (!p.bg) {
+        p.bg = new HR.Render.Background(); p.bg.resize(S, S); p.bg.setTheme(p.item); p.bg.setFx(p.item.fx || null); p.last = t;
+        // cartao de 120 px: um fundo inteiro (7 nebulosas, 70 estrelas) por card
+        // era o item mais caro da Loja. A cor, o bioma e o movimento ficam.
+        const B = p.bg;
+        if (B.shapes.length > 2) B.shapes.length = 2;
+        if (B.stars.length > 14) B.stars.length = 14;
+        if (B.dust.length > 8) B.dust.length = 8;
+        B.streaks.length = 0;
+      }
       const dt = Math.min(0.05, Math.max(0, t - p.last)); p.last = t;
       p.bg.update(dt, 70, { x: -1, y: 0 }, 0.15); p.bg.draw(ctx, t);
       return;
@@ -94,20 +103,35 @@
   function startPreviews() {
     if (HR.UI.previewRaf || !HR.UI.previews.length) return;
     // no Normal e no Baixo cada bola da loja é desenhada uma vez, quando entra na tela
+    let giro = 0;   // por onde o rodizio das animadas continua
     const loop = () => {
       const still = !!(HR.Perf && HR.Perf.lite && HR.Perf.lite()), t = still ? 0.7 : performance.now() / 1000;
       // orcamento de estreias por quadro: mesmo sem observador, ninguem
       // paga 152 desenhos de uma vez
       let orcamento = (HR.Perf && HR.Perf.level <= 1) ? 3 : 8;
+      const L = HR.UI.previews, n = L.length;
       // o observador leva um quadro ou dois para falar. Ate la desenhamos os
       // primeiros da lista, que sao justamente os de cima — assim nada fica
       // em branco esperando, e ainda assim ninguem desenha 152 de uma vez.
-      const mudo = !HR.UI.previews.some(p => p.vis);
-      HR.UI.previews.forEach(p => {
-        if (!p.cv.isConnected || (p.vis === false && !mudo) || (still && p.drawn)) return;
-        if (!p.drawn) { if (orcamento <= 0) return; orcamento--; }
-        drawPreview(p, t); p.drawn = true;
-      });
+      const mudo = !L.some(p => p.vis);
+      const pular = p => !p.cv.isConnected || (p.vis === false && !mudo);
+      // 1) estreias: quem ainda nao apareceu tem preferencia
+      for (let k = 0; k < n && orcamento > 0; k++) {
+        const p = L[k];
+        if (pular(p) || p.drawn) continue;
+        orcamento--; drawPreview(p, t); p.drawn = true;
+      }
+      // 2) rodizio: com a aba de bolas rolada ha ate 20 previas na tela, cada uma
+      //    com 2 a 4 gradientes. Seis por quadro mantem tudo mexendo sem que a
+      //    Loja custe mais que a partida.
+      if (!still) {
+        let anim = 6;
+        for (let k = 0; k < n && anim > 0; k++) {
+          const i = (giro + k) % n, p = L[i];
+          if (pular(p) || !p.drawn) continue;
+          drawPreview(p, t); anim--; giro = i + 1;
+        }
+      }
       HR.UI.previewRaf = requestAnimationFrame(loop);
     };
     HR.UI.previewRaf = requestAnimationFrame(loop);
@@ -133,7 +157,6 @@
   }
 
   /* ---------------- cartões ---------------- */
-  function themeSwatchOld(item, big) { return themeSwatch(item, big); }
   function themeSwatch(item, big) {
     const sw = HR.U.el('div', 'shop-swatch' + (big ? ' big' : ''));
     sw.style.background = 'linear-gradient(180deg,' + item.colors.join(',') + ')';

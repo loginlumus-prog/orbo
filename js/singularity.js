@@ -22,12 +22,15 @@ HR.ARCHONS = [
 ];
 HR.SG = {
   passages: 5,
+  // v8: a Singularidade era mais difícil que o fim da campanha e sem nada novo.
+  // Agora cada camada revisita uma galáxia (i % 10) e os caminhos se separam pelo
+  // estilo, não pela impossibilidade: F pede 75 % dos arcos, não 85 %.
   paths: {
     U: { waves: 5, speed: 1.00, radius: 1.00, pass: 0.60, grace: true },
-    Q: { waves: 6, speed: 1.12, radius: 0.92, pass: 0.72, req: { core: 20 } },
-    F: { waves: 7, speed: 1.28, radius: 0.80, pass: 0.85, noAegis: true, req: { core: 30, rank: 63 } }
+    Q: { waves: 6, speed: 1.06, radius: 0.95, pass: 0.66, req: { core: 20 } },
+    F: { waves: 7, speed: 1.15, radius: 0.90, pass: 0.75, noAegis: true, req: { core: 30, rank: 56 } }
   },
-  reconcileDays: 7, reconcileFails: 25,
+  reconcileDays: 7, reconcileFails: 12,
   finalWords: ['love', 'forgiveness', 'service']
 };
 
@@ -60,22 +63,29 @@ HR.SG = {
   function data() { const d = HR.Store.data; d.singularity = d.singularity || { layers: {}, words: [], ecos: [], firstClear: null }; return d.singularity; }
   function L(i) { const s = data(); return s.layers[i] || (s.layers[i] = { cleared: [false, false, false, false, false], ecos: [false, false, false, false, false], path: null, talkedAt: 0, fails: 0, passed: false, passedAt: 0 }); }
 
+  // v8: "uma camada por galáxia" — a camada i revisita a mecânica da galáxia (i % 10)
+  // no sistema 6 (intensidade média), em vez de repetir 10-10-x com v0 800+.
   function passage(i, p) {
-    const base = HR.Campaign.gen(HR.REGIONS[9], 9, 9, 2 + p);
+    const gi = i % 10;
+    const base = HR.Campaign.gen(HR.REGIONS[gi], gi, 5, 2 + p);
     const lv = Object.assign({}, base, { id: 'S-' + (i + 1) + '-' + (p + 1), sg: true, archon: i, passage: p, boss: null, galaxyBoss: false, waves: 0 });
-    lv.params = Object.assign({}, base.params, { radius: base.params.radius * (1 - i * 0.008), tbMul: base.params.tbMul * (1 - i * 0.006) });
-    lv.rings = 32 + i * 2 + p * 2; lv.v0 = Math.round(800 + i * 14 + p * 6); lv.speed = r2(lv.v0 / 265); lv.ramp = 0.22; lv.flowMul = 0.2; lv.tb0 = 0.76;
+    lv.params = Object.assign({}, base.params);
+    lv.rings = 26 + i + p; lv.v0 = Math.round(450 + i * 5 + p * 3); lv.speed = r2(lv.v0 / 265); lv.ramp = 0.12; lv.flowMul = 0.15; lv.tb0 = 0.98;
     const EV = ['asteroids', 'warp', 'sentinel', 'bonanza', 'guardian'];
     lv.events = [{ at: Math.round(lv.rings * 0.33), id: EV[(i + p) % 5] }, { at: Math.round(lv.rings * 0.76), id: EV[(i + p + 2) % 5] }];
     lv.dirs = ['right', 'top', 'left', 'bottom'].slice(0, 2 + ((i + p) % 3)); lv.dirEvery = 7 - ((i + p) % 3);
     lv.eco = true; lv.ecoAt = Math.round(lv.rings * 0.55);
     return lv;
   }
+  // v8: a Prova é o chefe da galáxia que a camada revisita; só a 11ª é a Singularidade.
   function trial(i, path) {
-    const P = HR.SG.paths[path] || HR.SG.paths.Q, base = HR.Campaign.gen(HR.REGIONS[9], 9, 9, 9), final = i === N - 1;
-    const lv = Object.assign({}, base, { id: 'S-' + (i + 1) + '-T', sg: true, archon: i, trial: true, boss: 'singularity', galaxyBoss: true, waves: P.waves, path });
-    lv.rings = 50 + i * 4 + (P.waves - 5) * 6 + (final ? 10 : 0); lv.v0 = Math.round((830 + i * 18) * P.speed); lv.speed = r2(lv.v0 / 265); lv.ramp = 0.18; lv.flowMul = 0.2; lv.tb0 = 0.74;
-    lv.params = Object.assign({}, base.params, { radius: base.params.radius * P.radius * (1 - i * 0.01) });
+    // gi = i % 10: a 11ª camada volta ao Berço — o fecho da história é a conversa,
+    // não um muro. O que muda nela é a Singularidade em pessoa (5 ondas).
+    const P = HR.SG.paths[path] || HR.SG.paths.Q, final = i === N - 1, gi = i % 10;
+    const base = HR.Campaign.gen(HR.REGIONS[gi], gi, 9, 9);
+    const lv = Object.assign({}, base, { id: 'S-' + (i + 1) + '-T', sg: true, archon: i, trial: true, boss: final ? 'singularity' : HR.REGIONS[gi].boss, galaxyBoss: true, waves: P.waves, path });
+    lv.rings = 32 + i * 2 + (P.waves - 5) * 4 + (final ? 8 : 0); lv.v0 = Math.round((470 + i * 7) * P.speed); lv.speed = r2(lv.v0 / 265); lv.ramp = 0.12; lv.flowMul = 0.15; lv.tb0 = 0.92;
+    lv.params = Object.assign({}, base.params, { radius: base.params.radius * P.radius });
     lv.passNeed = P.pass; lv.grace = !!P.grace; lv.noAegis = !!P.noAegis;
     const EV = ['sentinel', 'asteroids', 'warp', 'guardian', 'bonanza'], per = Math.ceil(lv.rings / P.waves);
     lv.events = []; for (let w = 1; w < P.waves; w += 2) lv.events.push({ at: per * w, id: EV[(i + w) % 5], wave: true });

@@ -37,22 +37,22 @@
 /* ---------- botões: ícone em placa colorida, como na órbita do menu ---------- */
 .btn > .ic.ic-live, .btn-icon > .ic.ic-live, .mode-btn > .ic.ic-live, .hero-arrow > .ic.ic-live {
   color: var(--ic, var(--accent));
-  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic) 34%, transparent) 0%, rgba(5,8,20,0.55) 72%);
-  box-shadow: inset 0 0 0 1.4px color-mix(in srgb, var(--ic) 46%, transparent), inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px color-mix(in srgb, var(--ic) 20%, transparent);
+  background: radial-gradient(120% 120% at 32% 16%, var(--ic-a34, rgba(76,240,255,0.34)) 0%, rgba(5,8,20,0.55) 72%);
+  box-shadow: inset 0 0 0 1.4px var(--ic-a46, rgba(76,240,255,0.46)), inset 0 1px 0 rgba(255,255,255,0.22), 0 0 14px var(--ic-a20, rgba(76,240,255,0.2));
 }
-.btn > .ic.ic-live svg, .btn-icon > .ic.ic-live svg { width: 66%; height: 66%; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ic) 55%, transparent)); }
+.btn > .ic.ic-live svg, .btn-icon > .ic.ic-live svg { width: 66%; height: 66%; filter: drop-shadow(0 0 6px var(--ic-a55, rgba(76,240,255,0.55))); }
 /* anel fino girando: o mesmo gesto do anel dos botões do menu */
 .btn > .ic.ic-live::after, .btn-icon > .ic.ic-live::after {
   content: ''; position: absolute; inset: -3px; border-radius: 50%; pointer-events: none; opacity: 0.7;
-  background: conic-gradient(from 0deg, color-mix(in srgb, var(--ic) 90%, transparent) 0deg 42deg, transparent 42deg 360deg);
+  background: conic-gradient(from 0deg, var(--ic-a90, rgba(76,240,255,0.9)) 0deg 42deg, transparent 42deg 360deg);
   -webkit-mask: radial-gradient(closest-side, transparent 79%, #000 80%);
   mask: radial-gradient(closest-side, transparent 79%, #000 80%);
   animation: g58-ring 9s linear infinite;
 }
-.btn:active > .ic.ic-live, .btn-icon:active > .ic.ic-live { box-shadow: inset 0 0 0 1.6px var(--ic), 0 0 20px color-mix(in srgb, var(--ic) 42%, transparent); }
-.btn-ghost .ic.ic-live { background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic) 28%, transparent) 0%, rgba(255,255,255,0.05) 72%); }
+.btn:active > .ic.ic-live, .btn-icon:active > .ic.ic-live { box-shadow: inset 0 0 0 1.6px var(--ic), 0 0 20px var(--ic-a42, rgba(76,240,255,0.42)); }
+.btn-ghost .ic.ic-live { background: radial-gradient(120% 120% at 32% 16%, var(--ic-a28, rgba(76,240,255,0.28)) 0%, rgba(255,255,255,0.05) 72%); }
 .mode-btn > .ic.ic-live { color: var(--ic); }
-.mode-btn.active > .ic.ic-live { box-shadow: inset 0 0 0 1.5px var(--ic), 0 0 16px color-mix(in srgb, var(--ic) 35%, transparent); }
+.mode-btn.active > .ic.ic-live { box-shadow: inset 0 0 0 1.5px var(--ic), 0 0 16px var(--ic-a35, rgba(76,240,255,0.35)); }
 
 /* ---------- começo da partida: o jato é símbolo + quantidade, abaixo do aviso ---------- */
 .hud-ready { bottom: max(22%, calc(150px + var(--sab))); }
@@ -67,61 +67,61 @@
 .pz-tile { --tc: #9fb0d8; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); }
 .pz-tile .pz-ic, .perk-stat .ps-ic {
   width: 26px; height: 26px; color: var(--tc, var(--accent));
-  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--tc) 32%, transparent) 0%, rgba(5,8,20,0.5) 74%);
-  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--tc) 42%, transparent), 0 0 12px color-mix(in srgb, var(--tc) 18%, transparent);
+  background: radial-gradient(120% 120% at 32% 16%, var(--tc-a32, rgba(159,176,216,0.32)) 0%, rgba(5,8,20,0.5) 74%);
+  box-shadow: inset 0 0 0 1.2px var(--tc-a42, rgba(159,176,216,0.42)), 0 0 12px var(--tc-a18, rgba(159,176,216,0.18));
 }
 .pz-tile .pz-ic .i, .perk-stat .ps-ic .i { width: 15px; height: 15px; }
-.perk-stat { padding: 4px 11px 4px 4px; background: rgba(255,255,255,0.05); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 26%, rgba(255,255,255,0.08)); }
+.perk-stat { padding: 4px 11px 4px 4px; background: rgba(255,255,255,0.05); box-shadow: inset 0 0 0 1px var(--tc-linha, rgba(177,191,223,0.32)); }
 .perk-stat b { color: var(--text); }
 
 /* ---------- talentos: a cor da árvore diz a categoria ---------- */
-.perk-modal .perk-tree { gap: 7px; padding: 9px 10px 11px; border-radius: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 10%, transparent), rgba(255,255,255,0.02)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 24%, transparent); }
+.perk-modal .perk-tree { gap: 7px; padding: 9px 10px 11px; border-radius: 18px; background: linear-gradient(180deg, var(--tc-a10, rgba(76,240,255,0.1)), rgba(255,255,255,0.02)); box-shadow: inset 0 0 0 1px var(--tc-a24, rgba(76,240,255,0.24)); }
 .perk-tree-head { gap: 8px; }
 .pt-ic {
   width: 28px; height: 28px; border-radius: 10px; color: var(--tc);
-  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--tc) 38%, transparent) 0%, rgba(5,8,20,0.5) 74%);
-  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--tc) 48%, transparent), 0 0 14px color-mix(in srgb, var(--tc) 22%, transparent);
+  background: radial-gradient(120% 120% at 32% 16%, var(--tc-a38, rgba(76,240,255,0.38)) 0%, rgba(5,8,20,0.5) 74%);
+  box-shadow: inset 0 0 0 1.2px var(--tc-a48, rgba(76,240,255,0.48)), 0 0 14px var(--tc-a22, rgba(76,240,255,0.22));
 }
 .pt-ic .i { width: 16px; height: 16px; }
 .pt-bar { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; }
-.pt-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 55%, transparent), var(--tc)); box-shadow: 0 0 10px color-mix(in srgb, var(--tc) 55%, transparent); transition: width 0.3s; }
+.pt-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--tc-a55, rgba(76,240,255,0.55)), var(--tc)); box-shadow: 0 0 10px var(--tc-a55, rgba(76,240,255,0.55)); transition: width 0.3s; }
 
 .perk-node {
-  width: 48px; height: 48px; opacity: 1; color: color-mix(in srgb, var(--tc) 62%, #7a86a8);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 9%, rgba(255,255,255,0.03)), rgba(255,255,255,0.02));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 20%, transparent);
+  width: 48px; height: 48px; opacity: 1; color: var(--tc-txt, #5dc8de);
+  background: linear-gradient(180deg, var(--tc-no, rgba(118,244,255,0.117)), rgba(255,255,255,0.02));
+  box-shadow: inset 0 0 0 1px var(--tc-a20, rgba(76,240,255,0.2));
 }
 .perk-node .pn-ic { opacity: 0.55; }
-.perk-node.on { color: #fff; background: radial-gradient(120% 120% at 32% 14%, color-mix(in srgb, var(--tc) 38%, transparent) 0%, rgba(5,8,20,0.5) 76%); box-shadow: inset 0 0 0 1.6px var(--tc), 0 0 14px color-mix(in srgb, var(--tc) 34%, transparent); }
-.perk-node.on .pn-ic { opacity: 1; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--tc) 60%, transparent)); }
+.perk-node.on { color: #fff; background: radial-gradient(120% 120% at 32% 14%, var(--tc-a38, rgba(76,240,255,0.38)) 0%, rgba(5,8,20,0.5) 76%); box-shadow: inset 0 0 0 1.6px var(--tc), 0 0 14px var(--tc-a34, rgba(76,240,255,0.34)); }
+.perk-node.on .pn-ic { opacity: 1; filter: drop-shadow(0 0 7px var(--tc-a60, rgba(76,240,255,0.6))); }
 .perk-node.rar-legendary.on { box-shadow: inset 0 0 0 1.6px var(--gold), 0 0 20px rgba(255,207,74,0.45); }
 .perk-node.rar-mythic.on { box-shadow: inset 0 0 0 1.6px #ff8a3d, 0 0 20px rgba(255,138,61,0.45); }
 .pn-pips i.on { box-shadow: 0 0 6px var(--tc); }
 
 /* talentos na pausa: cada selo com a cor da sua árvore */
-.pz-perk { --tc: #9fb0d8; color: color-mix(in srgb, var(--tc) 70%, #fff); background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 20%, rgba(255,255,255,0.04)), rgba(255,255,255,0.03)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 45%, transparent); }
+.pz-perk { --tc: #9fb0d8; color: var(--tc-cl, #bcc8e4); background: linear-gradient(180deg, var(--tc-pz, rgba(172,187,221,0.232)), rgba(255,255,255,0.03)); box-shadow: inset 0 0 0 1px var(--tc-a45, rgba(159,176,216,0.45)); }
 .pz-perk.rar-legendary { box-shadow: inset 0 0 0 1.2px var(--gold); }
 .pz-perk.rar-mythic { box-shadow: inset 0 0 0 1.2px #ff8a3d; }
 .pz-build { background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); }
 
 /* cartões de escolha: selo da árvore no canto (o v5.6 tinha alargado o cartão sem querer) */
 #perk-cards .perk-card { max-width: none; max-height: none; width: auto; text-align: center; align-items: center; gap: 6px; padding: 14px 8px 12px; }
-#perk-cards .perk-card.has-tree { box-shadow: inset 0 0 0 1.5px var(--rc, var(--stroke)), inset 0 -3px 0 color-mix(in srgb, var(--tc) 55%, transparent); }
-.pc-tree { position: absolute; left: 7px; top: 7px; width: 22px; height: 22px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: var(--tc); background: color-mix(in srgb, var(--tc) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 42%, transparent); }
+#perk-cards .perk-card.has-tree { box-shadow: inset 0 0 0 1.5px var(--rc, var(--stroke)), inset 0 -3px 0 var(--tc-a55, rgba(76,240,255,0.55)); }
+.pc-tree { position: absolute; left: 7px; top: 7px; width: 22px; height: 22px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: var(--tc); background: var(--tc-a18, rgba(76,240,255,0.18)); box-shadow: inset 0 0 0 1px var(--tc-a42, rgba(76,240,255,0.42)); }
 .pc-tree .i { width: 13px; height: 13px; }
 
 /* ---------- ajustes: o ícone da linha também ganha cor ---------- */
 .setting .s-ic {
   color: var(--ic, var(--accent));
-  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic, var(--accent)) 26%, transparent) 0%, rgba(5,8,20,0.45) 74%);
-  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--ic, var(--accent)) 34%, transparent), inset 0 1px 0 rgba(255,255,255,0.14);
+  background: radial-gradient(120% 120% at 32% 16%, var(--ic-a26, rgba(76,240,255,0.26)) 0%, rgba(5,8,20,0.45) 74%);
+  box-shadow: inset 0 0 0 1.2px var(--ic-a34, rgba(76,240,255,0.34)), inset 0 1px 0 rgba(255,255,255,0.14);
 }
 
 /* ---------- fim de fase: o ícone da linha com a cor do assunto ---------- */
 .stat-row .lean-ic, .lean-crit-ic {
   color: var(--ic, var(--muted));
-  background: radial-gradient(120% 120% at 32% 16%, color-mix(in srgb, var(--ic, #9fb0d8) 28%, transparent) 0%, rgba(5,8,20,0.45) 74%);
-  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--ic, #9fb0d8) 34%, transparent);
+  background: radial-gradient(120% 120% at 32% 16%, var(--ic-a28, rgba(159,176,216,0.28)) 0%, rgba(5,8,20,0.45) 74%);
+  box-shadow: inset 0 0 0 1.2px var(--ic-a34, rgba(159,176,216,0.34));
 }
 .lean-crit-ic { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; }
 .lean-crit-ic .i { color: var(--ic, var(--muted)); }

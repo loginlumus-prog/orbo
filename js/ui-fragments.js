@@ -1,8 +1,10 @@
 /* =====================================================================
-   ORBO v7.1 — O mural dos fragmentos.
+   ORBO v8 — O mural dos fragmentos.
 
    Uma aba dentro de Conquistas, que e onde a colecao ja mora.
-   - grade de 33 lugares: o que falta e uma silhueta sem titulo;
+   - grade de 33 lugares, cada um uma carta com a sua moldura desenhada no
+     proprio quadro (cantos por ato, selo com o numero): o que falta e uma
+     moldura vazia com "?" e a silhueta;
    - os 7 secretos nao tem nem silhueta, so um vinco;
    - tocar num fragmento abre o card em TELA CHEIA, com a arte ocupando tudo e
      o texto pousado embaixo; da para passar de um para o outro ali mesmo;
@@ -30,44 +32,49 @@ window.HR = window.HR || {};
   /* As cenas medem tudo pela altura (r = H * 0.11, R = H * 0.34...). Num quadro
      de tela cheia, que e bem mais alto que largo, os arranjos estourariam a
      largura. Entao o palco tem proporcao presa, fica um pouco acima do meio, e
-     o ceu continua para fora dele — o quadro fica cheio e a composicao, inteira. */
+     o ceu chapado continua para fora dele — o quadro fica cheio e a
+     composicao, inteira.
+
+     comMoldura: true/numero = card do mural (selo embaixo, numero do fragmento);
+                 'cheia'     = card em tela cheia (selo em cima, abaixo do cabecalho);
+                 false       = so a arte. */
+  const numero = f => HR.FRAGMENTS.indexOf(f) + 1;
   function desenha(ctx, W, H, f, t, comMoldura) {
     const cena = HR.FragScenes[f.cena]; if (!cena) return;
-    const u = HR.U, cor = f.p.cor || '#4cf0ff';
+    const u = HR.U, A = HR.FragArt, cor = f.p.cor || '#4cf0ff', ato = f.ato || 1;
     const Hp = Math.min(H, Math.round(W * 1.22));
     const dy = Math.round((H - Hp) * 0.34);
+    const p = Object.assign({}, f.p, { ato });
 
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
-    ctx.fillStyle = '#02030a'; ctx.fillRect(0, 0, W, H);
+    // o ceu chapado do ato cobre o quadro inteiro, com a mesma grade de pontos
+    // da cena: as faixas de fora e o palco viram uma coisa so
+    ctx.fillStyle = u.mix(A.tomAto(ato), cor, 0.10); ctx.fillRect(0, 0, W, H);
+    if (Hp < H) {
+      const passo = Math.max(7, Hp * 0.055), pt = Math.max(1, Hp * 0.004);
+      ctx.fillStyle = u.rgba('#ffffff', 0.075);
+      // a grade continua acima e abaixo do palco (dentro dele a cena ja pinta a sua)
+      for (let j = 0, y = passo * 0.6; y < H; y += passo, j++) {
+        if (y >= dy && y < dy + Hp) continue;
+        for (let x = passo * (j % 2 ? 0.6 : 1.1); x < W; x += passo) ctx.fillRect(x, y, pt, pt);
+      }
+    }
 
     ctx.save();
     ctx.translate(0, dy);
     ctx.beginPath(); ctx.rect(0, 0, W, Hp); ctx.clip();
-    cena(ctx, W, Hp, f.p, t);
+    cena(ctx, W, Hp, p, t);
     ctx.restore();
 
-    if (Hp < H) {
-      // as faixas de fora nao sao pintadas: sao a PROPRIA beirada da cena
-      // esticada. Assim nao existe emenda para o olho achar.
-      const px = ctx.canvas.width / W, py = ctx.canvas.height / H;
-      const fim = dy + Hp;
-      if (dy > 0) ctx.drawImage(ctx.canvas, 0, Math.round(dy * py), Math.round(W * px), 1, 0, 0, W, dy);
-      if (fim < H) ctx.drawImage(ctx.canvas, 0, Math.round((fim - 1) * py), Math.round(W * px), 1, 0, fim - 1, W, H - fim + 1);
-      // poeira: as faixas esticadas ficam lisas demais sem ela
-      const A = HR.FragArt;
-      for (let i = 0; i < 54; i++) {
-        const a = A.rnd(i * 5.3 + 1), b = A.rnd(i * 9.1 + 2), c = A.rnd(i * 3.7 + 3);
-        const y = b < 0.5 ? a * dy : H - a * (H - fim);
-        ctx.fillStyle = u.rgba(c > 0.85 ? cor : '#ffffff', 0.07 + c * 0.2);
-        ctx.beginPath(); ctx.arc(b * W, y, 0.4 + c * 1.1, 0, Math.PI * 2); ctx.fill();
-      }
-      // vinheta por cima de tudo: fecha o quadro inteiro numa coisa so
-      const v = ctx.createRadialGradient(W * 0.5, dy + Hp * 0.45, H * 0.30, W * 0.5, dy + Hp * 0.45, H * 0.85);
-      v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.5)');
-      ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    if (comMoldura === 'cheia') {
+      // em tela cheia o cabecalho (ato e botao de fechar) mora no topo: a
+      // moldura comeca abaixo dele e o selo senta na borda de cima
+      const sat = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+      A.moldura(ctx, W, H, cor, 22, { ato, num: numero(f), selo: 'topo', mt: Math.round(58 + sat) });
+    } else if (comMoldura) {
+      A.moldura(ctx, W, H, cor, comMoldura === true ? RAIO : comMoldura, { ato, num: numero(f), mini: W < 300, selo: 'base' });
     }
-    if (comMoldura) HR.FragArt.moldura(ctx, W, H, cor, comMoldura === true ? Math.max(10, Math.round(W * 0.04)) : comMoldura);
     ctx.restore();
   }
 
@@ -92,11 +99,10 @@ window.HR = window.HR || {};
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     cv.style.width = w + 'px'; cv.style.height = h + 'px';
-    const ctx = cv.getContext('2d'), u = HR.U;
+    const ctx = cv.getContext('2d'), u = HR.U, A = HR.FragArt, cinza = '#6c78a0';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, 'rgba(255,255,255,0.045)'); g.addColorStop(1, 'rgba(255,255,255,0.015)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    // a moldura vazia: o mesmo ceu do ato, sem cor, e o selo com "?"
+    ctx.fillStyle = u.mix(A.tomAto(f.ato || 1), '#000000', 0.35); ctx.fillRect(0, 0, w, h);
     if (SEGREDO(f)) {
       // vinco: nem a forma se conhece
       ctx.strokeStyle = u.rgba('#ffffff', 0.10); ctx.lineWidth = 1;
@@ -105,14 +111,14 @@ window.HR = window.HR || {};
       // silhueta: a forma do que falta, sem cor e sem nome
       ctx.save();
       ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
-      ctx.globalAlpha = 0.16;
-      const cinza = Object.assign({}, f.p, { cor: '#8b93ad', lavada: 1 });
+      ctx.globalAlpha = 0.22;
       const cena = HR.FragScenes[f.cena];
-      if (cena) { try { cena(ctx, w, h, cinza, 1.4); } catch (_) { /* nada */ } }
+      const pc = Object.assign({}, f.p, { cor: '#8b93ad', lavada: 1, ato: f.ato || 1 });
+      if (cena) { try { cena(ctx, w, h, pc, 1.4); } catch (_) { /* nada */ } }
       ctx.restore();
-      ctx.fillStyle = 'rgba(4,6,14,0.55)'; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(4,6,14,0.5)'; ctx.fillRect(0, 0, w, h);
     }
-    HR.FragArt.moldura(ctx, w, h, '#6c78a0', RAIO);
+    A.moldura(ctx, w, h, cinza, RAIO, { ato: f.ato || 1, mini: true, trancado: true, selo: 'base', tom: '#0d0f18' });
     return cv;
   }
 
@@ -263,7 +269,7 @@ window.HR = window.HR || {};
       if (!folha || !cv.isConnected || !atual) { raf = null; return; }
       if (Math.abs(cv.clientWidth - m.w) > 1 || Math.abs(cv.clientHeight - m.h) > 1) m = medir();
       ctx.setTransform(m.dpr, 0, 0, m.dpr, 0, 0);
-      desenha(ctx, m.w, m.h, atual, agora / 1000, false);
+      desenha(ctx, m.w, m.h, atual, agora / 1000, 'cheia');
       raf = lite() ? null : requestAnimationFrame(quadro);
     };
 
@@ -277,7 +283,7 @@ window.HR = window.HR || {};
       HR.Audio.sfx('click');
       mostra(alvo.id);
       if (!raf && !lite()) raf = requestAnimationFrame(quadro);
-      if (lite()) { m = medir(); ctx.setTransform(m.dpr, 0, 0, m.dpr, 0, 0); desenha(ctx, m.w, m.h, atual, 3.2, false); }
+      if (lite()) { m = medir(); ctx.setTransform(m.dpr, 0, 0, m.dpr, 0, 0); desenha(ctx, m.w, m.h, atual, 3.2, 'cheia'); }
     }
   }
 
@@ -373,7 +379,8 @@ window.HR = window.HR || {};
   // os gatilhos
   after(HR.UI, 'onLevelEnd', function () { HR.Frag.sync(); });
   after(HR.UI, 'onGameOver', function () { HR.Frag.sync(); });
-  if (HR.game && HR.game.on) HR.game.on('levelend', () => HR.Frag.sync());
+  // nada de game.on('levelend'): Game.on SUBSTITUI o handler, e se um dia HR.game
+  // existir nesta carga a tela de fim de fase para de abrir. O after() acima basta.
 
   HR.UI.fragSync = () => HR.Frag.sync();
   setTimeout(() => { try { HR.Frag.sync(); selos(); } catch (_) { /* nada */ } }, 1200);

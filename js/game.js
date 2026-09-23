@@ -15,6 +15,7 @@
 window.HR = window.HR || {};
 
 HR.DIRS = ['right', 'top', 'left', 'bottom'];
+const NAO_TEXTO = p => p.type !== 'text';   // filtro fixo: nao aloca por quadro
 
 HR.Game = class {
   constructor(canvas) {
@@ -85,6 +86,8 @@ HR.Game = class {
     this.scale = ch / this.H; this.W = cw / this.scale;
     this.ctx.setTransform(this.scale * this.dpr, 0, 0, this.scale * this.dpr, 0, 0);
     this.rect = this.canvas.getBoundingClientRect();
+    // o laco nao le mais clientWidth/clientHeight por quadro (ver watchSize)
+    this.observeSize();
     const b = this.ball, oldLu = this.Lu, oldLv = this.Lv;
     const vFrac = oldLv ? b.y / oldLv : 0.5, tvFrac = oldLv ? b.ty / oldLv : 0.5;
     const uFrac = oldLu ? b.x / oldLu : HR.CONFIG.BALL.xFrac, tuFrac = oldLu ? b.tx / oldLu : HR.CONFIG.BALL.xFrac;
@@ -92,6 +95,21 @@ HR.Game = class {
     b.y = HR.U.clamp(vFrac * this.Lv, b.r, this.Lv - b.r); b.ty = HR.U.clamp(tvFrac * this.Lv, b.r, this.Lv - b.r);
     b.x = this.clampU(uFrac * this.Lu); b.tx = this.clampU(tuFrac * this.Lu);
     this.bg.resize(this.W, this.H);
+  }
+
+  // O quadro lia canvas.clientWidth/clientHeight para saber se a tela mudou de
+  // tamanho. Como o HUD escreve estilo no quadro anterior, essa leitura forcava
+  // recalculo de estilo + layout do #app inteiro, todo quadro. O ResizeObserver
+  // avisa sozinho, sem ler nada dentro do laco.
+  observeSize() {
+    if (this.sizeObs || typeof ResizeObserver === 'undefined') return;
+    this.sizeObs = new ResizeObserver(() => {
+      const cw = this.canvas.clientWidth, ch = this.canvas.clientHeight;
+      if (!cw || !ch || (cw === this.cw && ch === this.ch)) return;
+      this.resize();
+      if (HR.UI && HR.UI.layoutShowcase) HR.UI.layoutShowcase();
+    });
+    this.sizeObs.observe(this.canvas);
   }
 
   /* ---------------- ciclo da partida ---------------- */
@@ -424,7 +442,8 @@ HR.Game = class {
     if (run.level && run.level.noAegis) { this.emit('banner', { title: HR.t('aegis_blocked'), color: '#ff5e7e' }); return false; }
     if (!HR.Consumables.use('aegis')) { this.emit('banner', { title: HR.t('aegis_none'), color: '#8d97b3' }); HR.Audio.sfx('error'); return false; }
     const sk = HR.Gear.current('aegis');
-    run.aegisT = G.dur; run.aegisUses++; HR.Store.data.stats5.aegisUsed++; HR.Store.save();
+    // o save (JSON.stringify + localStorage) custa 1-3 ms no A10: sai do quadro do toque
+    run.aegisT = G.dur; run.aegisUses++; HR.Store.data.stats5.aegisUsed++; HR.Store.saveSoon();
     this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 1, speed: 0, color: sk.color, size: 40, life: 0.6, type: 'wave' });
     this.particles.burst({ x: this.ball.x, y: this.ball.y, n: 24, speed: 340, color: [sk.color, sk.color2], size: 5, life: 0.7, type: 'spark' });
     HR.Audio.sfx('shield'); HR.U.vibrate([15, 20, 25]);
@@ -438,7 +457,7 @@ HR.Game = class {
     if (L && (L.boss || L.sg)) { this.emit('banner', { title: HR.t('jet_boss'), color: '#ff5e7e' }); return false; }
     if (!HR.Consumables.use(kind)) return false;
     run.jetUsed = true; run.jetKind = kind; run.jetLeft = L ? Math.min(G.rings, Math.floor(L.rings * 0.5)) : G.rings; run.jetTotal = run.jetLeft; run.jetsUsed++;
-    HR.Store.data.stats5[kind === 'megajet' ? 'megajetsUsed' : 'jetsUsed']++; HR.Store.save();
+    HR.Store.data.stats5[kind === 'megajet' ? 'megajetsUsed' : 'jetsUsed']++; HR.Store.saveSoon();
     if (this.state === 'ready') this.begin();
     const sk = HR.Gear.current('jet'), col = sk.color === 'rainbow' ? '#ff5ecf' : sk.color;
     run.invuln = Math.max(run.invuln, 0.6); this.shake = 9;
@@ -668,9 +687,10 @@ HR.Game = class {
     for (const r of this.rings) { if (r.flash > 0) r.flash = Math.max(0, r.flash - dt * 3); if (r.shatterT) r.shatterT += dt; }
     // arco que sai da tela sem ter sido resolvido (ex.: passou durante a animação de morte) conta como erro
     if (!this.demo) for (const r of this.rings) if (!r.resolved && r.x <= -r.r * 2 - 60) { r.resolved = true; r.missed = true; this.ringResolved(r); }
-    this.rings = this.rings.filter(r => r.x > -r.r * 2 - 60 && !(r.shatterT > 0.55));
-    this.obstacles = this.obstacles.filter(o => o.x > -80 && !o.dead);
-    this.pickups = this.pickups.filter(p => p.x > -60 && !p.taken);
+    // filtrar aloca um array novo: so quando ha de fato algo a remover
+    if (this.rings.some(r => !(r.x > -r.r * 2 - 60) || r.shatterT > 0.55)) this.rings = this.rings.filter(r => r.x > -r.r * 2 - 60 && !(r.shatterT > 0.55));
+    if (this.obstacles.some(o => !(o.x > -80) || o.dead)) this.obstacles = this.obstacles.filter(o => o.x > -80 && !o.dead);
+    if (this.pickups.some(p => !(p.x > -60) || p.taken)) this.pickups = this.pickups.filter(p => p.x > -60 && !p.taken);
     if (s === 'playing' && this.pendingDir && !this.rings.length) { this.startTransition(this.pendingDir); return; }
     if (s === 'playing' && this.pendingEvent && !this.pendingDir && this.rings.every(r => r.resolved)) { this.startEvent(this.pendingEvent); return; }
     if (s === 'playing' || s === 'ready') this.fill();
@@ -763,46 +783,21 @@ HR.Game = class {
     }
   }
 
-  controlMode() {
-    // v5.7: só o relativo (arrastar). O analógico e o "seguir o dedo" foram removidos.
-    return 'relative';
-  }
-
   updateBall(sdt, dt) {
     const B = HR.CONFIG.BALL, b = this.ball, st = HR.Store.data.settings, I = HR.Input, run = this.run;
     const U = this.uAxis(), V = this.vAxis();
     const canControl = this.state === 'playing' || this.state === 'ready' || this.state === 'transition';
-    let direct = false;
     if (run.autoT > 0 && this.state === 'playing' && !run.anomalyActive) {
       I.consumeDelta2();
       const next = this.rings.find(r => !r.resolved && r.x > b.x - 5);
       if (next) b.ty = next.y;
     } else if (canControl) {
-      const mode = this.controlMode();
+      // v5.7 tirou o analogico e o "seguir o dedo": sobrou o arrastar (de qualquer
+      // lugar) e o teclado. v6.6: os dois ramos mortos sairam junto.
       const d = I.consumeDelta2();
-      if (mode === 'absolute') {
-        if (I.down || (I.hasHover && I.lastPointerType === 'mouse')) {
-          const px = (I.absX - this.rect.left) / this.scale - this.frame.ox, py = (I.absY - this.rect.top) / this.scale - this.frame.oy;
-          b.tx = px * U.x + py * U.y; b.ty = px * V.x + py * V.y;
-        }
-      } else if (mode === 'stick') {
-        // v5.3: analógico direto: a inclinação vira a velocidade da bola na hora; ao soltar, para na hora
-        const S = I.stick, m = Math.hypot(S.x, S.y);
-        let wu = 0, wv = 0;
-        if (S.active && m > B.stickDead) {
-          const vt = Math.pow(Math.min(1, (m - B.stickDead) / (1 - B.stickDead)), B.stickCurve) * B.stickSpeed * (st.sensitivity || 1);
-          wu = (S.x * U.x + S.y * U.y) / m * vt; wv = (S.x * V.x + S.y * V.y) / m * vt;
-        }
-        const skx = (I.keys.right ? 1 : 0) - (I.keys.left ? 1 : 0), sky = (I.keys.down ? 1 : 0) - (I.keys.up ? 1 : 0);
-        if (skx || sky) { wu += (skx * U.x + sky * U.y) * B.keySpeed; wv += (skx * V.x + sky * V.y) * B.keySpeed; }
-        const resp = 1 - Math.exp(-B.stickResponse * dt);
-        b.vx += (wu - b.vx) * resp; b.vy += (wv - b.vy) * resp;
-        direct = true;
-      } else {
-        const g = (st.sensitivity || 1) * 1.4 / this.scale;
-        b.tx += (d.dx * U.x + d.dy * U.y) * g;
-        b.ty += (d.dx * V.x + d.dy * V.y) * g;
-      }
+      const g = (st.sensitivity || 1) * 1.4 / this.scale;
+      b.tx += (d.dx * U.x + d.dy * U.y) * g;
+      b.ty += (d.dx * V.x + d.dy * V.y) * g;
       const ks = B.keySpeed * dt;
       const kx = (I.keys.right ? 1 : 0) - (I.keys.left ? 1 : 0), ky = (I.keys.down ? 1 : 0) - (I.keys.up ? 1 : 0);
       if (kx || ky) { b.tx += (kx * U.x + ky * U.y) * ks; b.ty += (kx * V.x + ky * V.y) * ks; }
@@ -810,17 +805,13 @@ HR.Game = class {
     b.ty = HR.U.clamp(b.ty, b.r, this.Lv - b.r);
     b.tx = this.clampU(b.tx);
     const K = B.spring, C = B.damping;
-    if (!direct) {
-      b.vx += ((b.tx - b.x) * K - b.vx * C) * dt;
-      b.vy += ((b.ty - b.y) * K - b.vy * C) * dt;
-    }
+    b.vx += ((b.tx - b.x) * K - b.vx * C) * dt;
+    b.vy += ((b.ty - b.y) * K - b.vy * C) * dt;
     const sp = Math.hypot(b.vx, b.vy);
     if (sp > B.maxVy) { b.vx *= B.maxVy / sp; b.vy *= B.maxVy / sp; }
     b.x += b.vx * dt; b.y += b.vy * dt;
-    if (b.y < b.r) { b.y = b.r; b.vy *= direct ? 0 : -0.3; } else if (b.y > this.Lv - b.r) { b.y = this.Lv - b.r; b.vy *= direct ? 0 : -0.3; }
-    const cu = this.clampU(b.x); if (cu !== b.x) { b.x = cu; b.vx *= direct ? 0 : -0.3; }
-    // no analógico direto o alvo acompanha a bola (piloto automático ou outro controle começam de onde ela está)
-    if (direct) { b.tx = b.x; b.ty = b.y; }
+    if (b.y < b.r) { b.y = b.r; b.vy *= -0.3; } else if (b.y > this.Lv - b.r) { b.y = this.Lv - b.r; b.vy *= -0.3; }
+    const cu = this.clampU(b.x); if (cu !== b.x) { b.x = cu; b.vx *= -0.3; }
     b.trail.push({ x: b.x, y: b.y, t: this.time });
     const heat = Math.min(1, run.combo / 20), maxLen = 22 + Math.round(heat * 16), maxAge = 0.4 + heat * 0.25;
     while (b.trail.length > maxLen || (b.trail.length && this.time - b.trail[0].t > maxAge)) b.trail.shift();
@@ -1214,6 +1205,14 @@ HR.Game = class {
   }
 
   /* ---------------- desenho ---------------- */
+  // orbes de poder reaproveitadas: eram ate 15 objetos novos por quadro
+  orbList() { const L = this._orbs || (this._orbs = []); L.length = 0; return L; }
+  orb(n, color, rad, speed, size, T, wisp) {
+    const L = this._orbs, P = this._orbPool || (this._orbPool = []);
+    const o = P[L.length] || (P[L.length] = {});
+    o.n = n; o.color = color; o.rad = rad; o.speed = speed; o.size = size; o.T = T; o.wisp = !!wisp;
+    L.push(o);
+  }
   render() {
     const ctx = this.ctx, W = this.W, H = this.H, t = this.time, b = this.ball, R = HR.CONFIG.RUN, run = this.run;
     this.bg.draw(ctx, t);
@@ -1223,9 +1222,18 @@ HR.Game = class {
     ctx.translate(this.frame.ox, this.frame.oy); ctx.rotate(this.frame.angle);
     const rot = this.frame.angle;
     const sqAxis = Math.abs(Math.sin(rot)) > 0.5 ? 'x' : 'y';
-    for (const r of this.rings) HR.Render.drawRing(ctx, r, 'back', { alpha: r.alpha, t });
+    // Recorte: sempre havia 1 ou 2 arcos inteiros fora da tela (nascem em Lu+700
+    // e saem por -r*2-60) sendo desenhados com as duas metades, halo, centro e
+    // moeda. A margem r.r cobre a elipse inclinada em qualquer angulo.
+    const Lu = this.Lu;
+    const ro = this._ro || (this._ro = { alpha: 1, t: 0 });
+    ro.t = t;
     for (const r of this.rings) {
-      if (r.alpha < 0.05) continue;
+      if (r.x < -r.r - 40 || r.x > Lu + r.r + 40) continue;
+      ro.alpha = r.alpha; HR.Render.drawRing(ctx, r, 'back', ro);
+    }
+    for (const r of this.rings) {
+      if (r.alpha < 0.05 || r.x < -r.r - 40 || r.x > Lu + r.r + 40) continue;
       if (r.coin && !r.coinTaken) HR.Render.drawCoin(ctx, r.x, r.y, 12, t, r.index);
       if (!r.centerItem) HR.Render.drawRingCenter(ctx, r, r.aligned && this.state === 'playing', t);
       if ((r.nova || r.prism) && !r.resolved) { ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.tilt || 0); ctx.strokeStyle = r.nova ? 'rgba(255,226,122,' + (0.5 + 0.3 * Math.sin(t * 8)).toFixed(2) + ')' : 'rgba(255,122,217,0.55)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0, 0, r.r * HR.Render.RX + 8, r.r + 8, 0, 0, 6.283); ctx.stroke(); ctx.restore(); }
@@ -1240,23 +1248,23 @@ HR.Game = class {
       const ghost = run.ghostT > 0;
       const spd = Math.hypot(b.vx, b.vy), axisLocal = Math.abs(b.vx) > Math.abs(b.vy) ? 'x' : 'y';
       const sqAxisNow = axisLocal === 'y' ? sqAxis : (sqAxis === 'x' ? 'y' : 'x');
-      const orbs = [];
-      if (run.shields > 0) orbs.push({ n: run.shields, color: '#4cf0ff', rad: 1.6, speed: 2.2, size: 4.5 });
-      if (run.starT > 0) orbs.push({ n: 3, color: '#ffe27a', rad: 2.0, speed: 4.2, size: 5, T: run.starT });
-      if (run.magnetT > 0) orbs.push({ n: 4, color: '#ffcf4a', rad: 1.75, speed: -3, size: 3.5, T: run.magnetT });
-      if (run.ghostT > 0) orbs.push({ n: 2, color: '#e8f0ff', rad: 1.45, speed: 1.6, size: 4, T: run.ghostT, wisp: true });
-      if (run.slowmoT > 0) orbs.push({ n: 2, color: '#9be7ff', rad: 1.9, speed: 1.1, size: 4, T: run.slowmoT });
-      if (run.freezeT > 0) orbs.push({ n: 3, color: '#dff8ff', rad: 1.65, speed: 1.8, size: 3.5, T: run.freezeT });
+      const orbs = this.orbList();
+      if (run.shields > 0) this.orb(run.shields, '#4cf0ff', 1.6, 2.2, 4.5);
+      if (run.starT > 0) this.orb(3, '#ffe27a', 2.0, 4.2, 5, run.starT);
+      if (run.magnetT > 0) this.orb(4, '#ffcf4a', 1.75, -3, 3.5, run.magnetT);
+      if (run.ghostT > 0) this.orb(2, '#e8f0ff', 1.45, 1.6, 4, run.ghostT, true);
+      if (run.slowmoT > 0) this.orb(2, '#9be7ff', 1.9, 1.1, 4, run.slowmoT);
+      if (run.freezeT > 0) this.orb(3, '#dff8ff', 1.65, 1.8, 3.5, run.freezeT);
       if (run.jetLeft > 0 && HR.Render.drawJet) HR.Render.drawJet(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, HR.Gear.current('jet'), t, run.jetKind === 'megajet' ? 1.35 : 1);
-      if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) orbs.push({ n: 2, color: '#a29bfe', rad: 1.85, speed: 2.6, size: 3.5, T: run.autoT });
-      if (run.lensT > 0) orbs.push({ n: 3, color: '#7cff6b', rad: 2.1, speed: 1.4, size: 3.5, T: run.lensT });
-      if (run.echoT > 0) orbs.push({ n: 3, color: '#ff5ecf', rad: 1.5, speed: -2.2, size: 4, T: run.echoT });
-      if (run.bholeT > 0) orbs.push({ n: 5, color: '#a88bff', rad: 2.4, speed: -4, size: 3, T: run.bholeT });
-      if (run.prismT > 0) orbs.push({ n: 3, color: '#ff7ad9', rad: 1.7, speed: 2.8, size: 4, T: run.prismT });
-      if (run.phoenixT > 0) orbs.push({ n: 2, color: '#ff8a3d', rad: 2.0, speed: 3.4, size: 5, T: run.phoenixT });
-      if (run.goldT > 0) orbs.push({ n: 4, color: '#ffd24a', rad: 1.8, speed: -2.6, size: 3.5, T: run.goldT });
-      if (run.microT > 0) orbs.push({ n: 2, color: '#9dff8a', rad: 1.2, speed: 4, size: 3, T: run.microT });
-      if (run.chronoT > 0) orbs.push({ n: 4, color: '#c3b8ff', rad: 2.2, speed: 0.6, size: 3.5, T: run.chronoT });
+      if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) this.orb(2, '#a29bfe', 1.85, 2.6, 3.5, run.autoT);
+      if (run.lensT > 0) this.orb(3, '#7cff6b', 2.1, 1.4, 3.5, run.lensT);
+      if (run.echoT > 0) this.orb(3, '#ff5ecf', 1.5, -2.2, 4, run.echoT);
+      if (run.bholeT > 0) this.orb(5, '#a88bff', 2.4, -4, 3, run.bholeT);
+      if (run.prismT > 0) this.orb(3, '#ff7ad9', 1.7, 2.8, 4, run.prismT);
+      if (run.phoenixT > 0) this.orb(2, '#ff8a3d', 2.0, 3.4, 5, run.phoenixT);
+      if (run.goldT > 0) this.orb(4, '#ffd24a', 1.8, -2.6, 3.5, run.goldT);
+      if (run.microT > 0) this.orb(2, '#9dff8a', 1.2, 4, 3, run.microT);
+      if (run.chronoT > 0) this.orb(4, '#c3b8ff', 2.2, 0.6, 3.5, run.chronoT);
       if (run.cometT > 0 && !run.jetLeft && HR.Render.drawJet) HR.Render.drawJet(ctx, b.x, b.y, b.r, { color: '#9be7ff', color2: '#ffffff' }, t, 0.9);
       if (orbs.length) HR.Render.drawOrbs(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, orbs, t);
       ctx.save(); ctx.translate(b.x, b.y + Math.sin(t * 3) * 2); ctx.rotate(-rot);
@@ -1264,10 +1272,13 @@ HR.Game = class {
       ctx.restore();
       if (this.drawPowerTimers) this.drawPowerTimers(ctx, t, rot);
       if (run.aegisT > 0 && HR.Render.drawAegis) HR.Render.drawAegis(ctx, b.x, b.y + Math.sin(t * 3) * 2, b.r, HR.Gear.current('aegis'), t, run.aegisT);
-      if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) { ctx.strokeStyle = 'rgba(162,155,254,0.7)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+      if (run.autoT > 0 && !run.anomalyActive && !run.jetLeft) { const D = HR.Render.DASH; ctx.strokeStyle = 'rgba(162,155,254,0.7)'; ctx.lineWidth = 2; ctx.setLineDash(D.auto); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash(D.off); }
     }
-    for (const r of this.rings) HR.Render.drawRing(ctx, r, 'front', { alpha: r.alpha, t });
-    this.particles.draw(ctx, p => p.type !== 'text');
+    for (const r of this.rings) {
+      if (r.x < -r.r - 40 || r.x > Lu + r.r + 40) continue;
+      ro.alpha = r.alpha; HR.Render.drawRing(ctx, r, 'front', ro);
+    }
+    this.particles.draw(ctx, NAO_TEXTO);
     const L = run.level, darkR = L ? (L.boss === 'singularity' && run.bossWave >= 4 ? 380 : L.params.dark) : 0;
     if (darkR && this.state !== 'idle') {
       const g = ctx.createRadialGradient(b.x, b.y, darkR * 0.55, b.x, b.y, darkR * 1.5);
@@ -1280,11 +1291,36 @@ HR.Game = class {
   }
 
   frame_(ts) {
-    const dt = Math.min(0.05, Math.max(0, (ts - (this.last || ts)) / 1000));
+    // o quadro cru vai para o vigia (ele conta engasgo acima de 0,1 s e o limite de
+    // 0,05 s escondia todos); a fisica continua com o limite, senao a bola teleporta
+    const cru = Math.max(0, (ts - (this.last || ts)) / 1000);
+    const dt = Math.min(0.05, cru);
     this.last = ts;
-    if (HR.Perf) HR.Perf.sample(dt, this);
-    if (this.canvas.clientWidth !== this.cw || this.canvas.clientHeight !== this.ch) { this.resize(); if (HR.UI && HR.UI.layoutShowcase) HR.UI.layoutShowcase(); }
-    try { this.update(dt); this.render(); }
+    if (HR.Perf) HR.Perf.sample(cru, this);
+    // sem ResizeObserver (navegador antigo) o tamanho e conferido 4x por segundo
+    if (!this.sizeObs) {
+      this.sizeT = (this.sizeT || 0) + dt;
+      if (this.sizeT > 0.25) {
+        this.sizeT = 0;
+        if (this.canvas.clientWidth !== this.cw || this.canvas.clientHeight !== this.ch) { this.resize(); if (HR.UI && HR.UI.layoutShowcase) HR.UI.layoutShowcase(); }
+      }
+    }
+    try {
+      // Painel opaco por cima (Loja, Galaxia, Ajustes): o canvas continuava
+      // pintando a 60 fps por baixo, e cada quadro obriga o compositor a
+      // refazer o desfoque do painel. Aqui ele atualiza a ~10 Hz e desenha
+      // um quadro so a cada atualizacao — ao fechar o painel nada "salta",
+      // porque o update continua correndo.
+      const tapado = this.state === 'idle' && HR.UI && HR.UI.stack && HR.UI.stack.length > 0;
+      if (tapado) {
+        this.dormT = (this.dormT || 0) + dt;
+        if (this.dormT < 0.1) return;
+        this.update(this.dormT); this.dormT = 0; this.render();
+        return;
+      }
+      this.dormT = 0;
+      this.update(dt); this.render();
+    }
     catch (e) { console.error('[game loop]', e); }
   }
   start() {

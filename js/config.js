@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '7.4.0',
+  VERSION: '8.0.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -25,18 +25,13 @@ HR.CONFIG = {
     spring: 110,      // rigidez da mola que puxa a bola para o alvo do dedo
     damping: 15,      // amortecimento (abaixo do crítico → leve balanço, sensação solta)
     maxVy: 2600,      // velocidade máxima (px/s)
-    keySpeed: 1000,   // velocidade com teclado (px/s)
-    stickSpeed: 1150, // analógico no máximo (px/s)
-    stickDead: 0.07,  // zona morta do analógico
-    stickCurve: 1.12, // curva de resposta (1 = linear)
-    stickLead: 40,    // (v5.1) folga do alvo; o analógico direto da v5.3 não usa
-    stickResponse: 32 // analógico direto: quão rápido a bola chega à velocidade pedida (1/s; 32 ≈ 90% em 70 ms)
+    keySpeed: 1000    // velocidade com teclado (px/s)
   },
 
   RUN: {
     baseSpeed: 265, speedPerRing: 6.5, maxSpeed: 880,   // velocidade dos arcos (px/s)
     tbStart: 1.40, tbEnd: 0.70, tbPerRing: 0.0070,      // segundos entre arcos (mais denso: errar não mata)
-    ringR: 98, ringMinR: 56, ringRx: 0.26,              // raio base, mínimo, "espessura" da elipse
+    ringR: 98, ringMinR: 56,                            // raio base e mínimo (a "espessura" da elipse é HR.Render.RX)
     marginY: 60,
     perfectZone: 0.30,   // fração do raio que conta como PERFEITO
     coinZone: 0.72,      // fração do raio para pegar a moeda
@@ -145,7 +140,7 @@ HR.CONFIG = {
     comboEvery: 5,             // a cada N perfeitos seguidos...
     comboCoins: 5,             // ...ganha N moedas
     exchangeGems: 10, exchangeCoins: 600,
-    xp: { perRing: 3, perPerfect: 2, perPhase: 6, perLevel: 40, perStar: 15 }
+    xp: { perRing: 3, perPerfect: 2, perPhase: 6, perLevel: 40 }
   },
 
   ADS: {

@@ -56,17 +56,55 @@
   };
   HR.glyphColor = name => COLOR[name] || '';
 
+  /* ---------------- cores prontas: o iOS 15 nao tem color-mix() ----------------
+     Todo aro, placa e brilho do v5.6/v5.8/v6.0 era color-mix(): no iPhone 7 a
+     declaracao inteira sumia (icone sem placa, talento sem cor). As mesmas
+     porcentagens saem daqui em rgba, com o nome --<var>-a<NN> (NN = alfa x 100). */
+  const ALFAS = {
+    ic: [20, 26, 28, 34, 35, 40, 42, 45, 46, 55, 90],
+    tc: [9, 10, 16, 18, 20, 22, 24, 26, 32, 34, 35, 38, 42, 45, 48, 55, 60],
+    rc: [16, 18, 22, 25, 26, 30, 34, 40, 45, 50, 60, 70],
+    ac: [30, 50],
+    cc: [60]
+  };
+  function derivar(el, base) {
+    const c = (el.style.getPropertyValue('--' + base) || '').trim();
+    if (c.charAt(0) !== '#' || el.getAttribute('data-c-' + base) === c) return;
+    el.setAttribute('data-c-' + base, c);
+    const U = HR.U, set = (n, v) => el.style.setProperty(n, v);
+    ALFAS[base].forEach(a => set('--' + base + '-a' + a, U.rgba(c, a / 100)));
+    if (base === 'ic') set('--ic-aro', U.rgba(U.mix(c, '#ffffff', 0.19), 0.47));          // 38% do --ic sobre o --stroke
+    if (base === 'tc') {
+      set('--tc-txt', U.mix(c, '#7a86a8', 0.38));                                        // 62% do --tc com o cinza do texto
+      set('--tc-cl', U.mix(c, '#ffffff', 0.3));                                          // 70% com branco
+      set('--tc-linha', U.rgba(U.mix(c, '#ffffff', 0.185), 0.32));                       // 26% sobre branco 8%
+      set('--tc-no', U.rgba(U.mix(c, '#ffffff', 0.233), 0.117));                         // 9% sobre branco 3%
+      set('--tc-pz', U.rgba(U.mix(c, '#ffffff', 0.138), 0.232));                         // 20% sobre branco 4%
+      set('--tc-on', U.rgba(U.mix(c, '#ffffff', 0.154), 0.213));                         // 18% sobre branco 4%
+    }
+  }
+  function cores(root) {
+    $$('[style]', root || document).forEach(el => { for (const b in ALFAS) derivar(el, b); });
+  }
+  HR.UI.coresVivas = cores;
+
   // pinta a placa do ícone com a cor do assunto
   function tint(el, name, soft) {
     const c = COLOR[name]; if (!c) return;
     el.style.setProperty('--ic', c);
     el.style.setProperty('--ol', HR.U.mix(c, '#ffffff', 0.55));
-    if (!soft) el.classList.add('ic-live');
+    derivar(el, 'ic');
+    if (!soft) {
+      el.classList.add('ic-live');
+      // a classe faz o papel do :has(> .ic-live) do v6.0, que o iOS 15 ignora
+      const btn = el.parentNode; if (btn && btn.classList && btn.classList.contains('btn-icon')) { btn.classList.add('has-live'); btn.style.setProperty('--ic', c); derivar(btn, 'ic'); }
+    }
   }
 
   /* ---------------- botões: ícone colorido, com anel e animação ---------------- */
   const PLAIN = 'btn-play btn-reward btn-gem'.split(' ');   // botões que já têm cor forte: só a animação
   function upgrade(root) {
+    cores(root);
     $$('.btn > .ic[data-icon], .btn-icon > .ic[data-icon], .mode-btn > .ic[data-icon], .hero-arrow > .ic[data-icon]', root || document).forEach(el => {
       if (el.dataset.g58) return;
       const name = el.getAttribute('data-icon'); if (!name) return;
@@ -91,6 +129,9 @@
   // painéis e janelas que se desenham por conta própria
   'renderDaily renderAbilities renderSlots openAbilityPicker renderRegion renderSystem renderSingularity openLevelDetail openSingularityDetail renderMissions renderShop onLevelEnd showPerks hudInit'
     .split(' ').forEach(n => after(HR.UI, n, () => upgrade()));
+  // telas que so precisam das cores prontas (sem glifo novo)
+  'refreshMenu refreshMode renderSettings renderLeaderboard renderAchievements renderRifts openPerkSheet hudPerks renderPauseControl'
+    .split(' ').forEach(n => after(HR.UI, n, () => cores()));
 
   /* ---------------- começo da partida: jato vira ficha (símbolo + quantidade) ---------------- */
   function leanJets() {
@@ -123,6 +164,7 @@
       card.dataset.g58 = '1';
       const t = treeOf(p.id); if (!t) return;
       card.style.setProperty('--tc', t.color);
+      derivar(card, 'tc');   // as cores do selo da árvore, prontas (sem color-mix)
       card.classList.add('has-tree');
       card.insertAdjacentHTML('afterbegin', '<span class="pc-tree" data-tip="' + HR.UI.esc(HR.t('pk_tree_' + t.id)) + '" data-tip-tap="1">' + HR.glyph(t.icon) + '</span>');
     });

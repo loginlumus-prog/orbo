@@ -7,6 +7,10 @@ window.HR = window.HR || {};
 (function () {
   const TAU = Math.PI * 2;
   const col = (c, t, k) => c === 'rainbow' ? HR.U.hsl((t * 240 + (k || 0) * 60) % 360, 95, 62, 1) : c;
+  // Baixo/Normal: a bolha da Egide fica lisa (sem o padrao recortado dentro dela)
+  // e a chama do Jato tem duas linguas em vez de tres. A cor, a borda e o brilho
+  // — o que diz "estou protegido" e "estou voando" — continuam iguais.
+  const OBJ = () => (!HR.Perf || HR.Perf.obj);
 
   // T = segundos restantes (pisca nos 3 finais) · sk = HR.GEAR.aegisSkins[i]
   HR.Render.drawAegis = function (ctx, x, y, br, sk, t, T) {
@@ -21,7 +25,7 @@ window.HR = window.HR || {};
     // padrão do estilo (recortado na bolha)
     ctx.save(); ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.clip();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    switch (sk.style) {
+    switch (OBJ() ? sk.style : '') {
       case 'hex': case 'hive': {
         const s = sk.style === 'hive' ? R * 0.26 : R * 0.34, h = s * Math.sqrt(3), rot = t * 0.25;
         ctx.translate(x, y); ctx.rotate(rot);
@@ -117,12 +121,14 @@ window.HR = window.HR || {};
       ctx.quadraticCurveTo(x - len * 0.45, y + wid * 0.7 + off + Math.sin(t * 19) * 2, x + br * 0.2, y + wid + off);
       ctx.closePath(); ctx.fill();
     };
+    const obj = OBJ();
     tongue(L * 1.1, W * 1.15, 0.45, c1, 0);
-    tongue(L * 0.8, W * 0.8, 0.7, sk.color === 'rainbow' ? col('rainbow', t, 2) : c1, Math.sin(t * 11) * 2);
+    if (obj) tongue(L * 0.8, W * 0.8, 0.7, sk.color === 'rainbow' ? col('rainbow', t, 2) : c1, Math.sin(t * 11) * 2);
     tongue(L * 0.5, W * 0.45, 0.95, c2, 0);
     // estrias
     ctx.strokeStyle = U.rgba(c2, 0.55); ctx.lineWidth = 1.5;
-    for (let i = 0; i < 5; i++) { const yy = y + (i - 2) * br * 0.7, off = ((t * 900 + i * 137) % 260); ctx.beginPath(); ctx.moveTo(x - br * 1.2 - off, yy); ctx.lineTo(x - br * 1.2 - off - 30 - i * 6, yy); ctx.stroke(); }
+    const passo = obj ? 1 : 2;
+    for (let i = 0; i < 5; i += passo) { const yy = y + (i - 2) * br * 0.7, off = ((t * 900 + i * 137) % 260); ctx.beginPath(); ctx.moveTo(x - br * 1.2 - off, yy); ctx.lineTo(x - br * 1.2 - off - 30 - i * 6, yy); ctx.stroke(); }
     ctx.restore();
   };
 })();

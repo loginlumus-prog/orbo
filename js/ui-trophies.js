@@ -105,11 +105,8 @@
     if (typeof arg === 'string') HR.UI.achTab = arg;
     closeTrophy();
     render.call(this, arg);
-    const tabs = $('#ach-tabs');
-    if (tabs && !tabs.dataset.trWired) {
-      tabs.dataset.trWired = '1';
-      HR.U.$$('.tab', tabs).forEach(b => b.addEventListener('click', () => { closeTrophy(); if (b.getAttribute('data-tab') === 'ach') { const body = $('#ach-body'); if (body) { body.innerHTML = ''; renderTrophies(body); } } }));
-    }
+    // as abas ja sao ligadas em ui-galaxy (wireTabs), e o callback de la chama
+    // ESTA funcao: um listener proprio aqui renderizava a sala tres vezes por toque
     if (HR.UI.achTab === 'ach') { const body = $('#ach-body'); if (body) { body.innerHTML = ''; renderTrophies(body); } }
   };
   const back = HR.UI.back;

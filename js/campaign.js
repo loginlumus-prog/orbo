@@ -11,19 +11,24 @@ HR.SYSTEM_KEYS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', '
 HR.MECHS = ['basic', 'osc', 'swarm', 'shrink', 'fog', 'spin', 'storm', 'dark', 'vortex', 'hyper'];
 HR.MECH_ICON = { basic: 'ring', osc: 'wave', swarm: 'hive', shrink: 'shrink', fog: 'nebula', spin: 'spin', storm: 'storm', dark: 'eclipse', vortex: 'cyclone', hyper: 'speed' };
 
-// contratos por galáxia (8 de 10 modelos): stat = campo de campaign.rstats[ri] (ou calculado) · alvo = base + per × galáxia
+// contratos por galáxia: os 5 PRIMEIROS são fixos (só jogar cumpre) e 3 dos 5 últimos giram.
+// Antes eram 8 sorteados de 10 e a G10 ficava com só 4 possíveis — o portão de 5 nunca abria.
+// stat = campo de campaign.rstats[ri] (ou calculado) · alvo = base + per × galáxia
 HR.CONTRACTS = [
-  { id: 'perfects',     stat: 'perfects',     base: 200,  per: 80,  coins: 500, gems: 12, icon: 'target' },
-  { id: 'clears',       stat: 'clears',       base: 40,   per: 6,   coins: 600, gems: 12, icon: 'flag' },
-  { id: 'coins',        stat: 'coins',        base: 1500, per: 600, coins: 700, gems: 10, icon: 'coins' },
-  { id: 'pickups',      stat: 'pickups',      base: 45,   per: 15,  coins: 500, gems: 12, icon: 'gift' },
-  { id: 'flawless',     stat: 'flawless',     base: 6,    per: 2,   coins: 700, gems: 18, icon: 'sparkle' },
-  { id: 'events',       stat: 'events',       base: 8,    per: 4,   coins: 600, gems: 14, icon: 'zap' },
-  { id: 'nomiss',       stat: 'noMiss',       base: 20,   per: 4,   coins: 600, gems: 14, icon: 'link' },
-  { id: 'bossflawless', stat: 'bossFlawless', base: 2,    per: 0,   coins: 900, gems: 25, icon: 'crown' },
+  // fixos
+  { id: 'perfects',     stat: 'perfects',     base: 200,  per: 60,  coins: 500, gems: 12, icon: 'target' },
+  { id: 'clears',       stat: 'clears',       base: 40,   per: 5,   coins: 600, gems: 12, icon: 'flag' },
+  { id: 'coins',        stat: 'coins',        base: 1500, per: 900, coins: 700, gems: 10, icon: 'coins' },
+  { id: 'pickups',      stat: 'pickups',      base: 45,   per: 12,  coins: 500, gems: 12, icon: 'gift' },
   { id: 'systems',      stat: '@systems',     base: 5,    per: 0,   coins: 800, gems: 20, icon: 'system' },
-  { id: 'threestars',   stat: '@threeStars',  base: 25,   per: 5,   coins: 800, gems: 20, icon: 'star' }
+  // rotativos
+  { id: 'flawless',     stat: 'flawless',     base: 4,    per: 1,   coins: 700, gems: 18, icon: 'sparkle' },
+  { id: 'events',       stat: 'events',       base: 8,    per: 2,   coins: 600, gems: 14, icon: 'zap' },
+  { id: 'nomiss',       stat: 'noMiss',       base: 10,   per: 1.5, coins: 600, gems: 14, icon: 'link' },
+  { id: 'bossflawless', stat: 'bossFlawless', base: 1,    per: 0,   coins: 900, gems: 25, icon: 'crown' },
+  { id: 'threestars',   stat: '@threeStars',  base: 10,   per: 2,   coins: 800, gems: 20, icon: 'star' }
 ];
+HR.CONTRACTS_FIXED = 5;
 
 (function () {
   const NS = HR.CAMPAIGN.systems, NL = HR.CAMPAIGN.stages;
@@ -46,7 +51,9 @@ HR.CONTRACTS = [
       case 'dark':   { const dk = k === 1 ? 420 - L * 18 : 540 - L * 10; P.dark = P.dark ? Math.min(P.dark, dk) : dk; P.yDelta += 80 * k; break; }
       case 'vortex': mx('osc', 60 * k); mx('oscF', 1.8); mx('rot', 0.5 * k); mx('rotF', 1.6); mx('tiltVar', 0.55 * k); break;
       case 'hyper':
-        if (k === 1) { P.radius *= 0.92; mx('osc', 50); mx('oscF', 1.6); mx('rot', 0.4); mx('rotF', 1.4); mx('tiltVar', 0.6); P.fog = P.fog ? Math.min(P.fog, 700) : 700; P.tbMul *= 0.94; }
+        // v8: a G10 já vem com raio, intervalo e névoa no limite; o desconto extra do hyper
+        // era o que tornava a última galáxia impossível. 0,92/0,94 → 0,96/0,97.
+        if (k === 1) { P.radius *= 0.96; mx('osc', 50); mx('oscF', 1.6); mx('rot', 0.4); mx('rotF', 1.4); mx('tiltVar', 0.6); P.fog = P.fog ? Math.min(P.fog, 700) : 700; P.tbMul *= 0.97; }
         else { P.radius *= 0.96; P.tbMul *= 0.97; }
         break;
     }
@@ -79,12 +86,18 @@ HR.CONTRACTS = [
     const S = HR.CONFIG.SPEED, isBoss = li === NL - 1, galaxyBoss = isBoss && si === NS - 1;
     const gi = ri * NS * NL + si * NL + li, g = gi / (NS * NS * NL - 1), lp = (si * NL + li) / (NS * NL - 1), L = lp * 9;
     const tier = Math.min(9, Math.floor(g * 9.99));
-    const rings = isBoss ? (galaxyBoss ? (ri === 9 ? 60 : 36 + ri * 3) : 26 + ri * 2 + si) : Math.round(lerp(14 + ri * 2, 24 + ri * 2, li / 8)) + Math.floor(si / 2);
+    // v8: os spans saem de SPEED (com queda para os valores fixos antigos quando a chave não existe)
+    const radiusSpan = S.radiusSpan != null ? S.radiusSpan : 0.36;
+    const tbMulSpan = S.tbMulSpan != null ? S.tbMulSpan : 0.22;
+    const yDeltaSpan = S.yDeltaSpan != null ? S.yDeltaSpan : 280;
+    const maxMods = S.maxMods != null ? S.maxMods : 2;
+    // v8: o chefe pesava pelo comprimento, não pela velocidade — metade dos arcos
+    const rings = isBoss ? (galaxyBoss ? Math.round(26 + ri * 1.4) : Math.round(22 + ri + si / 2)) : Math.round(lerp(14 + ri * 2, 24 + ri * 2, li / 8)) + Math.floor(si / 2);
     let v0 = S.base + S.span * Math.pow(g, S.pow);
     if (isBoss) v0 *= galaxyBoss ? S.galaxyBossMul : S.bossMul;
     const P = {
-      accent: R.accent, radius: 1 - g * 0.36, tiltVar: 0, osc: 0, oscF: 0, rot: 0, rotF: 0,
-      yDelta: 180 + g * 280, tbMul: 1 - g * 0.22, coin: 0.45 + g * 0.10, dbl: 0,
+      accent: R.accent, radius: 1 - g * radiusSpan, tiltVar: 0, osc: 0, oscF: 0, rot: 0, rotF: 0,
+      yDelta: 180 + g * yDeltaSpan, tbMul: 1 - g * tbMulSpan, coin: 0.45 + g * 0.10, dbl: 0,
       fog: 0, dark: 0, shrink: 0, sync: false, burst: 0,
       mix: 0.35 + g * 0.55, obs: gi >= 12 ? 0.15 + g * 0.45 : 0, pick: gi === 0 ? 0 : HR.CONFIG.PICKUP.chance
     };
@@ -96,6 +109,13 @@ HR.CONTRACTS = [
     applyMech(P, R.mech, L, 1);
     const sec = secondaryMech(R, ri, si);
     if (sec) applyMech(P, sec, L, 0.5);
+    // v8: visibilidade medida em TEMPO de reação, não em pixels. A 800 px/s, 290 px de névoa
+    // davam 0,36 s — menos que o tempo de reação humano. Agora o alcance nunca fica abaixo
+    // de v0 × visSec (névoa) e v0 × visSec × 0,8 (escuro).
+    if (S.visSec) {
+      if (P.fog) P.fog = Math.max(P.fog, v0 * S.visSec);
+      if (P.dark) P.dark = Math.max(P.dark, v0 * S.visSec * 0.8);
+    }
     let dirEvery = 0;
     const dirMech = R.mech === 'storm' || R.mech === 'vortex' || R.mech === 'hyper' ? R.mech : (sec === 'storm' || sec === 'vortex' ? sec : null);
     if (dirMech === 'storm') dirEvery = isBoss ? 4 : 8 - Math.floor(L / 3);
@@ -107,6 +127,7 @@ HR.CONTRACTS = [
     const mods = [];
     if (!isBoss && gi >= 25 && (li % 3 === 2 || g > 0.45)) mods.push(MUT[(ri * 7 + si * 5 + li * 3) % 5]);
     if (!isBoss && g > 0.6 && li >= 6) { const m2 = MUT[(ri * 7 + si * 5 + li * 3 + 2) % 5]; if (!mods.includes(m2)) mods.push(m2); }
+    if (mods.length > maxMods) mods.length = maxMods;   // v8: no máximo 1 mutação por fase
     mods.forEach(m => {
       if (m === 'narrow') P.radius *= 0.9; else if (m === 'dense') P.tbMul *= 0.9; else if (m === 'wind') P.tiltVar = Math.max(P.tiltVar, 0.25) + 0.1;
       else if (m === 'pairs') P.dbl += 0.15; else if (m === 'bursts') P.burst = Math.max(P.burst, 0.2);
@@ -212,7 +233,31 @@ HR.CONTRACTS = [
     },
     nextPortal() { for (let i = 1; i < HR.REGIONS.length; i++) if (!this.isRegionUnlocked(i)) return this.isRegionUnlocked(i - 1) ? i : null; return null; },
     singularityMastered() { return this.bossBeaten(HR.REGIONS.length - 1); },
-    passNeed(level) { return Math.ceil(level.rings * (level.passNeed || HR.CONFIG.RUN.passNeed)); },
+    passNeed(level, help) { return Math.ceil(level.rings * (help && help.passNeed != null ? help.passNeed : (level.passNeed || HR.CONFIG.RUN.passNeed))); },
+
+    /* ---------------- modo de segurança ("vento a favor") ----------------
+       Derrotas seguidas na mesma fase afrouxam a fase, em degraus discretos.
+       Quem liga isso na partida é js/safety-v8.js; aqui ficam só as contas.
+       A vitória zera a conta. As estrelas continuam valendo. */
+    fails(levelId) { const c = HR.Store.data.campaign; return (c.fails || {})[levelId] || 0; },
+    help(levelId) {
+      const S = HR.CONFIG.PROGRESSION.SAFETY; if (!S) return null;
+      const h = Math.min(S.max, Math.floor(this.fails(levelId) / S.every));
+      if (h <= 0) return null;
+      return {
+        step: h,
+        radius: S.radius * h,
+        passNeed: Math.max(0.3, HR.CONFIG.RUN.passNeed - S.passNeed * h),
+        shield: h >= S.shieldAt ? 1 : 0,
+        noObs: h >= S.noObsAt
+      };
+    },
+    noteResult(levelId, success) {
+      if (!levelId) return;
+      const c = HR.Store.data.campaign; c.fails = c.fails || {};
+      if (success) delete c.fails[levelId]; else c.fails[levelId] = (c.fails[levelId] || 0) + 1;
+      HR.Store.save();
+    },
     // % da jornada (ranking): 60 % fases, 15 % estrelas, 25 % Arcontes
     progressPct() {
       const total = NS * NL * HR.REGIONS.length, arch = HR.Singularity ? HR.Singularity.passedCount() : 0, archN = HR.ARCHONS ? HR.ARCHONS.length : 11;
@@ -220,9 +265,14 @@ HR.CONTRACTS = [
     },
 
     // contratos: 8 por galáxia; prêmio automático no fim da partida
+    // v8: 5 fixos (cumpríveis só jogando) + 3 rotativos dos 5 restantes.
+    // O portão pede 5 contratos, então ele sempre fecha sem caçar nada raro.
     contractsOf(ri) {
-      const out = [], T = HR.CONTRACTS;
-      for (let k = 0; k < 8; k++) { const t = T[(ri * 3 + k) % T.length]; out.push({ id: t.id + '_' + ri, tpl: t.id, stat: t.stat, target: t.base + t.per * ri, coins: t.coins + ri * 80, gems: t.gems, xp: 400, icon: t.icon, ri }); }
+      const out = [], T = HR.CONTRACTS, NF = HR.CONTRACTS_FIXED || 5;
+      const add = t => out.push({ id: t.id + '_' + ri, tpl: t.id, stat: t.stat, target: Math.round(t.base + t.per * ri), coins: Math.round(t.coins * (1 + 0.4 * ri)), gems: t.gems, xp: 600, icon: t.icon, ri });
+      for (let k = 0; k < NF; k++) add(T[k]);
+      const rot = T.length - NF;
+      for (let k = 0; k < 3; k++) add(T[(ri * 3 + k) % rot + NF]);
       return out;
     },
     rstat(ri) { const c = HR.Store.data.campaign; c.rstats = c.rstats || {}; return c.rstats[ri] || (c.rstats[ri] = { perfects: 0, clears: 0, coins: 0, pickups: 0, flawless: 0, events: 0, noMiss: 0, bossFlawless: 0 }); },
@@ -255,15 +305,17 @@ HR.CONTRACTS = [
       return done;
     },
 
+    // v8: ★2 pedia 40 % de perfeitos (o casual faz ~30 %) e ★3 pedia "sem dano, sem erro e
+    // todas as moedas" — na prática ninguém fazia ★3 depois da G3. 25 % e "sem dano, até 1 erro".
     computeStars(summary, level) {
       let s = 1;
-      if (summary.perfects >= Math.ceil(level.rings * 0.4)) s++;
-      if (summary.hits === 0 && !summary.misses && summary.coinsMissed === 0) s++;
+      if (summary.perfects >= Math.ceil(level.rings * 0.25)) s++;
+      if (summary.hits === 0 && (summary.misses || 0) <= 1) s++;
       return s;
     },
     firstClearReward(level) {
-      // v5.9: escalonamento por galáxia — a partir da 3ª dá para comprar uma coisa ou outra
-      const GM = [1, 1, 1.35, 1.35, 1.5, 2, 2.2, 2.4, 2.7, 3];
+      // v8: a primeira vez subia pouco demais entre as galáxias (×3 no fim); agora ×7,5
+      const GM = [1, 1.3, 1.7, 2.2, 2.8, 3.5, 4.3, 5.2, 6.2, 7.5];
       let coins = Math.round((40 + level.ri * 30 + level.si * 6 + level.li * 4) * (GM[level.ri] || 1));
       if (level.galaxyBoss) coins *= 6; else if (level.boss) coins = Math.round(coins * 2.5);
       const gems = level.galaxyBoss ? 30 + level.ri * 4 : level.boss ? 5 : (level.li === 4 ? 1 : 0);
@@ -295,7 +347,7 @@ HR.CONTRACTS = [
         rewards.push({ coins: r.coins }); HR.Economy.addCoins(r.coins, 'campaign');
         if (r.gems) { rewards.push({ gems: r.gems }); HR.Economy.addGems(r.gems, 'campaign'); }
         if (r.aegis && HR.Consumables) { HR.Consumables.add('aegis', r.aegis, 'system_boss'); rewards.push({ aegis: r.aegis }); }
-      } else { const c = Math.round(this.firstClearReward(level).coins / 3); rewards.push({ coins: c }); HR.Economy.addCoins(c, 'campaign_repeat'); }
+      } else { const c = Math.round(this.firstClearReward(level).coins / (HR.CONFIG.ECONOMY.repeatDiv || 3)); rewards.push({ coins: c }); HR.Economy.addCoins(c, 'campaign_repeat'); }
       if (stars === 3 && before < 3) { rewards.push({ gems: 1 }); HR.Economy.addGems(1, 'campaign_3stars'); }
       if (summary.hits === 0) d.stats.flawlessLevels = (d.stats.flawlessLevels || 0) + 1;
       let systemCleared = false, regionCleared = false;

@@ -48,10 +48,13 @@ HR.PERKS = [
   { id: 'coinsx2',      rarity: 'rare',      max: 1, icon: 'coins',    mods: { coinMul: 2 } },
   { id: 'combo3',       rarity: 'rare',      max: 1, icon: 'flame',    mods: { comboEvery: 3 } },
   { id: 'reflex',       rarity: 'rare',      max: 1, icon: 'eye',      mods: { reflex: true } },
-  { id: 'streakshield', rarity: 'rare',      max: 1, icon: 'link',     mods: { streakShield: true } },
+  // v8: 8 PERFEITOS seguidos = 0,01 % para o casual — nunca disparava. Agora conta acertos.
+  { id: 'streakshield', rarity: 'rare',      max: 1, icon: 'link',     mods: { streakRun: 5 } },
   { id: 'greedy',       rarity: 'epic',      max: 1, icon: 'bag',      mods: { coinMul: 1.5, ringRadius: -0.10 } },
-  { id: 'risky',        rarity: 'epic',      max: 1, icon: 'dice',     mods: { ringRadius: -0.12, scorePerRing: 1 } },
-  { id: 'goldring',     rarity: 'epic',      max: 1, icon: 'goldRing', mods: { goldEvery: 10 } },
+  // v8: ponto só vale no Infinito; na Galáxia o Arriscado não dava nada — agora dá moeda
+  { id: 'risky',        rarity: 'epic',      max: 1, icon: 'dice',     mods: { ringRadius: -0.12, scorePerRing: 1, coinPerRing: 1 } },
+  // v8: a cada 10 arcos eram ~10 moedas por fase; a cada 5 (e a moeda já escala por galáxia)
+  { id: 'goldring',     rarity: 'epic',      max: 1, icon: 'goldRing', mods: { goldEvery: 5 } },
   { id: 'secondchance', rarity: 'legendary', max: 1, icon: 'undo',     mods: { secondChance: 1 } },
   // v4
   { id: 'scavenger',    rarity: 'common',    max: 2, icon: 'gift',     mods: { scavenger: 1 } },
@@ -61,7 +64,8 @@ HR.PERKS = [
   { id: 'warpcore',     rarity: 'epic',      max: 1, icon: 'warp',     mods: { warpcore: true } },
   { id: 'tempo',        rarity: 'epic',      max: 1, icon: 'clock',    mods: { tempo: true } },
   // v5
-  { id: 'microball',    rarity: 'common',    max: 2, icon: 'micro',    mods: { ballScale: 0.92 } },
+  // v8: 8 % de bola = ~1 px de abertura a mais. 15 % já se sente.
+  { id: 'microball',    rarity: 'common',    max: 2, icon: 'micro',    mods: { ballScale: 0.85 } },
   { id: 'magnetfield',  rarity: 'common',    max: 2, icon: 'magnet',   mods: { magnetRange: 1.4 } },
   { id: 'stardust',     rarity: 'common',    max: 3, icon: 'sparkles', mods: { coinChance: 0.06 } },
   { id: 'aegischarge',  rarity: 'rare',      max: 1, icon: 'aegis',    mods: { aegisCd: 0.6 } },
@@ -70,7 +74,8 @@ HR.PERKS = [
   { id: 'afterburner',  rarity: 'rare',      max: 1, icon: 'jet',      mods: { noFlowSpeed: true } },
   { id: 'resonance',    rarity: 'epic',      max: 1, icon: 'shockwave', mods: { resonance: 0.5 } },
   { id: 'prismatic',    rarity: 'epic',      max: 1, icon: 'prism',    mods: { prismEvery: 5 } },
-  { id: 'guardianangel', rarity: 'legendary', max: 1, icon: 'light',   mods: { angel: 30 } },
+  // v8: 30 arcos sem dano na G8+ era zero. 15 arcos, e épico (lendário quase nunca aparecia)
+  { id: 'guardianangel', rarity: 'epic',     max: 1, icon: 'light',   mods: { angel: 15 } },
   // ascensão (míticos): levam a build ao automático — ver docs/PLANO_V3.md v3.1
   { id: 'autoflow',     rarity: 'mythic',    max: 3, icon: 'pilot',    mods: { autoflow: 1 } },
   { id: 'regen',        rarity: 'mythic',    max: 3, icon: 'regen',    mods: { regen: 1 } },
@@ -80,25 +85,33 @@ HR.PERKS = [
 ];
 
 HR.Perks = {
-  baseMods() {
-    return { ringRadius: 0, perfectZone: 1, coinMul: 1, magnet: false, cdMul: 1, durMul: 1, comboEvery: 5, speedMul: 1, reflex: false, scorePerRing: 1, streakShield: false, goldEvery: 0, secondChance: 0, autoflow: 0, regen: 0, intangible: 0, overclock: 0, momentum: 0, scavenger: 0, hull: 0, flowkeeper: false, lucky: false, warpcore: false, tempo: false,
-      ballScale: 1, magnetRange: 1, coinChance: 0, aegisCd: 1, bagMul: 1, capBonus: 0, noFlowSpeed: false, resonance: 0, prismEvery: 0, angel: 0 };
-  },
+  // v8: as três listas ficam abertas para que js/perks-v8.js registre chaves novas
+  // sem reescrever recompute() (era um encadeado de === dentro do laço).
+  BASE: { ringRadius: 0, perfectZone: 1, coinMul: 1, magnet: false, cdMul: 1, durMul: 1, comboEvery: 5, speedMul: 1, reflex: false, scorePerRing: 1, streakShield: false, goldEvery: 0, secondChance: 0, autoflow: 0, regen: 0, intangible: 0, overclock: 0, momentum: 0, scavenger: 0, hull: 0, flowkeeper: false, lucky: false, warpcore: false, tempo: false,
+    ballScale: 1, magnetRange: 1, coinChance: 0, aegisCd: 1, bagMul: 1, capBonus: 0, noFlowSpeed: false, resonance: 0, prismEvery: 0, angel: 0, coinPerRing: 0 },
+  ADD: ['ringRadius', 'scorePerRing', 'secondChance', 'autoflow', 'regen', 'intangible', 'overclock', 'momentum', 'scavenger', 'hull', 'coinChance', 'capBonus', 'resonance', 'coinPerRing'],
+  MUL: ['perfectZone', 'cdMul', 'durMul', 'speedMul', 'coinMul', 'ballScale', 'magnetRange', 'aegisCd', 'bagMul'],
+  baseMods() { return Object.assign({}, this.BASE); },
   def(id) { return HR.PERKS.find(p => p.id === id); },
+  applyMods(m, mods, times) {
+    for (let n = 0; n < (times || 1); n++) {
+      for (const k in mods) {
+        const v = mods[k];
+        if (this.ADD.indexOf(k) >= 0) m[k] += v;
+        else if (this.MUL.indexOf(k) >= 0) m[k] *= v;
+        else m[k] = v;
+      }
+    }
+    return m;
+  },
   recompute(run) {
     const m = this.baseMods();
     for (const id in run.perks) {
       const p = this.def(id); if (!p || !p.mods) continue;
-      for (let n = 0; n < run.perks[id]; n++) {
-        for (const k in p.mods) {
-          const v = p.mods[k];
-          if (k === 'ringRadius' || k === 'scorePerRing' || k === 'secondChance' || k === 'autoflow' || k === 'regen' || k === 'intangible' || k === 'overclock' || k === 'momentum' || k === 'scavenger' || k === 'hull' || k === 'coinChance' || k === 'capBonus' || k === 'resonance') m[k] += v;
-          else if (k === 'perfectZone' || k === 'cdMul' || k === 'durMul' || k === 'speedMul' || k === 'coinMul' || k === 'ballScale' || k === 'magnetRange' || k === 'aegisCd' || k === 'bagMul') m[k] *= v;
-          else m[k] = v;
-        }
-      }
+      this.applyMods(m, p.mods, run.perks[id]);
     }
-    m.cdMul *= [1, 0.6, 0.35, 0.1][Math.min(3, m.overclock)];
+    // v8: overclock 3 zerava a recarga (×0,1) e a corrida se jogava sozinha
+    m.cdMul *= [1, 0.6, 0.4, 0.25][Math.min(3, m.overclock)];
     run.mods = m;
     return m;
   },
@@ -106,7 +119,8 @@ HR.Perks = {
     n = n || 3;
     const A = HR.CONFIG.ASCENSION;
     const mythicOk = run.mode === 'endless' && run.ringsPassed >= A.fromRing;
-    const pool = HR.PERKS.filter(p => (run.perks[p.id] || 0) < p.max && (p.rarity !== 'legendary' || run.ringsPassed >= 30) && (p.rarity !== 'mythic' || mythicOk));
+    // v8: numa fase de 14–35 arcos o lendário quase nunca chegava a aparecer — arco 20
+    const pool = HR.PERKS.filter(p => (run.perks[p.id] || 0) < p.max && (p.rarity !== 'legendary' || run.ringsPassed >= 20) && (p.rarity !== 'mythic' || mythicOk));
     const out = [];
     if (mythicOk && Math.random() < A.chance) { const my = pool.filter(p => p.rarity === 'mythic'); if (my.length) { const pick = my[Math.floor(Math.random() * my.length)]; out.push(pick); pool.splice(pool.indexOf(pick), 1); } }
     while (out.length < n && pool.length) {
@@ -208,15 +222,15 @@ Object.assign(HR.I18N.pt, {
   perk_coinsx2: 'Moedas Duplas', perk_coinsx2_d: 'Todas as moedas valem o dobro.',
   perk_combo3: 'Combo Curto', perk_combo3_d: 'Bônus de combo a cada 3 perfeitos em vez de 5.',
   perk_reflex: 'Reflexo', perk_reflex_d: 'Câmera lenta automática ao chegar perto da borda.',
-  perk_streakshield: 'Escudo de Sequência', perk_streakshield_d: 'A cada 8 perfeitos seguidos, +1 escudo.',
+  perk_streakshield: 'Escudo de Sequência', perk_streakshield_d: 'A cada 5 acertos seguidos, +1 escudo.',
   perk_greedy: 'Ganancioso', perk_greedy_d: '+50 % moedas, mas arcos 10 % menores.',
-  perk_risky: 'Arriscado', perk_risky_d: 'Arcos 12 % menores, mas cada arco vale 2 pontos.',
-  perk_goldring: 'Anel Dourado', perk_goldring_d: 'A cada 10º arco, +5 moedas.',
+  perk_risky: 'Arriscado', perk_risky_d: 'Arcos 12 % menores, mas cada arco vale 2 pontos e +1 moeda.',
+  perk_goldring: 'Anel Dourado', perk_goldring_d: 'A cada 5º arco, +5 moedas.',
   perk_secondchance: 'Segunda Chance', perk_secondchance_d: 'Uma vez por corrida, o erro é desfeito.',
   perk_autoflow: 'Fluxo', perk_autoflow_d: 'Piloto automático em pulsos; no nível 3, permanente.',
   perk_regen: 'Regeneração', perk_regen_d: '+1 escudo a cada 12/8/5 arcos e o limite de escudos sobe.',
   perk_intangible: 'Intangível', perk_intangible_d: 'Fantasma 40 % do tempo → 70 % → permanente.',
-  perk_overclock: 'Overclock', perk_overclock_d: 'Habilidades recarregam 40 % / 65 % / 90 % mais rápido.',
+  perk_overclock: 'Overclock', perk_overclock_d: 'Habilidades recarregam 40 % / 60 % / 75 % mais rápido.',
   perk_momentum: 'Momento', perk_momentum_d: '+1 ponto por arco por nível.',
   ab_blackhole: 'Buraco Negro', ab_blackhole_d: 'Um mini buraco negro engole os obstáculos por perto e puxa moedas e itens de longe.',
   ab_prism: 'Prisma', ab_prism_d: 'A zona de PERFEITO fica 3 vezes maior por alguns segundos.',
@@ -226,7 +240,7 @@ Object.assign(HR.I18N.pt, {
   ab_comet: 'Cometa', ab_comet_d: 'Dispara invencível em alta velocidade, despedaçando as bordas.',
   ab_supernova: 'Supernova', ab_supernova_d: 'Explosão: os 3 próximos arcos contam como PERFEITOS e os obstáculos somem.',
   ab_chrono: 'Cronos', ab_chrono_d: 'O mundo quase para por um instante; só a bola se move.',
-  perk_microball: 'Compacta', perk_microball_d: 'Bola 8 % menor por nível.',
+  perk_microball: 'Compacta', perk_microball_d: 'Bola 15 % menor por nível.',
   perk_magnetfield: 'Campo Magnético', perk_magnetfield_d: 'Alcance de atração de itens 40 % maior por nível.',
   perk_stardust: 'Poeira Estelar', perk_stardust_d: '+6 % de chance de moeda em cada arco por nível.',
   perk_aegischarge: 'Égide Rápida', perk_aegischarge_d: 'A Égide recarrega 40 % mais rápido.',
@@ -235,7 +249,7 @@ Object.assign(HR.I18N.pt, {
   perk_afterburner: 'Pós-combustão', perk_afterburner_d: 'A sequência não acelera os arcos: o ritmo fica sempre calmo.',
   perk_resonance: 'Ressonância', perk_resonance_d: 'Cada PERFEITO tira 0,5 s da recarga das habilidades.',
   perk_prismatic: 'Prismático', perk_prismatic_d: 'A cada 5 arcos, um conta como PERFEITO se você passar por ele.',
-  perk_guardianangel: 'Anjo da Guarda', perk_guardianangel_d: 'A cada 30 arcos sem dano, +1 escudo.',
+  perk_guardianangel: 'Anjo da Guarda', perk_guardianangel_d: 'A cada 15 arcos sem dano, +1 escudo.',
   perk_title: 'ESCOLHA UM PODER', perk_sub: 'Arco {n} · monte sua build', perk_reroll: 'Trocar opções', perk_skip: 'Pular (+15 moedas)', perk_taken: 'Nível {n}/{max}', build: 'Build',
   perk_auto: 'Escolha automática', perk_auto_d: 'Os próximos perks são escolhidos sozinhos, sem pausar.', perk_auto_on: 'Perk automático', perk_auto_toast: 'Perk automático: {name}',
   rarity_common: 'Comum', rarity_rare: 'Raro', rarity_epic: 'Épico', rarity_legendary: 'Lendário', rarity_mythic: 'Mítico'
@@ -269,15 +283,15 @@ Object.assign(HR.I18N.en, {
   perk_coinsx2: 'Double Coins', perk_coinsx2_d: 'All coins are worth double.',
   perk_combo3: 'Short Combo', perk_combo3_d: 'Combo bonus every 3 perfects instead of 5.',
   perk_reflex: 'Reflex', perk_reflex_d: 'Automatic slow motion when close to a rim.',
-  perk_streakshield: 'Streak Shield', perk_streakshield_d: 'Every 8 perfects in a row, +1 shield.',
+  perk_streakshield: 'Streak Shield', perk_streakshield_d: 'Every 5 rings in a row, +1 shield.',
   perk_greedy: 'Greedy', perk_greedy_d: '+50% coins, but rings 10% smaller.',
-  perk_risky: 'Risky', perk_risky_d: 'Rings 12% smaller, but each ring scores 2.',
-  perk_goldring: 'Golden Ring', perk_goldring_d: 'Every 10th ring gives +5 coins.',
+  perk_risky: 'Risky', perk_risky_d: 'Rings 12% smaller, but each ring scores 2 and gives +1 coin.',
+  perk_goldring: 'Golden Ring', perk_goldring_d: 'Every 5th ring gives +5 coins.',
   perk_secondchance: 'Second Chance', perk_secondchance_d: 'Once per run, a mistake is undone.',
   perk_autoflow: 'Flow', perk_autoflow_d: 'Autopilot in pulses; permanent at level 3.',
   perk_regen: 'Regeneration', perk_regen_d: '+1 shield every 12/8/5 rings and the shield cap rises.',
   perk_intangible: 'Intangible', perk_intangible_d: 'Ghost 40% of the time → 70% → permanent.',
-  perk_overclock: 'Overclock', perk_overclock_d: 'Abilities recharge 40% / 65% / 90% faster.',
+  perk_overclock: 'Overclock', perk_overclock_d: 'Abilities recharge 40% / 60% / 75% faster.',
   perk_momentum: 'Momentum', perk_momentum_d: '+1 point per ring per level.',
   ab_blackhole: 'Black Hole', ab_blackhole_d: 'A mini black hole swallows nearby obstacles and pulls coins and items from far away.',
   ab_prism: 'Prism', ab_prism_d: 'The PERFECT zone gets 3 times bigger for a few seconds.',
@@ -287,7 +301,7 @@ Object.assign(HR.I18N.en, {
   ab_comet: 'Comet', ab_comet_d: 'Blast forward invincible at high speed, shattering rims.',
   ab_supernova: 'Supernova', ab_supernova_d: 'Explosion: the next 3 rings count as PERFECT and obstacles vanish.',
   ab_chrono: 'Chronos', ab_chrono_d: 'The world almost stops for a moment; only the ball moves.',
-  perk_microball: 'Compact', perk_microball_d: 'Ball 8% smaller per level.',
+  perk_microball: 'Compact', perk_microball_d: 'Ball 15% smaller per level.',
   perk_magnetfield: 'Magnetic Field', perk_magnetfield_d: 'Item pull range 40% bigger per level.',
   perk_stardust: 'Stardust', perk_stardust_d: '+6% coin chance on every ring per level.',
   perk_aegischarge: 'Quick Aegis', perk_aegischarge_d: 'The Aegis recharges 40% faster.',
@@ -296,7 +310,7 @@ Object.assign(HR.I18N.en, {
   perk_afterburner: 'Afterburner', perk_afterburner_d: 'Streaks no longer speed up rings: the rhythm stays calm.',
   perk_resonance: 'Resonance', perk_resonance_d: 'Each PERFECT takes 0.5 s off ability cooldowns.',
   perk_prismatic: 'Prismatic', perk_prismatic_d: 'Every 5th ring counts as PERFECT if you pass it.',
-  perk_guardianangel: 'Guardian Angel', perk_guardianangel_d: 'Every 30 rings without damage, +1 shield.',
+  perk_guardianangel: 'Guardian Angel', perk_guardianangel_d: 'Every 15 rings without damage, +1 shield.',
   perk_title: 'PICK A POWER', perk_sub: 'Ring {n} · build your run', perk_reroll: 'Reroll', perk_skip: 'Skip (+15 coins)', perk_taken: 'Level {n}/{max}', build: 'Build',
   perk_auto: 'Auto pick', perk_auto_d: 'Next perks are chosen automatically, without pausing.', perk_auto_on: 'Auto perk', perk_auto_toast: 'Auto perk: {name}',
   rarity_common: 'Common', rarity_rare: 'Rare', rarity_epic: 'Epic', rarity_legendary: 'Legendary', rarity_mythic: 'Mythic'
@@ -330,15 +344,15 @@ Object.assign(HR.I18N.es, {
   perk_coinsx2: 'Monedas Dobles', perk_coinsx2_d: 'Todas las monedas valen el doble.',
   perk_combo3: 'Combo Corto', perk_combo3_d: 'Bono de combo cada 3 perfectos en vez de 5.',
   perk_reflex: 'Reflejo', perk_reflex_d: 'Cámara lenta automática cerca del borde.',
-  perk_streakshield: 'Escudo de Racha', perk_streakshield_d: 'Cada 8 perfectos seguidos, +1 escudo.',
+  perk_streakshield: 'Escudo de Racha', perk_streakshield_d: 'Cada 5 aciertos seguidos, +1 escudo.',
   perk_greedy: 'Codicioso', perk_greedy_d: '+50 % monedas, pero aros un 10 % más pequeños.',
-  perk_risky: 'Arriesgado', perk_risky_d: 'Aros un 12 % más pequeños, pero cada aro vale 2 puntos.',
-  perk_goldring: 'Aro Dorado', perk_goldring_d: 'Cada 10º aro da +5 monedas.',
+  perk_risky: 'Arriesgado', perk_risky_d: 'Aros un 12 % más pequeños, pero cada aro vale 2 puntos y +1 moneda.',
+  perk_goldring: 'Aro Dorado', perk_goldring_d: 'Cada 5.º aro da +5 monedas.',
   perk_secondchance: 'Segunda Oportunidad', perk_secondchance_d: 'Una vez por partida, el error se deshace.',
   perk_autoflow: 'Flujo', perk_autoflow_d: 'Piloto automático en pulsos; permanente en nivel 3.',
   perk_regen: 'Regeneración', perk_regen_d: '+1 escudo cada 12/8/5 aros y sube el límite de escudos.',
   perk_intangible: 'Intangible', perk_intangible_d: 'Fantasma el 40 % del tiempo → 70 % → permanente.',
-  perk_overclock: 'Overclock', perk_overclock_d: 'Las habilidades recargan un 40 % / 65 % / 90 % más rápido.',
+  perk_overclock: 'Overclock', perk_overclock_d: 'Las habilidades recargan un 40 % / 60 % / 75 % más rápido.',
   perk_momentum: 'Impulso', perk_momentum_d: '+1 punto por aro por nivel.',
   ab_blackhole: 'Agujero Negro', ab_blackhole_d: 'Un mini agujero negro se traga los obstáculos cercanos y atrae monedas y objetos desde lejos.',
   ab_prism: 'Prisma', ab_prism_d: 'La zona de PERFECTO se hace 3 veces más grande por unos segundos.',
@@ -348,7 +362,7 @@ Object.assign(HR.I18N.es, {
   ab_comet: 'Cometa', ab_comet_d: 'Sales disparado, invencible y a gran velocidad, rompiendo los bordes.',
   ab_supernova: 'Supernova', ab_supernova_d: 'Explosión: los 3 próximos aros cuentan como PERFECTOS y los obstáculos desaparecen.',
   ab_chrono: 'Cronos', ab_chrono_d: 'El mundo casi se detiene un instante; solo la bola se mueve.',
-  perk_microball: 'Compacta', perk_microball_d: 'Bola un 8 % más pequeña por nivel.',
+  perk_microball: 'Compacta', perk_microball_d: 'Bola un 15 % más pequeña por nivel.',
   perk_magnetfield: 'Campo Magnético', perk_magnetfield_d: 'Alcance de atracción de objetos un 40 % mayor por nivel.',
   perk_stardust: 'Polvo Estelar', perk_stardust_d: '+6 % de probabilidad de moneda en cada aro por nivel.',
   perk_aegischarge: 'Égida Rápida', perk_aegischarge_d: 'La Égida recarga un 40 % más rápido.',
@@ -357,7 +371,7 @@ Object.assign(HR.I18N.es, {
   perk_afterburner: 'Postcombustión', perk_afterburner_d: 'Las rachas ya no aceleran los aros: el ritmo queda tranquilo.',
   perk_resonance: 'Resonancia', perk_resonance_d: 'Cada PERFECTO quita 0,5 s a la recarga de las habilidades.',
   perk_prismatic: 'Prismático', perk_prismatic_d: 'Cada 5 aros, uno cuenta como PERFECTO si lo pasas.',
-  perk_guardianangel: 'Ángel Guardián', perk_guardianangel_d: 'Cada 30 aros sin daño, +1 escudo.',
+  perk_guardianangel: 'Ángel Guardián', perk_guardianangel_d: 'Cada 15 aros sin daño, +1 escudo.',
   perk_title: 'ELIGE UN PODER', perk_sub: 'Aro {n} · arma tu build', perk_reroll: 'Cambiar opciones', perk_skip: 'Saltar (+15 monedas)', perk_taken: 'Nivel {n}/{max}', build: 'Build',
   perk_auto: 'Elección automática', perk_auto_d: 'Los próximos perks se eligen solos, sin pausar.', perk_auto_on: 'Perk automático', perk_auto_toast: 'Perk automático: {name}',
   rarity_common: 'Común', rarity_rare: 'Raro', rarity_epic: 'Épico', rarity_legendary: 'Legendario', rarity_mythic: 'Mítico'

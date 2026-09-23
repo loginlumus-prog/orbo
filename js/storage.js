@@ -60,13 +60,11 @@ HR.Store = {
     return d;
   },
 
-  load() {
-    const K = HR.CONFIG.SAVE_KEY, LK = HR.CONFIG.LEGACY_SAVE_KEY;
-    let d = null, legacy = false;
-    try { d = JSON.parse(localStorage.getItem(K) || 'null'); } catch (e) { d = null; }
-    if (!d) { try { d = JSON.parse(localStorage.getItem(LK) || 'null'); legacy = !!d; } catch (e) { d = null; } }
+  // Completa o save com os defaults: campo de versao nova nunca fica indefinido.
+  // Usado por load() e por import() (um backup antigo nao tem stats5/rifts/frags).
+  withDefaults(d) {
     const def = this.defaults();
-    if (!d || typeof d !== 'object') d = def;
+    if (!d || typeof d !== 'object' || Array.isArray(d)) d = def;
     const merge = (base, src) => {
       for (const k in base) {
         if (src[k] === undefined) src[k] = base[k];
@@ -74,7 +72,15 @@ HR.Store = {
       }
       return src;
     };
-    d = merge(def, d);
+    return merge(def, d);
+  },
+
+  load() {
+    const K = HR.CONFIG.SAVE_KEY, LK = HR.CONFIG.LEGACY_SAVE_KEY;
+    let d = null, legacy = false;
+    try { d = JSON.parse(localStorage.getItem(K) || 'null'); } catch (e) { d = null; }
+    if (!d) { try { d = JSON.parse(localStorage.getItem(LK) || 'null'); legacy = !!d; } catch (e) { d = null; } }
+    d = this.withDefaults(d);
     if (legacy) { d.v = 3; d.migratedFrom = 'halorush'; }
     if (d.v < 4) d.v = 4;
     this.migrate(d);
@@ -85,8 +91,19 @@ HR.Store = {
   },
 
   save() {
+    this.pending = false;
     try { localStorage.setItem(HR.CONFIG.SAVE_KEY, JSON.stringify(this.data)); } catch (e) { /* armazenamento cheio ou bloqueado */ }
   },
+  // Para o meio da partida (gema apanhada, Egide, Jato): o JSON.stringify +
+  // setItem sincronos custam 1-3 ms no A10 e caiam no quadro do toque. Aqui
+  // o save vai para um momento ocioso; se o app fechar antes, flush() salva.
+  saveSoon() {
+    if (this.pending) return;
+    this.pending = true;
+    const go = () => { if (this.pending) this.save(); };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 1500 }); else setTimeout(go, 120);
+  },
+  flush() { if (this.pending) this.save(); },
 
   reset() {
     const keepSettings = this.data ? this.data.settings : null;
@@ -96,5 +113,25 @@ HR.Store = {
   },
 
   export() { return JSON.stringify(this.data); },
-  import(json) { try { const d = JSON.parse(json); if (d && d.v) { this.data = d; this.save(); return true; } } catch (e) { /* inválido */ } return false; }
+  // "Colar codigo de backup": o JSON vinha de uma versao mais velha e era gravado
+  // cru, deixando stats5/rifts/frags/story indefinidos (o primeiro
+  // data.stats5.aegisUsed++ lancava). Aqui ele passa pelo mesmo caminho da carga:
+  // valida, completa com os defaults e migra antes de gravar.
+  import(json) {
+    let d = null;
+    try { d = JSON.parse(json); } catch (e) { return false; }
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return false;
+    const velho = !d.v;                 // backup sem versao = Halo Rush v1
+    d = this.withDefaults(d);
+    if (velho) { d.v = 3; d.migratedFrom = 'halorush'; }
+    if (d.v < 4) d.v = 4;
+    this.migrate(d);
+    d.lastOpen = Date.now();
+    this.data = d;
+    this.save();
+    return true;
+  }
 };
+// um save adiado nunca se perde: ao esconder ou fechar a pagina ele e gravado
+document.addEventListener('visibilitychange', () => { if (document.hidden) HR.Store.flush(); });
+window.addEventListener('pagehide', () => HR.Store.flush());

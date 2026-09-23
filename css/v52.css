@@ -93,7 +93,8 @@
 
 /* movimento só quando o menu está à vista; aparelho leve e "reduzir movimento" desligam */
 #screen-menu:not(.visible) .scene * { animation-play-state: paused !important; }
-body:has(.screen.panel.visible) #scene * { animation-play-state: paused !important; }
+/* o :has() nao existe no iOS 15: a classe vem de HR.UI.marcaPainel() */
+.panel-open #scene * { animation-play-state: paused !important; }
 .fx-low .scene * { animation: none !important; }
 .fx-low .scene .ob-circle .ic { filter: none; }
 .fx-low .menu-dust { display: none; }

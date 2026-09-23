@@ -6,12 +6,12 @@
 .rift-chip {
   --rc: #4cf0ff; display: flex; align-items: center; gap: 8px; width: 100%; margin: 8px 0 0;
   padding: 8px 10px 8px 12px; border: none; cursor: pointer; border-radius: 16px; color: var(--text);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 16%, transparent), rgba(255,255,255,0.03));
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 40%, transparent);
+  background: linear-gradient(180deg, var(--rc-a16, rgba(76,240,255,0.16)), rgba(255,255,255,0.03));
+  box-shadow: inset 0 0 0 1.5px var(--rc-a40, rgba(76,240,255,0.4));
 }
 .rift-chip[hidden] { display: none; }
-.rift-chip:active { background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 26%, transparent), rgba(255,255,255,0.05)); }
-.rc-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #000 40%, var(--rc) 62%, transparent 72%); box-shadow: 0 0 12px color-mix(in srgb, var(--rc) 70%, transparent); }
+.rift-chip:active { background: linear-gradient(180deg, var(--rc-a26, rgba(76,240,255,0.26)), rgba(255,255,255,0.05)); }
+.rc-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #000 40%, var(--rc) 62%, transparent 72%); box-shadow: 0 0 12px var(--rc-a70, rgba(76,240,255,0.7)); }
 .rift-chip b { flex: 1; min-width: 0; text-align: left; font-family: var(--display); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-gold { display: inline-flex; align-items: center; gap: 3px; font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--gold); }
 .rc-gold .i { width: 14px; height: 14px; }
@@ -28,12 +28,12 @@
 .rift-card {
   --rc: #4cf0ff; position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 12px 8px 12px; border: none; cursor: pointer; border-radius: 20px; color: var(--text); text-align: center;
-  background: radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--rc) 16%, transparent), rgba(4,6,16,0.6) 72%);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 34%, transparent);
+  background: radial-gradient(circle at 50% 34%, var(--rc-a16, rgba(76,240,255,0.16)), rgba(4,6,16,0.6) 72%);
+  box-shadow: inset 0 0 0 1.5px var(--rc-a34, rgba(76,240,255,0.34));
   transition: transform 0.12s;
 }
 .rift-card:active { transform: scale(0.97); }
-.rift-card.on { box-shadow: inset 0 0 0 2px var(--rc), 0 0 26px color-mix(in srgb, var(--rc) 30%, transparent); }
+.rift-card.on { box-shadow: inset 0 0 0 2px var(--rc), 0 0 26px var(--rc-a30, rgba(76,240,255,0.3)); }
 .rift-card.locked { background: rgba(255,255,255,0.03); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.08); }
 .rift-art { display: block; }
 .rift-info { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; }
@@ -49,7 +49,7 @@
 
 /* ---------- meus recordes: uma linha por fenda ---------- */
 .rift-records { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
-.rift-row { --rc: #4cf0ff; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px; background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc) 22%, transparent); }
+.rift-row { --rc: #4cf0ff; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 14px; background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px var(--rc-a22, rgba(76,240,255,0.22)); }
 .rift-row.locked { opacity: 0.45; }
 .rr-dot { flex: none; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 50% 50%, #000 38%, var(--rc) 60%, transparent 72%); }
 .rift-row b { flex: 1; min-width: 0; font-family: var(--display); font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -60,13 +60,13 @@
 /* modos (Infinito / Galáxia / Treino): sem o círculo atrás do símbolo */
 .mode-btn > .ic.ic-live { background: none; box-shadow: none; width: 22px; height: 22px; }
 .mode-btn > .ic.ic-live svg { width: 100%; height: 100%; }
-.mode-btn.active > .ic.ic-live { box-shadow: none; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ic) 55%, transparent)); }
+.mode-btn.active > .ic.ic-live { box-shadow: none; filter: drop-shadow(0 0 6px var(--ic-a55, rgba(76,240,255,0.55))); }
 
 /* setas do nome da bola: sem borda, só o símbolo, um pouco maior */
 .hero-arrow { background: none; box-shadow: none; width: 38px; height: 38px; }
 .hero-arrow:active { background: none; box-shadow: none; transform: translateY(2px); }
 .hero-arrow > .ic.ic-live { width: 26px; height: 26px; background: none; box-shadow: none; }
-.hero-arrow > .ic.ic-live svg { width: 100%; height: 100%; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ic) 40%, transparent)); }
+.hero-arrow > .ic.ic-live svg { width: 100%; height: 100%; filter: drop-shadow(0 0 6px var(--ic-a40, rgba(76,240,255,0.4))); }
 .hero-arrow > .ic.ic-live::after { content: none; }
 
 @media (max-width: 360px) { .rift-name { font-size: 12.5px; } .rift-art { width: 92px; height: 92px; } }

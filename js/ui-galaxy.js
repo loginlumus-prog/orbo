@@ -13,7 +13,11 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const sfx = n => { if (HR.Audio && HR.Audio.sfx) HR.Audio.sfx(n); };
   const lite = () => !!(HR.Perf && HR.Perf.lite && HR.Perf.lite());
-  const accentVars = hex => '--wa:' + hex + ';--wa-28:' + HR.U.rgba(hex, 0.28) + ';--wa-14:' + HR.U.rgba(hex, 0.14) + ';--wa-glow:' + HR.U.rgba(hex, 0.45) + ';--rb1:' + HR.U.mix(hex, '#ffffff', 0.55) + ';--rb2:' + hex + ';';
+  // --wa-f* e --wa-c* sao os antigos color-mix() do galaxy.css, calculados aqui:
+  // no iOS 15 a declaracao inteira com color-mix() era jogada fora
+  const accentVars = hex => '--wa:' + hex + ';--wa-28:' + HR.U.rgba(hex, 0.28) + ';--wa-14:' + HR.U.rgba(hex, 0.14) + ';--wa-glow:' + HR.U.rgba(hex, 0.45) + ';--rb1:' + HR.U.mix(hex, '#ffffff', 0.55) + ';--rb2:' + hex +
+    ';--wa-f55:' + HR.U.mix(hex, '#000000', 0.45) + ';--wa-f60:' + HR.U.mix(hex, '#000000', 0.4) + ';--wa-f35:' + HR.U.mix(hex, '#000000', 0.65) +
+    ';--wa-c70:' + HR.U.mix(hex, '#ffffff', 0.3) + ';--wa-c80:' + HR.U.mix(hex, '#ffffff', 0.2) + ';';
   const starsHtml = (n, cls) => { let h = '<span class="lv-stars' + (cls ? ' ' + cls : '') + '" aria-hidden="true">'; for (let i = 0; i < 3; i++) h += '<span class="lv-star' + (i < n ? ' on' : '') + '">' + HR.icon('star', '', true) + '</span>'; return h + '</span>'; };
   const regionName = R => HR.t('reg_' + R.id);
   const cosmeticName = rw => { if (!rw) return ''; const key = rw.skin ? 'skin_' + rw.skin : rw.trail ? 'trail_' + rw.trail : rw.theme ? 'theme_' + rw.theme : null; return key ? HR.t(key) : ''; };
@@ -258,7 +262,7 @@
     if (!body.dataset.bound) {
       body.dataset.bound = '1';
       host.addEventListener('click', e => {
-        const core = e.target.closest('#gx-core'); if (core) { e.stopPropagation(); sfx('click'); if (HR.UI.renderSingularity) HR.UI.open('singularity'); else openSingularityDetail(); return; }
+        const core = e.target.closest('#gx-core'); if (core) { e.stopPropagation(); sfx('click'); if (HR.UI.renderSingularity) HR.UI.open('singularity'); else HR.UI.openSingularityDetail(); return; }
         const btn = e.target.closest('[data-region]'); if (!btn) return; e.stopPropagation();
         const ri = +btn.getAttribute('data-region');
         if (!C.isRegionUnlocked(ri) && !C.isRegionUnlocked(ri - 1)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('region_locked_hint', { name: galName(HR.REGIONS[ri - 1]) }), 'bad'); btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); return; }
@@ -473,7 +477,7 @@
         sfx('click'); HR.UI.open('system', gri + '-' + gsi);
       });
     }
-    const cont = $('#reg-continue'); if (cont) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); openLevelDetail(cur.id); });
+    const cont = $('#reg-continue'); if (cont) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); HR.UI.openLevelDetail(cur.id); });
     $('#reg-music').addEventListener('click', e => { e.stopPropagation(); sfx('click'); if (HR.Music) { HR.Audio.unlock(); HR.Music.play(R.music); HR.Music.setIntensity(0.6); } });
     if (HR.Music && HR.Store.data.settings.music && HR.Audio.unlocked) { HR.Music.play(R.music); HR.Music.setIntensity(0.45); }
   }
@@ -522,10 +526,10 @@
         const btn = e.target.closest('[data-level]'); if (!btn) return; e.stopPropagation();
         const id = btn.getAttribute('data-level');
         if (!HR.Campaign.isUnlocked(id)) { sfx('error'); HR.UI.toast(HR.icon('lock') + ' ' + HR.t('locked'), 'bad'); const w = btn.querySelector('.lv-circle-wrap'); if (w) { w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake'); } return; }
-        sfx('click'); openLevelDetail(id);
+        sfx('click'); HR.UI.openLevelDetail(id);
       });
     }
-    const cont = $('#sys-continue'); if (cont && next) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); openLevelDetail(next.id); });
+    const cont = $('#sys-continue'); if (cont && next) cont.addEventListener('click', e => { e.stopPropagation(); sfx('click'); HR.UI.openLevelDetail(next.id); });
     HR.Store.data.hints.system = true;
   }
 

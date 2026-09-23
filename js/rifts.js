@@ -35,8 +35,9 @@ window.HR = window.HR || {};
     openCount() { let k = 0; for (let n = 1; n <= N; n++) if (this.unlocked(n)) k++; return k; },
     nextLocked() { for (let n = 1; n <= N; n++) if (!this.unlocked(n)) return n; return 0; },
 
-    // ouro: +22 % por fenda (1,00 · 1,22 · 1,44 … 2,98)
-    mul(n) { return Math.round((1 + 0.22 * (Math.min(N, Math.max(1, n)) - 1)) * 100) / 100; },
+    // ouro: +25 % por fenda (1,00 · 1,25 · 1,50 … 3,25) — v8: avançar na história
+    // tem de continuar sendo o melhor jeito de farmar
+    mul(n) { return Math.round((1 + 0.25 * (Math.min(N, Math.max(1, n)) - 1)) * 100) / 100; },
     mulPct(n) { return Math.round((this.mul(n) - 1) * 100); },
 
     current() { const c = data().cur; return this.unlocked(c) ? c : 1; },

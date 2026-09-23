@@ -365,7 +365,16 @@
   after(HR.UI, 'onLevelEnd', function (s) {
     const lv = s && s.levelId ? HR.Campaign.level(s.levelId) : null;
     if (!lv || !s.success || !lv.boss) return;
-    const letter = () => { const c = lv.si === 9 ? HR.Story.letterFor(lv.ri) : null; if (c) { HR.Story.letter(lv.ri + 1); open(c); } };
+    const letter = () => { const c = lv.si === 9 ? HR.Story.letterFor(lv.ri) : null; if (c) { HR.Story.letter(lv.ri + 1); open(c); return; } fim(); };
+    // a porta (10-10-10): depois da cena da porta vem o final, e a porta fica
+    // aberta — quem voltar la escolhe de novo e ve outro
+    const fim = () => {
+      if (lv.ri !== 9 || lv.si !== 9 || HR.Story.mode() === 'off') return;
+      const e = HR.Story.ending(), id = 'end_' + e;
+      if (!HR.Story.exists(id)) return;
+      HR.Story.seeEnding(e);
+      open(id);
+    };
     const sid = HR.Story.bossTalk(lv.ri, lv.si);
     if (sid) setTimeout(() => open(sid, letter), 900);
     else setTimeout(letter, 900);

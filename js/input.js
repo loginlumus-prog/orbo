@@ -4,16 +4,22 @@ window.HR = window.HR || {};
 HR.Input = {
   el: null, down: false, pointerId: null, lastX: 0, lastY: 0, dx: 0, dy: 0, absY: 0, absX: 0, hasHover: false,
   keys: { up: false, down: false, left: false, right: false },
-  // analógico virtual: origem no ponto do toque, arrastada junto quando o dedo passa do raio
+  // deslocamento do dedo desde o toque, normalizado pelo raio: quem usa e o
+  // corredor do Jato (trocar de faixa inclinando). A bola anda pelo arrasto (dx/dy).
   stick: { active: false, ox: 0, oy: 0, x: 0, y: 0, R: 46 }, onTap: null, onEscape: null, onAbility: null, onDoubleTap: null, lastPointerType: 'touch',
   tap_: { t: 0, x: 0, y: 0 },
 
   attach(el) {
     this.el = el;
-    const ignore = e => !!(e.target && e.target.closest && e.target.closest('button, .panel, .modal, .card, .tabs, input, .menu-nav, .topbar, .level-pill, .mode-seg, .loadout, .stats-strip, .hud-abilities'));
+    const SEL = 'button, .panel, .modal, .card, .tabs, input, .menu-nav, .topbar, .level-pill, .mode-seg, .loadout, .stats-strip, .hud-abilities';
+    const ignore = e => !!(e.target && e.target.closest && e.target.closest(SEL));
+    // O closest() de 14 seletores rodava em TODO touchmove (60-120 Hz). A resposta
+    // e a mesma do pointerdown que abriu o arrasto, entao fica guardada ali.
+    let ignorando = false;
 
     el.addEventListener('pointerdown', e => {
-      if (ignore(e)) return;
+      ignorando = ignore(e);
+      if (ignorando) return;
       this.lastPointerType = e.pointerType || 'touch';
       this.down = true; this.pointerId = e.pointerId;
       this.lastX = e.clientX; this.lastY = e.clientY; this.absY = e.clientY; this.absX = e.clientX;
@@ -37,7 +43,7 @@ HR.Input = {
     const up = e => { if (e.pointerId === this.pointerId) { this.down = false; this.pointerId = null; this.releaseStick(); } };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('lostpointercapture', up);
     el.addEventListener('contextmenu', e => e.preventDefault());
-    el.addEventListener('touchmove', e => { if (!ignore(e)) e.preventDefault(); }, { passive: false });
+    el.addEventListener('touchmove', e => { if (!(ignorando || ignore(e))) e.preventDefault(); }, { passive: false });
 
     window.addEventListener('keydown', e => {
       if (e.repeat) return;
@@ -52,7 +58,6 @@ HR.Input = {
       // Espaço é a tecla do jogo (começa, joga de novo, próxima fase): nunca aciona o botão que ficou com foco
       else if (e.code === 'Space') { if (e.target.closest && e.target.closest('input,textarea,select')) return; e.preventDefault(); const ae = document.activeElement; if (ae && ae !== document.body && ae.blur) ae.blur(); if (this.onTap) this.onTap(e); }
       else if (e.code === 'Enter') { if (this.onTap && !e.target.closest('button,input,textarea,select')) this.onTap(e); }
-      else if (e.code === 'KeyC') { if (this.onControl) this.onControl(); }
       else if (e.code === 'Escape') { if (this.onEscape) this.onEscape(); }
     });
     // clique de mouse/toque não deixa o botão com foco (evita o Espaço repetir o último clique e mostrar a dica)
@@ -76,7 +81,6 @@ HR.Input = {
     S.x = sx / S.R; S.y = sy / S.R;
   },
   releaseStick() { const S = this.stick; S.active = false; S.x = 0; S.y = 0; },
-  consumeDelta() { const d = this.dy; this.dy = 0; this.dx = 0; return d; },
   consumeDelta2() { const d = { dx: this.dx, dy: this.dy }; this.dx = 0; this.dy = 0; return d; },
   reset() { this.dx = 0; this.dy = 0; this.down = false; this.releaseStick(); this.keys.up = this.keys.down = this.keys.left = this.keys.right = false; }
 };

@@ -117,7 +117,13 @@
     if (!openNow) return;
     openNow = false;
     if (host) host.classList.remove('visible');
-    if (!camePaused && HR.game && HR.game.resume) HR.game.resume();
+    // game.resume() sozinho deixa o estado em `ready` sem o "Toque para começar":
+    // a bola para e parece travado. O caminho normal (o mesmo da tela de pausa)
+    // chama hudReady() e o aviso volta.
+    if (!camePaused) {
+      if (HR.UI.resume) HR.UI.resume();
+      else if (HR.game && HR.game.resume) HR.game.resume();
+    }
     if (HR.Audio) HR.Audio.sfx('click');
   }
   HR.UI.openPerkSheet = open;
@@ -225,8 +231,15 @@
     }).observe(host, { childList: true });
   }
 
-  // varre a cada quadro do HUD: pega até o cartão que já estava na tela quando a partida começou
+  // O MutationObserver de guard() pega o cartão que aparece durante a partida;
+  // esta varredura existe só para o que JÁ estava na tela quando a partida
+  // começou, então 3x por segundo basta (era a cada quadro do HUD: dois
+  // getElementById e um querySelectorAll por quadro).
+  let sweepT = 0;
   function sweep() {
+    const now = performance.now();
+    if (now - sweepT < 320) return;
+    sweepT = now;
     // barra de evento presa: se a partida acabou com o evento ativo, ela reaparecia na partida seguinte
     const bar = document.getElementById('hud-event');
     if (bar && bar.classList.contains('show') && !(HR.game && HR.game.event)) bar.classList.remove('show');

@@ -8,12 +8,26 @@ window.HR = window.HR || {};
 (function () {
   const TAU = Math.PI * 2;
   const U = () => HR.U;
-  // normal unitária no ponto i
+  // normal unitária no ponto i. Os objetos vem de um anel de quatro, reaproveitado:
+  // era um {x,y} novo por ponto (2 por segmento na fita, 3 bandas na aurora,
+  // helice e prisma) — 40 a 120 objetos por quadro so para o GC recolher.
+  // Quatro bastam porque no maximo duas normais vivem ao mesmo tempo (a fita e a
+  // trepadeira usam a do ponto anterior e a do atual). Nao guarde a referencia.
+  const _ring = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
+  let _ri = 0;
   function nrm(pts, i) {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
     const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
-    return { x: -dy / l, y: dx / l };
+    const o = _ring[_ri = (_ri + 1) & 3];
+    o.x = -dy / l; o.y = dx / l;
+    return o;
   }
+  // niveis Baixo/Normal: menos passes nos rastros de varias camadas
+  const OBJ = () => (!HR.Perf || HR.Perf.obj);
+  // Estes desenham UM objeto a cada 2, 3 ou 5 pontos (coracoes, borboletas,
+  // runas...). Cortar os pontos pela metade deixaria uma borboleta so: eles
+  // ficam inteiros — e sao baratos, ~7 desenhos por quadro.
+  const ESPARSOS = { notes: 1, hearts: 1, leaves: 1, feathers: 1, drops: 1, clones: 1, halos: 1, runes: 1, butterflies: 1, meteors: 1, confetti: 1, gold: 1, frost: 1 };
   const hash = (i, s) => { const v = Math.sin(i * 127.1 + (s || 0) * 311.7) * 43758.5453; return v - Math.floor(v); };
   function heart(ctx, s) { ctx.beginPath(); ctx.moveTo(0, s * 0.35); ctx.bezierCurveTo(-s * 1.1, -s * 0.35, -s * 0.45, -s * 1.05, 0, -s * 0.45); ctx.bezierCurveTo(s * 0.45, -s * 1.05, s * 1.1, -s * 0.35, 0, s * 0.35); ctx.closePath(); }
   function star4(ctx, s) { ctx.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? s * 0.28 : s, a = k * Math.PI / 4; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); }
@@ -42,6 +56,16 @@ window.HR = window.HR || {};
   T.neon = (ctx, pts, sk, t, heat) => {
     const u = U(), n = pts.length, col = u.mix(sk.glow, '#ff5ecf', 0.35 + 0.35 * Math.sin(t * 2));
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // no Baixo/Normal ficam o brilho largo e o nucleo branco (o passe do meio sai)
+    if (!OBJ()) {
+      for (const pass of [0, 2]) for (let i = 1; i < n; i++) {
+        const k = i / n;
+        ctx.strokeStyle = pass === 2 ? u.rgba('#ffffff', k * 0.9) : u.rgba(col, k * 0.16);
+        ctx.lineWidth = (pass === 0 ? 16 : 2) * (0.4 + k * 0.6) * (1 + heat * 0.5);
+        ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke();
+      }
+      return;
+    }
     for (let pass = 0; pass < 3; pass++) {
       for (let i = 1; i < n; i++) {
         const k = i / n;
@@ -67,6 +91,17 @@ window.HR = window.HR || {};
   // fumaça que se espalha e sobe
   T.smoke = (ctx, pts, sk, t) => {
     const u = U(), n = pts.length, col = u.mix('#c9d2e6', sk.glow, 0.25);
+    // no Baixo/Normal cada baforada e um par de circulos com alpha em vez de um
+    // gradiente radial (eram ~15 por quadro, o rastro mais caro de todos)
+    if (!OBJ()) {
+      for (let i = 0; i < n - 1; i += 2) {
+        const p = pts[i], k = i / n, age = t - p.t, r = 5 + age * 38 + (1 - k) * 6, y = p.y - age * 14;
+        const a = Math.min(0.35, k * 0.4);
+        ctx.fillStyle = u.rgba(col, a * 0.35); ctx.beginPath(); ctx.arc(p.x, y, r, 0, TAU); ctx.fill();
+        ctx.fillStyle = u.rgba(col, a * 0.5); ctx.beginPath(); ctx.arc(p.x, y, r * 0.55, 0, TAU); ctx.fill();
+      }
+      return;
+    }
     for (let i = 0; i < n - 1; i += 2) {
       const p = pts[i], k = i / n, age = t - p.t, r = 5 + age * 38 + (1 - k) * 6, y = p.y - age * 14;
       const g = ctx.createRadialGradient(p.x, y, 0, p.x, y, r); g.addColorStop(0, u.rgba(col, Math.min(0.35, k * 0.4))); g.addColorStop(1, u.rgba(col, 0));
@@ -207,13 +242,20 @@ window.HR = window.HR || {};
 
   // clones: ecos translúcidos da própria bola
   T.clones = (ctx, pts, sk) => {
-    const u = U(), n = pts.length;
+    const u = U(), n = pts.length, obj = OBJ();
     for (let i = 1; i < n - 2; i += 4) {
       const p = pts[i], k = i / n, r = 6 + k * 9;
-      const g = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, 0, p.x, p.y, r);
-      g.addColorStop(0, u.rgba('#ffffff', k * 0.35)); g.addColorStop(0.5, u.rgba(sk.base || sk.glow, k * 0.3)); g.addColorStop(1, u.rgba(sk.glow, k * 0.08));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
+      if (obj) {
+        const g = ctx.createRadialGradient(p.x - r * 0.3, p.y - r * 0.3, 0, p.x, p.y, r);
+        g.addColorStop(0, u.rgba('#ffffff', k * 0.35)); g.addColorStop(0.5, u.rgba(sk.base || sk.glow, k * 0.3)); g.addColorStop(1, u.rgba(sk.glow, k * 0.08));
+        ctx.fillStyle = g;
+      } else {
+        // eco chapado: disco da cor da bola com um ponto claro em cima
+        ctx.fillStyle = u.rgba(sk.base || sk.glow, k * 0.28);
+      }
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, TAU); ctx.fill();
       ctx.strokeStyle = u.rgba(sk.glow, k * 0.55); ctx.lineWidth = 1.2; ctx.stroke();
+      if (!obj) { ctx.fillStyle = u.rgba('#ffffff', k * 0.3); ctx.beginPath(); ctx.arc(p.x - r * 0.3, p.y - r * 0.3, r * 0.45, 0, TAU); ctx.fill(); }
     }
   };
 
@@ -271,11 +313,14 @@ window.HR = window.HR || {};
     }
   };
 
-  // aurora: faixas coloridas ondulando
+  // aurora: faixas coloridas ondulando (duas faixas no Baixo/Normal)
+  const AUR = [['#7cff6b', 0], ['#4cf0ff', 2.1], ['#b48cff', 4.2]];
+  const AUR2 = [['#7cff6b', 0], ['#b48cff', 4.2]];
   T.aurora = (ctx, pts, sk, t) => {
     const u = U(), n = pts.length;
     ctx.globalCompositeOperation = 'lighter';
-    [['#7cff6b', 0], ['#4cf0ff', 2.1], ['#b48cff', 4.2]].forEach(([c, ph], bi) => {
+    const bandas = OBJ() ? AUR : AUR2;
+    bandas.forEach(([c, ph], bi) => {
       for (let i = 1; i < n; i++) {
         const k = i / n, no = nrm(pts, i), off = Math.sin(i * 0.3 + t * 2 + ph) * 10 * k + (bi - 1) * 6 * k, a = pts[i - 1], b = pts[i];
         ctx.strokeStyle = u.rgba(c, k * 0.22); ctx.lineWidth = 6 + k * 14;
@@ -349,22 +394,29 @@ window.HR = window.HR || {};
   };
 
   // zigue-zague elétrico
+  const ZZ = [[9, 0.16, 0], [3.2, 0.75, 0], [1.2, 1, 1]];
+  const ZZ2 = [[9, 0.2, 0], [1.4, 1, 1]];
   T.zigzag = (ctx, pts, sk, t, heat) => {
     const u = U(), n = pts.length, b = Math.floor(t * 20), col = u.mix(sk.glow, '#fff07a', 0.4);
     const off = i => { const no = nrm(pts, i), a = (i % 2 ? 1 : -1) * (3 + hash(i, b) * 6) * (i / n); return { x: no.x * a, y: no.y * a }; };
     ctx.lineJoin = 'miter'; ctx.lineCap = 'round';
-    [[9, 0.16], [3.2, 0.75], [1.2, 1]].forEach(([w, al], pass) => { ctx.strokeStyle = fade(ctx, pts, [pass === 2 ? '#ffffff' : col, al]); ctx.lineWidth = w * (1 + heat * 0.5); polyline(ctx, pts, Math.floor(n * 0.2), n, off); ctx.stroke(); });
+    // tres camadas no Bom/Muito bom; no Baixo/Normal o brilho largo e o nucleo
+    const camadas = OBJ() ? ZZ : ZZ2;
+    camadas.forEach(([w, al, branco]) => { ctx.strokeStyle = fade(ctx, pts, [branco ? '#ffffff' : col, al]); ctx.lineWidth = w * (1 + heat * 0.5); polyline(ctx, pts, Math.floor(n * 0.2), n, off); ctx.stroke(); });
   };
 
   // prisma: a luz se abre em cores
   T.prism = (ctx, pts, sk, t) => {
     const u = U(), n = pts.length;
     ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-    for (let j = 0; j < 6; j++) {
+    // 6 bandas no Bom/Muito bom, 3 (mais largas) no Baixo/Normal: continua um
+    // leque de cores, com metade dos strokes
+    const obj = OBJ(), passo = obj ? 1 : 2;
+    for (let j = 0; j < 6; j += passo) {
       const spread = (j - 2.5) * 2.6;
       for (let i = 1; i < n; i++) {
         const k = i / n, fan = spread * (1.4 - k), no = nrm(pts, i), a = pts[i - 1], b = pts[i];
-        ctx.strokeStyle = u.hsl((j * 55 + t * 40) % 360, 100, 60, k * 0.5); ctx.lineWidth = 2 + k * 2.5;
+        ctx.strokeStyle = u.hsl((j * 55 + t * 40) % 360, 100, 60, k * 0.5); ctx.lineWidth = (2 + k * 2.5) * passo;
         ctx.beginPath(); ctx.moveTo(a.x + no.x * fan, a.y + no.y * fan); ctx.lineTo(b.x + no.x * fan, b.y + no.y * fan); ctx.stroke();
       }
     }
@@ -373,11 +425,15 @@ window.HR = window.HR || {};
   HR.Render.TRAILS = T;
   const base = HR.Render.drawTrail;
   HR.Render.drawTrail = function (ctx, trailId, pts, skin, t, heat) {
-    // v6.5: o rastro vale em todo nivel. Custa menos de 0,05 ms por quadro e e o
-    // item que a pessoa comprou — cortar isso era tirar o que ela mais ve.
+    // O rastro vale em todo nivel: e o item que a pessoa comprou, cortar era tirar
+    // o que ela mais ve. Mas a conta da v6.5 estava errada por uma ordem de
+    // grandeza (o prisma faz 228 strokes em 'lighter', o neon 259 — 1 a 3 ms no
+    // A10). No Baixo/Normal ele desenha com metade dos pontos e menos camadas;
+    // cada um continua sendo ele mesmo.
     const f = T[trailId];
     if (!f) return base.apply(this, arguments);
     if (!pts || pts.length < 3) return;
+    if (!OBJ() && !ESPARSOS[trailId] && pts.length > 6) pts = HR.Render.thin(pts);
     ctx.save(); f(ctx, pts, skin, t, heat || 0); ctx.restore();
   };
 })();

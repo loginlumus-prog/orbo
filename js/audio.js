@@ -23,19 +23,29 @@ HR.Audio = {
     this.applySettings();
   },
 
+  // unlocked só vira true quando o contexto REALMENTE voltou a tocar: no iOS um
+  // pointerdown de toque não conta como ativação e o resume() pode ser recusado
   unlock() {
     this.init();
-    if (!this.ctx) return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    const c = this.ctx; if (!c) return;
+    if (c.state === 'running') { this.destravou(); return; }
+    if (!c.resume) return;
+    const p = c.resume();
+    if (p && p.then) p.then(() => this.destravou(), () => { /* o próximo gesto tenta de novo */ });
+    else this.destravou();
+  },
+  destravou() {
+    if (!this.ctx || this.ctx.state !== 'running') return;
     this.unlocked = true;
-    if (HR.Music) { HR.Music.init(); if (HR.Store.data.settings.music) HR.Music.resume(); }
+    const s = HR.Store && HR.Store.data && HR.Store.data.settings;
+    if (HR.Music) { HR.Music.init(); if (s && s.music) HR.Music.resume(); }
   },
   suspend() { if (this.ctx && this.ctx.state === 'running') this.ctx.suspend(); },
   resume() { if (this.ctx && this.unlocked && this.ctx.state === 'suspended') this.ctx.resume(); },
 
   applySettings() {
     if (!this.ctx) return;
-    const s = HR.Store.data.settings;
+    const s = HR.Store && HR.Store.data && HR.Store.data.settings; if (!s) return;
     const sv = s.sfxVol == null ? 1 : s.sfxVol, mv = s.musicVol == null ? 0.8 : s.musicVol;
     this.sfxGain.gain.setTargetAtTime(s.sound ? sv : 0, this.ctx.currentTime, 0.05);
     this.musicGain.gain.setTargetAtTime(s.music ? mv : 0, this.ctx.currentTime, 0.1);
@@ -141,3 +151,36 @@ HR.Audio = {
     }
   }
 };
+
+/* =====================================================================
+   Destrave por gesto e volta do background.
+   O menu ficava mudo até apertar JOGAR: o destrave saía do ar no primeiro
+   pointerdown, mesmo quando o WebKit recusava o resume(). Aqui a escuta fica
+   de pé até o contexto virar 'running', e voltar de outro app religa o som.
+   ===================================================================== */
+(function () {
+  const EVS = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
+  let ouvindo = false;
+  const musicaLigada = () => { const s = HR.Store && HR.Store.data && HR.Store.data.settings; return !!(s && s.music); };
+  function ouvir() { if (ouvindo) return; ouvindo = true; EVS.forEach(ev => window.addEventListener(ev, tenta)); }
+  function calar() { if (!ouvindo) return; ouvindo = false; EVS.forEach(ev => window.removeEventListener(ev, tenta)); }
+  function tenta() {
+    const A = HR.Audio;
+    A.unlock();
+    const c = A.ctx;
+    if (!c || c.state !== 'running') return;   // segue ouvindo: o próximo gesto tenta de novo
+    if (HR.Music && HR.UI && HR.UI.current === 'menu' && musicaLigada()) HR.Music.play('menu');
+    calar();
+  }
+  ouvir();
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const A = HR.Audio, c = A.ctx; if (!c || !A.unlocked) return;
+    const volta = () => { if (HR.Music && musicaLigada() && !HR.Music.timer) HR.Music.resume(); };
+    if (c.state === 'running') { volta(); return; }
+    const p = c.resume ? c.resume() : null;
+    if (p && p.then) p.then(volta, ouvir);   // recusado sem gesto: espera o próximo toque
+    else if (c.state === 'running') volta(); else ouvir();
+  });
+})();

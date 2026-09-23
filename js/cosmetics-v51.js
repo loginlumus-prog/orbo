@@ -14,10 +14,13 @@ window.HR = window.HR || {};
   const SPECIAL = ['pack', 'iap', 'reward', 'archon'];
 
   // ---------- preços por raridade: [moedas, gemas] ----------
-  HR.SKIN_PRICE = { common: [2500, 60], rare: [9000, 150], epic: [32000, 380], legendary: [140000, 900], mythic: [550000, 2400], ultimate: [1500000, 0] };
-  HR.TRAIL_PRICE = { common: [2000, 50], rare: [7000, 130], epic: [24000, 320], legendary: [95000, 800] };
-  HR.THEME_PRICE = { common: [3000, 70], rare: [10000, 180], epic: [36000, 420], legendary: [120000, 1000] };
-  HR.GEAR_PRICE = { rare: [20000, 180], epic: [45000, 380], legendary: [120000, 900] };
+  // v8: o topo da loja somava 12,5 M de moedas — 4,5 anos de renda só para as bolas lendárias
+  // e míticas. Os lendários caem ~45 % e as gemas sobem, para a gema valer ~62–70 moedas em
+  // TODOS os níveis (antes ia de 42 a 230, e comprar com gema no topo era o único caminho).
+  HR.SKIN_PRICE = { common: [2500, 45], rare: [9000, 150], epic: [32000, 480], legendary: [75000, 1200], mythic: [280000, 4000], ultimate: [900000, 0] };
+  HR.TRAIL_PRICE = { common: [2000, 40], rare: [7000, 120], epic: [24000, 380], legendary: [52000, 850] };
+  HR.THEME_PRICE = { common: [3000, 55], rare: [10000, 170], epic: [36000, 540], legendary: [65000, 1050] };
+  HR.GEAR_PRICE = { rare: [20000, 330], epic: [45000, 680], legendary: [65000, 1050] };
   const price = (item, table) => {
     if (item.price === 0 || item.season || SPECIAL.includes(item.cur)) return;
     const P = table[item.rar] || table.rare;

@@ -9,6 +9,12 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const R = () => HR.Rifts;
 
+  // as cores das fendas vao prontas em rgba: color-mix() so existe no Safari 16.2
+  // para cima, e o iPhone 7 para no iOS 15 (a declaracao inteira era descartada)
+  const ALFAS = [16, 18, 22, 25, 26, 30, 34, 40, 45, 50, 60, 70];
+  const corRc = (el, c) => { el.style.setProperty('--rc', c); ALFAS.forEach(a => el.style.setProperty('--rc-a' + a, HR.U.rgba(c, a / 100))); };
+  const corRcTxt = c => { let t = '--rc:' + c + ';'; ALFAS.forEach(a => { t += '--rc-a' + a + ':' + HR.U.rgba(c, a / 100) + ';'; }); return t; };
+
   if (HR.UI.PANELS && HR.UI.PANELS.indexOf('rifts') < 0) HR.UI.PANELS.push('rifts');
 
   /* ---------------- a tela ---------------- */
@@ -22,7 +28,10 @@
       '<h2 class="ribbon"><span>' + esc(HR.t('rifts')) + '</span></h2><span></span></header>' +
       '<div class="panel-body" id="rifts-body"></div>';
     (document.getElementById('app') || document.body).appendChild(el);
-    $('[data-back]', el).addEventListener('click', () => { HR.Audio.sfx('click'); HR.UI.back(); });
+    // dataset.wired avisa o HR.UI.init: sem isto o Voltar ficava com dois
+    // listeners e cada toque chamava back() (e o som do clique) duas vezes
+    const volta = $('[data-back]', el); volta.dataset.wired = '1';
+    volta.addEventListener('click', () => { HR.Audio.sfx('click'); HR.UI.back(); });
     if (HR.UI.glyphUpgrade) HR.UI.glyphUpgrade(el);
     return el;
   }
@@ -53,7 +62,7 @@
     const open = R().unlocked(n), cur = R().current() === n, best = R().best(n);
     const el = HR.U.el('button', 'rift-card' + (open ? '' : ' locked') + (cur ? ' on' : ''));
     el.type = 'button';
-    el.style.setProperty('--rc', R().color(n));
+    corRc(el, R().color(n));
     const cv = HR.U.el('canvas', 'rift-art');
     const dpr = Math.min(2, (HR.Perf && HR.Perf.dprCap && HR.Perf.dprCap()) || window.devicePixelRatio || 1);
     cv.width = 108 * dpr; cv.height = 108 * dpr; cv.style.width = '108px'; cv.style.height = '108px';
@@ -117,7 +126,8 @@
     chip.hidden = false;
     const n = R().current(), cor = R().color(n);
     const abertas = R().openCount(), total = R().N;
-    if (HR.UI.corSelo) HR.UI.corSelo(chip, cor); else chip.style.setProperty('--rc', cor);
+    if (HR.UI.corSelo) HR.UI.corSelo(chip, cor);
+    corRc(chip, cor);
     // a rosca do progresso: a circunferencia vai calculada na mao, porque
     // pathLength em <circle> ainda engasga em Safari antigo
     const raio = 15.5, volta = (2 * Math.PI * raio).toFixed(2);
@@ -154,7 +164,7 @@
     let h = '<div class="section-title">' + esc(HR.t('rifts')) + '</div>';
     for (let n = 1; n <= R().N; n++) {
       const open = R().unlocked(n);
-      h += '<div class="rift-row' + (open ? '' : ' locked') + '" style="--rc:' + R().color(n) + '">' +
+      h += '<div class="rift-row' + (open ? '' : ' locked') + '" style="' + corRcTxt(R().color(n)) + '">' +
         '<span class="rr-dot"></span><b>' + esc(R().name(n)) + '</b>' +
         '<span class="rr-v">' + (open ? (R().best(n) ? HR.U.fmt(R().best(n)) : '—') : HR.icon('lock')) + '</span></div>';
     }

@@ -8,6 +8,11 @@ window.HR = window.HR || {};
   const TAU = Math.PI * 2;
   const U = () => HR.U;
   const hash = (i, s) => { const v = Math.sin(i * 127.1 + (s || 0) * 311.7) * 43758.5453; return v - Math.floor(v); };
+  // Baixo/Normal: metade das particulas do Jato e bolha lisa na Egide (o padrao
+  // recortado dentro dela sai). N() mantem a distribuicao das particulas uniforme
+  // porque o proprio laco passa o total reduzido para trail().
+  const OBJ = () => (!HR.Perf || HR.Perf.obj);
+  const N = n => (OBJ() ? n : Math.max(2, Math.round(n / 2)));
 
   function shell(ctx, x, y, R, c1) {
     const u = U(), g = ctx.createRadialGradient(x - R * 0.3, y - R * 0.35, R * 0.1, x, y, R);
@@ -20,7 +25,7 @@ window.HR = window.HR || {};
     ctx.strokeStyle = u.rgba(c1, 0.22); ctx.lineWidth = 7; ctx.beginPath(); ctx.arc(x, y, R + 1, 0, TAU); ctx.stroke();
   }
   function gloss(ctx, x, y, R) { ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(x, y, R * 0.82, Math.PI * 1.12, Math.PI * 1.45); ctx.stroke(); }
-  function inside(ctx, x, y, R, fn) { ctx.save(); ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.clip(); fn(); ctx.restore(); }
+  function inside(ctx, x, y, R, fn) { if (!OBJ()) return; ctx.save(); ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.clip(); fn(); ctx.restore(); }
   function heart(ctx, s) { ctx.beginPath(); ctx.moveTo(0, s * 0.35); ctx.bezierCurveTo(-s * 1.1, -s * 0.35, -s * 0.45, -s * 1.05, 0, -s * 0.45); ctx.bezierCurveTo(s * 0.45, -s * 1.05, s * 1.1, -s * 0.35, 0, s * 0.35); ctx.closePath(); }
   function leaf(ctx, s) { ctx.beginPath(); ctx.moveTo(-s, 0); ctx.quadraticCurveTo(0, -s * 0.7, s, 0); ctx.quadraticCurveTo(0, s * 0.7, -s, 0); ctx.closePath(); }
   function star4(ctx, s) { ctx.beginPath(); for (let k = 0; k < 8; k++) { const r = k % 2 ? s * 0.28 : s, a = k * Math.PI / 4; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); } ctx.closePath(); }
@@ -219,14 +224,14 @@ window.HR = window.HR || {};
     ctx.closePath(); ctx.fill();
   }
   function flame(ctx, x, y, br, k, t, c1, c2, sc) { const L = br * (3.4 + 0.6 * Math.sin(t * 22)) * k * (sc || 1), W = br * 0.95 * k; tongue(ctx, x, y, br, L * 1.1, W * 1.15, 0.4, c1, 0, t); tongue(ctx, x, y, br, L * 0.55, W * 0.5, 0.9, c2, 0, t); }
-  function streaks(ctx, x, y, br, t, col) { const u = U(); ctx.strokeStyle = u.rgba(col, 0.5); ctx.lineWidth = 1.5; for (let i = 0; i < 5; i++) { const yy = y + (i - 2) * br * 0.7, off = (t * 900 + i * 137) % 260; ctx.beginPath(); ctx.moveTo(x - br * 1.2 - off, yy); ctx.lineTo(x - br * 1.2 - off - 30 - i * 6, yy); ctx.stroke(); } }
+  function streaks(ctx, x, y, br, t, col) { const u = U(); ctx.strokeStyle = u.rgba(col, 0.5); ctx.lineWidth = 1.5; for (let i = 0; i < 5; i += (OBJ() ? 1 : 2)) { const yy = y + (i - 2) * br * 0.7, off = (t * 900 + i * 137) % 260; ctx.beginPath(); ctx.moveTo(x - br * 1.2 - off, yy); ctx.lineTo(x - br * 1.2 - off - 30 - i * 6, yy); ctx.stroke(); } }
   // partícula que sai da bola e vai para trás: f 0..1
   const trail = (x, y, br, k, t, i, n, rate) => { const f = (t * (rate || 2) + i / n) % 1; return { f, px: x - br * (0.8 + f * 5) * k, py: y + Math.sin(i * 2.7 + t * 3) * br * 0.45 * f }; };
 
   const J = {};
   J.plasma = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, sk.color2, 0.7);
-    for (let i = 0; i < 7; i++) { const f = (t * 2.5 + i / 7) % 1, cx = x - br * (0.8 + f * 4.2) * k, r = br * (0.9 - f * 0.45) * k; ctx.strokeStyle = u.rgba(i % 2 ? sk.color : sk.color2, 0.8 * (1 - f)); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, y, r * 0.35, r, 0, 0, TAU); ctx.stroke(); }
+    for (let i = 0, NN = N(7); i < NN; i++) { const f = (t * 2.5 + i / NN) % 1, cx = x - br * (0.8 + f * 4.2) * k, r = br * (0.9 - f * 0.45) * k; ctx.strokeStyle = u.rgba(i % 2 ? sk.color : sk.color2, 0.8 * (1 - f)); ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, y, r * 0.35, r, 0, 0, TAU); ctx.stroke(); }
     streaks(ctx, x, y, br, t, sk.color2);
   };
   J.rainbow = (ctx, x, y, br, sk, t, k, u) => {
@@ -237,35 +242,35 @@ window.HR = window.HR || {};
   J.ion = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter';
     [-0.4, 0, 0.4].forEach((o, i) => { const L = br * (4.6 + Math.sin(t * 30 + i) * 0.4) * k, g = ctx.createLinearGradient(x, y, x - L, y); g.addColorStop(0, u.rgba(i === 1 ? '#ffffff' : sk.color, 0.9)); g.addColorStop(1, u.rgba(sk.color, 0)); ctx.strokeStyle = g; ctx.lineWidth = i === 1 ? 2.6 * k : 1.4 * k; ctx.beginPath(); ctx.moveTo(x - br * 0.4, y + o * br * k); ctx.lineTo(x - L, y + o * br * 1.4 * k); ctx.stroke(); });
-    for (let i = 0; i < 4; i++) { const f = (t * 3 + i / 4) % 1, cx = x - br * (1 + f * 3.8) * k; ctx.strokeStyle = u.rgba(sk.color, 0.7 * (1 - f)); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(cx, y, br * 0.2 * k, br * 0.75 * k * (1 - f * 0.4), 0, 0, TAU); ctx.stroke(); }
+    for (let i = 0, NN = N(4); i < NN; i++) { const f = (t * 3 + i / NN) % 1, cx = x - br * (1 + f * 3.8) * k; ctx.strokeStyle = u.rgba(sk.color, 0.7 * (1 - f)); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(cx, y, br * 0.2 * k, br * 0.75 * k * (1 - f * 0.4), 0, 0, TAU); ctx.stroke(); }
     const gl = ctx.createRadialGradient(x - br * 0.6, y, 0, x - br * 0.6, y, br * 1.4 * k); gl.addColorStop(0, u.rgba(sk.color, 0.5)); gl.addColorStop(1, u.rgba(sk.color, 0)); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x - br * 0.6, y, br * 1.4 * k, 0, TAU); ctx.fill();
   };
   J.smoke = (ctx, x, y, br, sk, t, k, u) => {
-    for (let i = 0; i < 11; i++) { const p = trail(x, y, br, k, t, i, 11, 1.4), r = br * (0.35 + p.f * 1.2) * k; ctx.fillStyle = u.rgba(sk.color2, 0.32 * (1 - p.f)); ctx.beginPath(); ctx.arc(p.px, p.py, r, 0, TAU); ctx.fill(); }
+    for (let i = 0, NN = N(11); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 1.4), r = br * (0.35 + p.f * 1.2) * k; ctx.fillStyle = u.rgba(sk.color2, 0.32 * (1 - p.f)); ctx.beginPath(); ctx.arc(p.px, p.py, r, 0, TAU); ctx.fill(); }
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, '#fff3c2', 0.45);
   };
   J.bubbles = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, sk.color2, 0.6);
     ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < 12; i++) { const p = trail(x, y, br, k, t, i, 12, 1.8), r = br * (0.12 + hash(i, 1) * 0.25) * k; ctx.strokeStyle = u.rgba(sk.color2, 0.8 * (1 - p.f)); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.px, p.py - p.f * br, r, 0, TAU); ctx.stroke(); }
+    for (let i = 0, NN = N(12); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 1.8), r = br * (0.12 + hash(i, 1) * 0.25) * k; ctx.strokeStyle = u.rgba(sk.color2, 0.8 * (1 - p.f)); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.px, p.py - p.f * br, r, 0, TAU); ctx.stroke(); }
   };
   J.hearts = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, sk.color2, 0.55);
     ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < 8; i++) { const p = trail(x, y, br, k, t, i, 8, 1.5); ctx.save(); ctx.translate(p.px, p.py); ctx.rotate(-Math.PI / 2 + Math.sin(t * 4 + i) * 0.3); ctx.fillStyle = u.rgba(i % 2 ? sk.color : sk.color2, 0.9 * (1 - p.f)); heart(ctx, br * 0.28 * k * (1 - p.f * 0.4)); ctx.fill(); ctx.restore(); }
+    for (let i = 0, NN = N(8); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 1.5); ctx.save(); ctx.translate(p.px, p.py); ctx.rotate(-Math.PI / 2 + Math.sin(t * 4 + i) * 0.3); ctx.fillStyle = u.rgba(i % 2 ? sk.color : sk.color2, 0.9 * (1 - p.f)); heart(ctx, br * 0.28 * k * (1 - p.f * 0.4)); ctx.fill(); ctx.restore(); }
   };
   J.pixel = (ctx, x, y, br, sk, t, k, u) => {
     const P = Math.max(3, Math.round(br * 0.35 * k)), cols = ['#ffffff', sk.color2, sk.color, '#ff5e3a'];
-    for (let i = 0; i < 16; i++) { const f = (t * 3 + i / 16) % 1, px = Math.round((x - br * (0.6 + f * 4.4) * k) / P) * P, py = Math.round((y + (hash(i, Math.floor(t * 8)) - 0.5) * br * 1.2 * f * k) / P) * P, s = Math.max(1, Math.round((1 - f) * 2.5)) * P; ctx.fillStyle = u.rgba(cols[Math.min(3, Math.floor(f * 4))], 1 - f * 0.7); ctx.fillRect(px - s / 2, py - s / 2, s, s); }
+    for (let i = 0, NN = N(16); i < NN; i++) { const f = (t * 3 + i / NN) % 1, px = Math.round((x - br * (0.6 + f * 4.4) * k) / P) * P, py = Math.round((y + (hash(i, Math.floor(t * 8)) - 0.5) * br * 1.2 * f * k) / P) * P, s = Math.max(1, Math.round((1 - f) * 2.5)) * P; ctx.fillStyle = u.rgba(cols[Math.min(3, Math.floor(f * 4))], 1 - f * 0.7); ctx.fillRect(px - s / 2, py - s / 2, s, s); }
   };
   J.frost = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, sk.color2, 0.8);
     ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < 10; i++) { const p = trail(x, y, br, k, t, i, 10, 2.2), s = br * 0.35 * k * (1 - p.f * 0.5); ctx.save(); ctx.translate(p.px, p.py); ctx.rotate(t * 3 + i); ctx.fillStyle = u.rgba(i % 2 ? '#ffffff' : sk.color, 0.85 * (1 - p.f)); ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.35, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.35, 0); ctx.fill(); ctx.restore(); }
+    for (let i = 0, NN = N(10); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 2.2), s = br * 0.35 * k * (1 - p.f * 0.5); ctx.save(); ctx.translate(p.px, p.py); ctx.rotate(t * 3 + i); ctx.fillStyle = u.rgba(i % 2 ? '#ffffff' : sk.color, 0.85 * (1 - p.f)); ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.35, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.35, 0); ctx.fill(); ctx.restore(); }
   };
   J.starfall = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, sk.color2, 0.6);
-    for (let i = 0; i < 12; i++) { const p = trail(x, y, br, k, t, i, 12, 1.6); ctx.save(); ctx.translate(p.px, p.py + Math.sin(i) * br * 0.6 * p.f); ctx.rotate(t * 2 + i); ctx.fillStyle = u.rgba(i % 3 ? sk.color : '#ffffff', (1 - p.f) * (0.6 + 0.4 * Math.sin(t * 12 + i))); star4(ctx, br * 0.32 * k * (1 - p.f * 0.5)); ctx.fill(); ctx.restore(); }
+    for (let i = 0, NN = N(12); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 1.6); ctx.save(); ctx.translate(p.px, p.py + Math.sin(i) * br * 0.6 * p.f); ctx.rotate(t * 2 + i); ctx.fillStyle = u.rgba(i % 3 ? sk.color : '#ffffff', (1 - p.f) * (0.6 + 0.4 * Math.sin(t * 12 + i))); star4(ctx, br * 0.32 * k * (1 - p.f * 0.5)); ctx.fill(); ctx.restore(); }
   };
   J.twin = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter';
@@ -298,12 +303,12 @@ window.HR = window.HR || {};
     ctx.globalCompositeOperation = 'lighter'; tongue(ctx, x, y, br, br * 4.2 * k, br * 1.2 * k, 0.55, sk.color, 0, t);
     ctx.globalCompositeOperation = 'source-over'; tongue(ctx, x, y, br, br * 3.4 * k, br * 0.8 * k, 0.9, sk.color2, 0, t + 1);
     ctx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 10; i++) { const p = trail(x, y, br, k, t, i, 10, 2.4); ctx.fillStyle = u.rgba(sk.color, 0.9 * (1 - p.f)); ctx.beginPath(); ctx.arc(p.px, p.py + (hash(i, 3) - 0.5) * br * k, 1.6, 0, TAU); ctx.fill(); }
+    for (let i = 0, NN = N(10); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 2.4); ctx.fillStyle = u.rgba(sk.color, 0.9 * (1 - p.f)); ctx.beginPath(); ctx.arc(p.px, p.py + (hash(i, 3) - 0.5) * br * k, 1.6, 0, TAU); ctx.fill(); }
   };
   J.gold = (ctx, x, y, br, sk, t, k, u) => {
     ctx.globalCompositeOperation = 'lighter'; flame(ctx, x, y, br, k, t, sk.color, sk.color2, 1);
     ctx.globalCompositeOperation = 'source-over';
-    for (let i = 0; i < 9; i++) { const p = trail(x, y, br, k, t, i, 9, 1.7), s = br * 0.26 * k; ctx.save(); ctx.translate(p.px, p.py); ctx.scale(Math.max(0.15, Math.abs(Math.cos(t * 9 + i))), 1); ctx.fillStyle = u.rgba('#ffcf4a', 1 - p.f); ctx.beginPath(); ctx.arc(0, 0, s, 0, TAU); ctx.fill(); ctx.strokeStyle = u.rgba('#8a5a08', 0.8 * (1 - p.f)); ctx.lineWidth = 0.8; ctx.stroke(); ctx.restore(); }
+    for (let i = 0, NN = N(9); i < NN; i++) { const p = trail(x, y, br, k, t, i, NN, 1.7), s = br * 0.26 * k; ctx.save(); ctx.translate(p.px, p.py); ctx.scale(Math.max(0.15, Math.abs(Math.cos(t * 9 + i))), 1); ctx.fillStyle = u.rgba('#ffcf4a', 1 - p.f); ctx.beginPath(); ctx.arc(0, 0, s, 0, TAU); ctx.fill(); ctx.strokeStyle = u.rgba('#8a5a08', 0.8 * (1 - p.f)); ctx.lineWidth = 0.8; ctx.stroke(); ctx.restore(); }
     streaks(ctx, x, y, br, t, sk.color2);
   };
 

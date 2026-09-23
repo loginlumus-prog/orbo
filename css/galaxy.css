@@ -11,7 +11,7 @@
 .gx-node { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; }
 .gx-disc {
   position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #06101a; font-family: var(--display); font-size: 20px; font-weight: 700;
-  background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--wa) 45%, color-mix(in srgb, var(--wa) 55%, #000) 100%);
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--wa) 45%, var(--wa-f55, #2a848c) 100%);
   box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 24px var(--wa-glow), inset 0 1px 0 rgba(255,255,255,0.6); transition: transform 0.08s, box-shadow 0.08s;
 }
 .gx-disc .i { width: 22px; height: 22px; }
@@ -84,7 +84,7 @@
 .lv-node--boss .lv-circle-wrap { width: 72px; height: 72px; }
 .lv-circle { position: absolute; inset: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 21px; font-weight: 600; background: linear-gradient(180deg, rgba(28,38,72,0.96), rgba(9,13,30,0.96)); box-shadow: 0 4px 0 rgba(0,0,0,0.5), inset 0 0 0 1.5px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.12); color: var(--text); transition: transform 0.08s, box-shadow 0.08s; }
 .lv-node:active .lv-circle { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.5), inset 0 0 0 1.5px rgba(255,255,255,0.14); }
-.lv-node.is-done .lv-circle { background: radial-gradient(circle at 35% 30%, #fff, var(--wa) 50%, color-mix(in srgb, var(--wa) 60%, #000)); color: #06101a; box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 22px var(--wa-glow), inset 0 1px 0 rgba(255,255,255,0.6); }
+.lv-node.is-done .lv-circle { background: radial-gradient(circle at 35% 30%, #fff, var(--wa) 50%, var(--wa-f60, #2e9099)); color: #06101a; box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 22px var(--wa-glow), inset 0 1px 0 rgba(255,255,255,0.6); }
 .lv-node.is-current .lv-circle { box-shadow: 0 4px 0 rgba(0,0,0,0.5), inset 0 0 0 2.5px var(--wa), 0 0 24px var(--wa-glow); }
 .lv-node.is-locked .lv-circle { color: var(--muted); opacity: 0.6; }
 .lv-halo { position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--wa); opacity: 0.6; animation: gx-halo 1.8s ease-out infinite; }
@@ -104,7 +104,7 @@
 /* ---------- ficha da fase / singularidade ---------- */
 .item-detail.lv-detail { max-width: 360px; gap: 12px; text-align: center; max-height: 86vh; overflow-y: auto; box-shadow: 0 6px 0 rgba(0,0,0,0.5), 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 1.5px var(--wa-28), inset 0 1px 0 rgba(255,255,255,0.12); }
 .lv-detail-head { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.lv-detail-num { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 30%, #fff, var(--wa) 50%, color-mix(in srgb, var(--wa) 60%, #000)); color: #06101a; font-family: var(--display); font-size: 26px; font-weight: 700; box-shadow: 0 4px 0 rgba(0,0,0,0.45), 0 0 22px var(--wa-glow); }
+.lv-detail-num { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 30%, #fff, var(--wa) 50%, var(--wa-f60, #2e9099)); color: #06101a; font-family: var(--display); font-size: 26px; font-weight: 700; box-shadow: 0 4px 0 rgba(0,0,0,0.45), 0 0 22px var(--wa-glow); }
 .lv-detail-boss { position: relative; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: rgba(0,0,0,0.4); box-shadow: inset 0 0 0 2px var(--wa), 0 0 24px var(--wa-glow); }
 .lv-detail-boss .lv-boss-ic .i { width: 36px; height: 36px; }
 .lv-detail-boss .lv-boss-tag { top: -8px; }
@@ -139,9 +139,9 @@
 .lo-row { display: flex; flex-direction: column; gap: 8px; }
 .lo-slot { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 18px; text-align: left; --ac: var(--accent); background: linear-gradient(180deg, rgba(22,30,62,0.92), rgba(9,13,30,0.94)); box-shadow: 0 4px 0 rgba(0,0,0,0.45), inset 0 0 0 1.5px var(--stroke), inset 0 1px 0 rgba(255,255,255,0.1); transition: transform 0.08s, box-shadow 0.08s; }
 .lo-slot:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.45), inset 0 0 0 1.5px var(--stroke); }
-.lo-slot.filled { box-shadow: 0 4px 0 rgba(0,0,0,0.45), inset 0 0 0 2px var(--ac), 0 0 20px color-mix(in srgb, var(--ac) 30%, transparent); }
+.lo-slot.filled { box-shadow: 0 4px 0 rgba(0,0,0,0.45), inset 0 0 0 2px var(--ac), 0 0 20px var(--ac-a30, rgba(76,240,255,0.3)); }
 .lo-slot.locked { opacity: 0.6; }
-.lo-ic { flex: none; width: 50px; height: 50px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--ac); background: rgba(0,0,0,0.35); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ac) 50%, transparent); }
+.lo-ic { flex: none; width: 50px; height: 50px; border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: var(--ac); background: rgba(0,0,0,0.35); box-shadow: inset 0 0 0 1.5px var(--ac-a50, rgba(76,240,255,0.5)); }
 .lo-ic .i { width: 26px; height: 26px; }
 .lo-slot.locked .lo-ic, .lo-slot:not(.filled) .lo-ic { color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--stroke); }
 .lo-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -201,7 +201,7 @@
 @media (max-height: 720px) { .reg-hero { min-height: 116px; } .reg-hero-text h3 { font-size: 24px; } }
 
 /* ---------- v3.1: mapa (nós com anel de órbita e rótulo em pílula) ---------- */
-.gx-disc::after { content: ''; position: absolute; left: -12px; right: -12px; top: 50%; height: 22px; margin-top: -11px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--wa) 70%, #fff); border-top-color: transparent; transform: rotate(-18deg); opacity: 0.55; pointer-events: none; }
+.gx-disc::after { content: ''; position: absolute; left: -12px; right: -12px; top: 50%; height: 22px; margin-top: -11px; border-radius: 50%; border: 2px solid var(--wa-c70, #82f5ff); border-top-color: transparent; transform: rotate(-18deg); opacity: 0.55; pointer-events: none; }
 .gx-node.is-locked .gx-disc::after { display: none; }
 .gx-name { padding: 2px 8px; border-radius: 999px; background: rgba(4,6,16,0.72); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
 .gx-core .gx-name { background: rgba(4,6,16,0.8); }
@@ -209,13 +209,13 @@
 /* ---------- v3.1: álbum ---------- */
 .alb-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .alb-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 12px; border-radius: 18px; text-align: center; --rc: var(--accent); background: linear-gradient(180deg, rgba(22,30,62,0.92), rgba(9,13,30,0.94)); box-shadow: 0 4px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 0 0 1px rgba(255,255,255,0.06); min-width: 0; }
-.alb-card.on { box-shadow: 0 4px 0 rgba(0,0,0,0.4), inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 60%, transparent), 0 0 18px color-mix(in srgb, var(--rc) 18%, transparent); }
+.alb-card.on { box-shadow: 0 4px 0 rgba(0,0,0,0.4), inset 0 0 0 1.5px var(--rc-a60, rgba(76,240,255,0.6)), 0 0 18px var(--rc-a18, rgba(76,240,255,0.18)); }
 .alb-card.off { opacity: 0.6; }
 .alb-card.off .alb-ic { filter: grayscale(1) brightness(0.55); }
-.alb-ic { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--rc); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.12), rgba(0,0,0,0.45)); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 45%, transparent), 0 0 18px color-mix(in srgb, var(--rc) 25%, transparent); }
+.alb-ic { width: 64px; height: 64px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--rc); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.12), rgba(0,0,0,0.45)); box-shadow: inset 0 0 0 1.5px var(--rc-a45, rgba(76,240,255,0.45)), 0 0 18px var(--rc-a25, rgba(76,240,255,0.25)); }
 .alb-ic .i { width: 30px; height: 30px; }
 .alb-ic canvas { border-radius: 50%; }
-.alb-ring { position: relative; width: 26px; height: 52px; border-radius: 50%; border: 6px solid var(--rc); transform: rotate(-16deg); box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 50%, transparent), inset 0 0 8px color-mix(in srgb, var(--rc) 40%, transparent); }
+.alb-ring { position: relative; width: 26px; height: 52px; border-radius: 50%; border: 6px solid var(--rc); transform: rotate(-16deg); box-shadow: 0 0 14px var(--rc-a50, rgba(76,240,255,0.5)), inset 0 0 8px var(--rc-a40, rgba(76,240,255,0.4)); }
 .alb-name { font-family: var(--display); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .alb-desc { font-size: 11px; color: var(--muted); line-height: 1.3; min-height: 28px; }
 .alb-tag { position: absolute; top: 8px; right: 8px; padding: 2px 7px; border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; background: rgba(0,0,0,0.45); color: var(--muted); }
@@ -262,7 +262,7 @@
 
 /* ---------- v4: nós do mapa ---------- */
 .gx-node { width: 58px; height: 58px; margin: -29px 0 0 -29px; }
-.gx-disc { box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 28px var(--wa-glow), inset 0 1px 0 rgba(255,255,255,0.6), inset -6px -8px 14px color-mix(in srgb, var(--wa) 35%, #000); }
+.gx-disc { box-shadow: 0 4px 0 rgba(0,0,0,0.5), 0 0 28px var(--wa-glow), inset 0 1px 0 rgba(255,255,255,0.6), inset -6px -8px 14px var(--wa-f35, #1b5459); }
 .gx-node.is-locked .gx-disc { box-shadow: 0 4px 0 rgba(0,0,0,0.5), inset 0 0 0 1.5px var(--stroke), inset -6px -8px 14px rgba(0,0,0,0.5); }
 .gx-name small.gx-portal { color: var(--danger); }
 .gx-node.is-locked .gx-name small.gx-portal { color: #ff8aa0; }
@@ -312,6 +312,6 @@
 .lv-node--boss { margin-top: -34px; }
 .lv-node--boss .lv-circle-wrap { width: 68px; height: 68px; }
 .lv-circle { font-size: 20px; }
-.lv-orbit { position: absolute; left: -9px; right: -9px; top: 50%; height: 18px; margin-top: -9px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--wa) 80%, #fff); border-top-color: transparent; transform: rotate(-20deg); opacity: 0.6; pointer-events: none; }
+.lv-orbit { position: absolute; left: -9px; right: -9px; top: 50%; height: 18px; margin-top: -9px; border-radius: 50%; border: 2px solid var(--wa-c80, #70f3ff); border-top-color: transparent; transform: rotate(-20deg); opacity: 0.6; pointer-events: none; }
 .lv-dot-ev { position: absolute; left: -2px; top: -2px; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold), 0 0 0 2px rgba(6,9,22,0.9); }
 .lv-node.is-locked .lv-dot-ev { display: none; }

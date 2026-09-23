@@ -18,7 +18,8 @@ HR.Economy = {
   addGems(n, src) {
     if (!n) return;
     const d = HR.Store.data;
-    d.gems += n; HR.Store.save();
+    // gema apanhada no meio da partida: o save espera um momento ocioso
+    d.gems += n; if (src === 'pickup' && HR.Store.saveSoon) HR.Store.saveSoon(); else HR.Store.save();
     HR.Analytics.log('gems', { n, src, balance: d.gems });
     if (HR.UI) HR.UI.refreshCurrency();
   },
@@ -99,13 +100,31 @@ HR.Missions = {
   ensureDaily() {
     const d = HR.Store.data, C = HR.CONFIG, today = HR.U.dateKey();
     let changed = false;
-    const wantDaily = C.MISSIONS_DAILY + (HR.Seasons && HR.Seasons.current() ? 1 : 0);
-    if (d.missions.date !== today || d.missions.list.length !== wantDaily) {
-      d.missions.date = today; d.missions.rerolls = 0;
+    const temporada = !!(HR.Seasons && HR.Seasons.current());
+    // Só o dia novo refaz a lista. Antes a conta era `list.length !== wantDaily`, e
+    // a temporada que começava (ou terminava) no meio do dia mudava esse número:
+    // a lista inteira era sorteada de novo com progresso 0 e rerolls zerados.
+    if (d.missions.date !== today) { d.missions.date = today; d.missions.list = []; d.missions.rerolls = 0; changed = true; }
+    // missão de um id que saiu do conteúdo não fica na lista atrapalhando a conta
+    const validas = d.missions.list.filter(m => !!this.tpl(m.id));
+    if (validas.length !== d.missions.list.length) { d.missions.list = validas; changed = true; }
+    const sazonal = m => { const t = this.tpl(m.id); return !!(t && t.season); };
+    const lista = d.missions.list, comuns = lista.filter(m => !sazonal(m));
+    // faltando missão (dia novo, ou conteúdo novo): completa o que falta e deixa em
+    // paz as que já estão lá, com o progresso do dia
+    if (comuns.length < C.MISSIONS_DAILY) {
       const seed = today.split('-').reduce((a, b) => a * 31 + parseInt(b, 10), 7) + d.level;
-      d.missions.list = this.pickN(HR.MISSIONS.filter(t => this.eligible(t, false)), C.MISSIONS_DAILY, seed).map(t => this.make(t, false));
-      if (HR.Seasons && HR.Seasons.current()) { const st = HR.MISSIONS.find(t => t.season); if (st) d.missions.list.push(this.make(st, false)); }
+      const usados = {}; lista.forEach(m => { usados[m.id] = 1; });
+      const pool = HR.MISSIONS.filter(t => !usados[t.id] && this.eligible(t, false));
+      this.pickN(pool, C.MISSIONS_DAILY - comuns.length, seed).forEach(t => lista.push(this.make(t, false)));
       changed = true;
+    }
+    // a temporada entrou hoje: só entra a missão sazonal. Terminou: só ela sai.
+    if (temporada && !lista.some(sazonal)) {
+      const st = HR.MISSIONS.find(t => t.season);
+      if (st) { lista.push(this.make(st, false)); changed = true; }
+    } else if (!temporada && lista.some(sazonal)) {
+      d.missions.list = lista.filter(m => !sazonal(m)); changed = true;
     }
     const wk = this.weekKey();
     if (d.missions.weekKey !== wk || d.missions.weekly.length !== C.MISSIONS_WEEKLY) {

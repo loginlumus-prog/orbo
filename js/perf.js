@@ -14,15 +14,20 @@ window.HR = window.HR || {};
 
 HR.Perf = {
   // dpr = resolução · part = teto de partículas · bg = quanto do fundo é desenhado
+  // glow = shadowBlur (a operacao mais cara do 2D no Safari): so nos niveis 2 e 3
   TABLE: [
-    { dpr: 1.00, part: 80,   fx2: false, bgFx: false, scenes: false, bg: 0.30, glow: false, anims: false, trail: false, flow: false },
-    { dpr: 1.50, part: 300,  fx2: false, bgFx: true,  scenes: false, bg: 0.65, glow: true,  anims: false, trail: true,  flow: false },
-    { dpr: 2.00, part: 700,  fx2: true,  bgFx: true,  scenes: true,  bg: 1.00, glow: true,  anims: true,  trail: true,  flow: true },
-    { dpr: 2.00, part: 1200, fx2: true,  bgFx: true,  scenes: true,  bg: 1.30, glow: true,  anims: true,  trail: true,  flow: true }
+    { dpr: 1.00, part: 80,   fx2: false, bgFx: false, scenes: false, bg: 0.30, glow: false, flow: false },
+    { dpr: 1.50, part: 300,  fx2: false, bgFx: true,  scenes: false, bg: 0.65, glow: false, flow: false },
+    { dpr: 2.00, part: 700,  fx2: true,  bgFx: true,  scenes: true,  bg: 1.00, glow: true,  flow: true },
+    { dpr: 2.00, part: 1200, fx2: true,  bgFx: true,  scenes: true,  bg: 1.30, glow: true,  flow: true }
   ],
   MODES: ['auto', 'ultra', 'high', 'normal', 'low'],
   BY_MODE: { ultra: 3, high: 2, normal: 1, low: 0 },
   mode: 'auto', level: 2,
+  // "objetos": 0 no Baixo e no Normal. E o que bola, arcos, rastro, orbes,
+  // Egide e Jato consultam para desenhar menos (o fundo ja obedecia a TABLE,
+  // mas os objetos custavam o mesmo em qualquer nivel).
+  obj: 1,
   acc: 0, n: 0, slow: 0, bad: 0, suggested: false, lastDrop: 0,
 
   GEN: 2,   // sobe quando o motor muda a ponto de o nivel aprendido nao valer mais
@@ -52,9 +57,15 @@ HR.Perf = {
   guess() {
     const cores = navigator.hardwareConcurrency || 4;
     const mem = typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null;
+    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
     if ((navigator.connection || {}).saveData) return 1;      // economia de dados: respeita
-    if (cores <= 2 || (mem !== null && mem <= 2)) return 0;    // bem fraco (ex.: iPhone 7)
+    if (ios && cores <= 2) return 0;                            // iPhone 7 e mais velhos: o piso
+    if (cores <= 2 || (mem !== null && mem <= 2)) return 0;    // bem fraco
     if (cores <= 3 || (mem !== null && mem <= 3)) return 1;    // fraco
+    // iOS nao informa memoria: 6 nucleos vao do iPhone 8 ao 15. Chutar 3 (DPR 2,
+    // 1200 particulas, cenario) no iPhone 8 e cair no vigia. Fica no 2; quem
+    // quiser o 3 escolhe nos ajustes.
+    if (ios) return 2;
     if (cores >= 6 && (mem === null || mem >= 6)) return 3;    // aparelho bom
     return 2;                                                   // a grande maioria
   },
@@ -67,8 +78,6 @@ HR.Perf = {
   scenes() { return this.T().scenes; },
   bg() { return this.T().bg; },
   glow() { return this.T().glow; },
-  anims() { return this.T().anims; },
-  trailFx() { return this.T().trail; },
   flowLayers() { return this.T().flow; },
   // "leve": menus e mapas desenham um quadro parado em vez de um laço a 60 fps
   lite() { return this.level <= 1; },
@@ -77,6 +86,7 @@ HR.Perf = {
   // marca o nível no <html>: o CSS desliga o que custa caro
   apply(game) {
     const el = document.documentElement;
+    this.obj = this.level <= 1 ? 0 : 1;
     for (let i = 0; i < 4; i++) el.classList.toggle('perf-' + i, this.level === i);
     el.classList.toggle('fx-low', this.level <= 1);          // compatível com o v5.2
     el.classList.toggle('fx-min', this.level === 0);
@@ -107,6 +117,9 @@ HR.Perf = {
   // janela de 3 s durante a partida. Quadro lento = acima de 22 ms (menos de 45 fps).
   sample(dt, game) {
     if (!game || game.state !== 'playing' || document.hidden) { this.acc = 0; this.n = 0; this.slow = 0; this.bad = 0; return; }
+    // o dt chega cru (o game.js limita a 0,05 s so para a fisica); a volta do
+    // background traz um quadro de segundos, que nao e engasgo de desempenho
+    if (dt > 1) { this.acc = 0; this.n = 0; this.slow = 0; this.bad = 0; return; }
     this.acc += dt; this.n++;
     if (dt > 1 / 45) this.slow++;
     if (dt > 0.1) this.bad++;                     // engasgo feio: pesa mais

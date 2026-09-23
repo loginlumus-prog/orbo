@@ -88,6 +88,11 @@ window.HR = window.HR || {};
       const now = A.ctx.currentTime;
       this.voices.forEach(v => { v.fading = true; v.gain.gain.cancelScheduledValues(now); v.gain.gain.setValueAtTime(v.gain.gain.value, now); v.gain.gain.linearRampToValueAtTime(0, now + 0.4); v.endAt = now + 0.5; });
       this.current = null;
+      // sem vozes o sequenciador nao tem o que agendar: o timer de 25 ms (40
+      // chamadas por segundo) era o unico que continuava com a musica parada.
+      // O scheduler limpa o timer sozinho, mas so no proximo tique; se nao
+      // sobrou nenhuma voz para desvanecer, limpa aqui mesmo.
+      if (!this.voices.length && this.timer) { clearInterval(this.timer); this.timer = null; }
     },
     // ao religar a música nas configurações
     resume() { const w = this.wanted; if (w) { this.current = null; this.play(w); } },

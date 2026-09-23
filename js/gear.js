@@ -7,11 +7,16 @@
 window.HR = window.HR || {};
 
 HR.GEAR = {
+  // v8: o preço do consumível acompanha a galáxia (base + passo × galáxia atual).
+  // Antes uma Égide custava 1.800 na G1 (45 min de jogo) e 1.800 na G10 (11 min):
+  // cara demais quando ela salva, barata demais quando não faz falta.
+  // price e bundle.price são leituras vivas — ui-shop.js e Consumables.buy não mudam.
   consumables: {
-    aegis:   { icon: 'aegis',   color: '#4cf0ff', price: 1800, bundle: { n: 5, price: 8500 },  dur: 30, cd: 30 },
-    jet:     { icon: 'jet',     color: '#ffb347', price: 1200, bundle: { n: 5, price: 5600 },  rings: 25, speed: 2.4 },
-    megajet: { icon: 'megajet', color: '#ff5ecf', price: 3500, bundle: { n: 3, price: 9900 },  rings: 60, speed: 2.8 }
+    aegis:   { icon: 'aegis',   color: '#4cf0ff', base: 900,  step: 90,  bundle: { n: 5 }, dur: 30, cd: 30 },
+    jet:     { icon: 'jet',     color: '#ffb347', base: 800,  step: 80,  bundle: { n: 5 }, rings: 25, speed: 2.4 },
+    megajet: { icon: 'megajet', color: '#ff5ecf', base: 2400, step: 240, bundle: { n: 3 }, rings: 60, speed: 2.8 }
   },
+  BUNDLE_MUL: 4,    // o pacote custa 4× o unitário (5 pelo preço de 4, 3 pelo preço de 4)
   // style = desenho da bolha em render.js (drawAegis)
   aegisSkins: [
     { id: 'crystal', price: 0,     gems: 0,   rar: 'common',    color: '#4cf0ff', color2: '#ffffff', style: 'hex' },
@@ -33,6 +38,16 @@ HR.GEAR = {
     { id: 'rainbow', price: 50000, gems: 320, rar: 'legendary', color: 'rainbow', color2: '#ffffff' }
   ]
 };
+
+// preço vivo: qualquer leitura de G.price / G.bundle.price já sai na escala da galáxia aberta
+(function () {
+  const riNow = () => (HR.Campaign && HR.Campaign.currentRegion ? HR.Campaign.currentRegion() : 0);
+  Object.keys(HR.GEAR.consumables).forEach(id => {
+    const g = HR.GEAR.consumables[id];
+    Object.defineProperty(g, 'price', { configurable: true, enumerable: true, get() { return g.base + g.step * riNow(); } });
+    Object.defineProperty(g.bundle, 'price', { configurable: true, enumerable: true, get() { return (g.base + g.step * riNow()) * HR.GEAR.BUNDLE_MUL; } });
+  });
+})();
 
 HR.Consumables = {
   def(id) { return HR.GEAR.consumables[id]; },

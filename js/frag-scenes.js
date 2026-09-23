@@ -1,25 +1,25 @@
 /* =====================================================================
-   ORBO v7.2 — Os 33 arranjos dos cards. UM para cada fragmento.
+   ORBO v8 — Os 33 arranjos dos cards, em vetor. UM para cada fragmento.
 
-   Antes eram 15 composicoes repartidas entre os 33, e isso custava caro: a
-   espiral servia de "Berco", de "Tudo no mesmo dia" e de "Espiral"; quatro
-   fragmentos diferentes mostravam o mesmo anel; "O Ninho" era a bola sozinha.
-   A arte nao falava a mesma coisa que o texto.
+   Cada fragmento tem o seu desenho, e o desenho diz o que a frase diz: se a
+   frase fala de idade, o quadro mede idade; se fala de duas maos, tem duas
+   maos; se fala de um instante em que nao havia nada, o quadro comeca vazio.
+   (O ASSUNTO de cada card foi revisado na v7 e nao muda aqui: o que muda e
+   o ESTILO.)
 
-   Agora cada fragmento tem o seu desenho, e o desenho diz o que a frase diz:
-   se a frase fala de idade, o quadro mede idade; se fala de duas maos, tem
-   duas maos; se fala de um instante em que nao havia nada, o quadro comeca
-   vazio de verdade.
-
-   Todos continuam sendo os mesmos cinco elementos de js/render-frag.js, entao
-   a serie continua sendo uma serie.
+   Estilo: ilustracao vetorial de cartaz. Contorno escuro em tudo, cor
+   chapada em dois tons, luz de cima/esquerda, fundo chapado com grade de
+   pontos, e no maximo um brilho difuso por card. Os elementos vem de
+   js/render-frag.js — e por isso que a serie continua sendo uma serie.
 
    Regras de composicao, iguais em todos:
    - a luz vem de cima e da esquerda;
    - o assunto fica na faixa de ouro (38% ou 62% da altura), nunca no meio
      exato, salvo quando a simetria E o assunto;
-   - sobra e parte do desenho: nada encosta na beirada;
-   - nada de preenchimento chapado, e brilho por tracos sobrepostos.
+   - sobra e parte do desenho: nada encosta na beirada (a moldura mora la);
+   - a animacao e um respiro ou um giro lento. Nunca treme.
+
+   p.ato chega de ui-fragments (o ato do fragmento) e escolhe o tom do ceu.
 
    API: HR.FragScenes[id do fragmento](ctx, W, H, p, t)
    ===================================================================== */
@@ -29,43 +29,31 @@ window.HR = window.HR || {};
   const TAU = Math.PI * 2;
   const A = () => HR.FragArt;
   const U = () => HR.U;
-
   const S = {};
 
   /* ================= ferramentas comuns ================= */
 
-  // traco que apaga na ponta: desenhado em pedacos, com a forca caindo
+  // traco que afina ate a ponta, com contorno: o rastro do vetor
   function rastro(ctx, pts, cor, larg, forca) {
-    const u = U();
-    ctx.save(); ctx.lineCap = 'round'; ctx.globalCompositeOperation = 'lighter';
-    for (let i = 1; i < pts.length; i++) {
-      const k = i / (pts.length - 1), f = (1 - k) * (1 - k);
-      ctx.strokeStyle = u.rgba(cor, forca * f);
-      ctx.lineWidth = Math.max(0.5, larg * (1 - k * 0.72));
-      ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
-    }
+    ctx.save(); ctx.globalAlpha = forca == null ? 1 : Math.min(1, forca);
+    A().fio(ctx, pts, cor, larg, { afina: 0.8 });
     ctx.restore();
   }
 
-  // palavra em luz: o brilho vem de copias da propria letra, ampliadas a partir
-  // do centro. Nada de strokeText — traco grosso em letra de junta fechada
-  // engrossa a perna e borra o desenho.
+  // palavra de cartaz: contorno grosso escuro, uma copia deslocada na cor
+  // (a sombra chapada) e a letra branca por cima
   function palavra(ctx, cx, cy, txt, cor, tam, nitidez) {
-    const u = U(), n = nitidez == null ? 1 : nitidez;
+    const u = U(), n = nitidez == null ? 1 : nitidez, d = Math.max(1.5, tam * 0.07);
     ctx.save();
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = "600 " + Math.round(tam) + "px 'Fredoka', 'Rubik', sans-serif";
-    ctx.globalCompositeOperation = 'lighter';
-    [[1.055, 0.10], [1.03, 0.14], [1.014, 0.2]].forEach(e => {
-      ctx.save();
-      ctx.translate(cx, cy); ctx.scale(e[0], e[0]); ctx.translate(-cx, -cy);
-      ctx.fillStyle = u.rgba(cor, e[1] * n);
-      ctx.fillText(txt, cx, cy);
-      ctx.restore();
-    });
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = u.rgba('#ffffff', 0.92 * n);
-    ctx.fillText(txt, cx, cy);
+    ctx.globalAlpha = n;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    ctx.font = "700 " + Math.round(tam) + "px 'Fredoka', 'Rubik', sans-serif";
+    ctx.strokeStyle = A().ESC; ctx.lineWidth = Math.max(3, tam * 0.16);
+    ctx.strokeText(txt, cx + d, cy + d);
+    ctx.fillStyle = cor; ctx.fillText(txt, cx + d, cy + d);
+    ctx.strokeText(txt, cx, cy);
+    ctx.fillStyle = '#ffffff'; ctx.fillText(txt, cx, cy);
+    ctx.fillStyle = u.rgba(cor, 0.35); ctx.fillText(txt, cx, cy);
     ctx.restore();
   }
 
@@ -75,85 +63,93 @@ window.HR = window.HR || {};
     return p.palavra || padrao;
   }
 
-  // elipse acesa, com parede e fio branco por dentro: a forma base dos aneis
-  function aro(ctx, cx, cy, rx, ry, cor, forca) {
-    const a = A(), u = U(), f = forca == null ? 1 : forca;
-    ctx.save(); ctx.lineCap = 'round';
-    a.bloom(ctx, cor, [[2.4, 0.8 * f], [7, 0.2 * f], [18, 0.08 * f]], () => {
-      ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU); ctx.stroke();
-    });
-    ctx.strokeStyle = u.rgba('#ffffff', 0.5 * f); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU); ctx.stroke();
+  // anel em traco com contorno e luz: a forma base dos aneis
+  function aro(ctx, cx, cy, rx, ry, cor, forca, lw) {
+    const u = U(), f = forca == null ? 1 : forca;
+    ctx.save(); ctx.lineCap = 'round'; ctx.globalAlpha = f;
+    const el = () => { ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU); };
+    ctx.strokeStyle = u.rgba(cor, 0.18); ctx.lineWidth = lw * 5; el(); ctx.stroke();
+    ctx.strokeStyle = A().ESC; ctx.lineWidth = lw * 2.6; el(); ctx.stroke();
+    ctx.strokeStyle = cor; ctx.lineWidth = lw * 1.5; el(); ctx.stroke();
+    ctx.strokeStyle = u.rgba('#ffffff', 0.85); ctx.lineWidth = lw * 0.5;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx - lw * 0.35, ry - lw * 0.35, 0, -2.9, -1.2); ctx.stroke();
     ctx.restore();
   }
 
-  // uma mao de luz: palma, quatro dedos e o polegar, tudo em traco.
+  // uma mao: palma chapada, quatro dedos e o polegar, tudo com contorno.
   // Sem detalhe nenhum — no jogo inteiro ninguem tem rosto, e ela nao lembra.
   // O x local aponta para o que a mao esta segurando.
-  function maoLuz(ctx, x, y, r, ang, cor, forca) {
-    const a = A(), u = U(), f = forca == null ? 1 : forca;
+  function mao(ctx, x, y, r, ang, cor, lw) {
+    const a = A(), u = U(), sombra = u.mix(cor, a.ESC, 0.35);
     ctx.save();
     ctx.translate(x, y); ctx.rotate(ang);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    // a palma: uma mancha, para a mao ter peso
-    const g = ctx.createRadialGradient(-r * 0.5, -r * 0.1, 0, -r * 0.42, 0, r * 0.95);
-    g.addColorStop(0, u.rgba(cor, 0.5 * f));
-    g.addColorStop(0.6, u.rgba(cor, 0.18 * f));
-    g.addColorStop(1, u.rgba(cor, 0));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.ellipse(-r * 0.42, 0, r * 0.7, r * 0.85, 0, 0, TAU); ctx.fill();
-    // os quatro dedos, curvando por cima do que seguram
-    const dedo = (y0, comp, esp) => {
-      a.bloom(ctx, cor, [[esp, 0.85 * f], [esp * 2.6, 0.22 * f], [esp * 6, 0.08 * f]], () => {
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.55, y0);
-        ctx.quadraticCurveTo(r * 0.28, y0 * 1.06, r * comp, y0 * 0.42);
-        ctx.stroke();
-      });
+    const dedo = (y0, comp, esp) => () => {
+      ctx.beginPath(); ctx.moveTo(-r * 0.5, y0);
+      ctx.quadraticCurveTo(r * 0.28, y0 * 1.06, r * comp, y0 * 0.42);
+      ctx.lineWidth = esp;
     };
-    dedo(-r * 0.56, 0.74, r * 0.14);
-    dedo(-r * 0.19, 0.92, r * 0.155);
-    dedo(r * 0.19, 0.86, r * 0.15);
-    dedo(r * 0.54, 0.62, r * 0.125);
-    // o polegar, do outro lado: e ele que diz que e uma mao
-    a.bloom(ctx, cor, [[r * 0.15, 0.8 * f], [r * 0.4, 0.2 * f]], () => {
-      ctx.beginPath();
-      ctx.moveTo(-r * 0.72, r * 0.5);
+    const dedos = [dedo(-r * 0.56, 0.74, r * 0.22), dedo(-r * 0.19, 0.92, r * 0.24), dedo(r * 0.19, 0.86, r * 0.23), dedo(r * 0.54, 0.62, r * 0.20)];
+    const polegar = () => {
+      ctx.beginPath(); ctx.moveTo(-r * 0.6, r * 0.5);
       ctx.quadraticCurveTo(-r * 0.1, r * 1.0, r * 0.42, r * 0.78);
-      ctx.stroke();
-    });
+      ctx.lineWidth = r * 0.24;
+    };
+    // contorno de tudo primeiro (traco mais grosso), depois a cor por cima
+    const todos = dedos.concat([polegar]);
+    ctx.strokeStyle = a.ESC;
+    todos.forEach(f => { f(); ctx.lineWidth += lw * 2; ctx.stroke(); });
+    a.forma(ctx, a.elip(ctx, -r * 0.42, 0, r * 0.62, r * 0.8), { base: cor, sombra, lw });
+    ctx.strokeStyle = sombra; todos.forEach(f => { f(); ctx.stroke(); });
+    ctx.strokeStyle = cor; todos.forEach(f => { f(); ctx.lineWidth *= 0.62; ctx.stroke(); });
+    ctx.strokeStyle = u.rgba('#ffffff', 0.7); dedos.forEach(f => { f(); ctx.lineWidth *= 0.22; ctx.stroke(); });
     ctx.restore();
   }
 
-  // galaxia pequena, para caber dentro de outra coisa
-  function miniGalaxia(ctx, cx, cy, R, cor, giro) {
+  // galaxia pequena, chapada: um disco, dois bracos e o miolo
+  function miniGalaxia(ctx, cx, cy, R, cor, giro, lw) {
     const a = A(), u = U();
     ctx.save();
-    ctx.translate(cx, cy); ctx.rotate(giro); ctx.scale(1, 0.4);
-    ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-    g.addColorStop(0, u.rgba(cor, 0.4)); g.addColorStop(0.5, u.rgba(cor, 0.1)); g.addColorStop(1, u.rgba(cor, 0));
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
+    ctx.translate(cx, cy); ctx.rotate(giro); ctx.scale(1, 0.42);
+    ctx.fillStyle = u.rgba(cor, 0.22); ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
+    ctx.lineCap = 'round';
     for (let b = 0; b < 2; b++) {
       ctx.rotate(Math.PI);
-      for (let i = 0; i < 34; i++) {
-        const k = i / 34, ang = k * 5.2, rr = k * R * 0.94;
-        ctx.fillStyle = u.rgba(a.rnd(i * 3.3) > 0.8 ? '#ffffff' : cor, 0.55 * (1 - k * 0.5));
-        ctx.beginPath(); ctx.arc(Math.cos(ang) * rr, Math.sin(ang) * rr, 0.7 + a.rnd(i * 5.9) * 1.3, 0, TAU); ctx.fill();
-      }
+      const braco = () => {
+        ctx.beginPath();
+        for (let i = 0; i <= 14; i++) { const k = i / 14, an = k * 4.2, rr = k * R * 0.94; i ? ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr) : ctx.moveTo(0, 0); }
+      };
+      ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 2.4; braco(); ctx.stroke();
+      ctx.strokeStyle = cor; ctx.lineWidth = lw * 1.3; braco(); ctx.stroke();
     }
     ctx.restore();
-    a.discoLuz(ctx, cx, cy, R * 0.34, '#fff3c2', 0.85);
+    a.forma(ctx, a.circ(ctx, cx, cy, R * 0.2), { base: '#fff3c2', sombra: u.mix(cor, '#fff3c2', 0.5), lw: lw * 0.8 });
   }
 
-  // o escuro morno de antes de haver espaco: nenhuma estrela, nenhuma poeira
+  // o escuro morno de antes de haver espaco: nenhuma estrela, nenhuma grade
   function escuroMorno(ctx, W, H, cor) {
     const u = U();
-    const g = ctx.createRadialGradient(W * 0.46, H * 0.44, 0, W * 0.5, H * 0.5, H * 0.95);
-    g.addColorStop(0, u.mix(cor, '#1a0f14', 0.55));
-    g.addColorStop(0.55, '#140c12');
-    g.addColorStop(1, '#07040a');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#120a10'; ctx.fillRect(0, 0, W, H);
+    [[1.0, 0.05], [0.7, 0.06], [0.42, 0.07]].forEach(c => {
+      ctx.fillStyle = u.rgba(u.mix(cor, '#ff9a7a', 0.5), c[1]);
+      ctx.beginPath(); ctx.ellipse(W * 0.48, H * 0.46, H * c[0] * 1.1, H * c[0] * 0.85, 0, 0, TAU); ctx.fill();
+    });
+  }
+
+  // linha pontilhada com contorno, para caminhos e olhares
+  function pontilhado(ctx, pts, cor, lw, t) {
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.setLineDash([lw * 1.2, lw * 3.2]); ctx.lineDashOffset = -(t || 0) * lw * 4;
+    ctx.strokeStyle = cor; ctx.lineWidth = lw;
+    ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke();
+    ctx.restore();
+  }
+
+  // o chao: uma faixa chapada embaixo, com o fio de cima aceso
+  function chao(ctx, W, H, y, cor, lw, curva) {
+    const u = U(), c = curva || 0;
+    const p = () => { ctx.beginPath(); ctx.moveTo(-lw, y + c); ctx.quadraticCurveTo(W / 2, y - c, W + lw, y + c); ctx.lineTo(W + lw, H + lw); ctx.lineTo(-lw, H + lw); ctx.closePath(); };
+    A().forma(ctx, p, { base: u.mix(cor, '#0a0812', 0.82), sombra: u.mix(cor, '#0a0812', 0.9), luz: u.rgba(cor, 0.55), lw });
   }
 
   /* ================= ATO I — ACORDAR ================= */
@@ -161,95 +157,80 @@ window.HR = window.HR || {};
   /* 1. giro — "girou antes de saber que estava girando".
      O assunto e o giro, nao a bola: o rastro do proprio giro fica na tela. */
   S.giro = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46, r = H * 0.115;
-    a.fundo(ctx, W, H, p.cor, 3, 0.85);
-    // o chao insinuado, so para o giro ter onde acontecer
-    const ch = ctx.createLinearGradient(0, H * 0.76, 0, H);
-    ch.addColorStop(0, u.rgba(p.cor, 0)); ch.addColorStop(1, u.rgba(p.cor, 0.13));
-    ctx.fillStyle = ch; ctx.fillRect(0, H * 0.76, W, H * 0.24);
-    // o rastro: uma espiral que se abre e apaga para tras
+    const a = A(), cx = W * 0.5, cy = H * 0.46, r = H * 0.115, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 3, [0.5, 0.46]);
+    chao(ctx, W, H, H * 0.80, p.cor, lw, H * 0.03);
+    // o rastro: uma espiral que se abre e afina para tras
     for (let v = 0; v < 2; v++) {
       const pts = [];
-      for (let i = 0; i <= 54; i++) {
-        const k = i / 54, ang = -k * 6.6 + t * 0.45 + v * 3.14, rr = r * (1.22 + k * 2.4);
+      for (let i = 0; i <= 40; i++) {
+        const k = i / 40, ang = -k * 6.6 + t * 0.45 + v * 3.14, rr = r * (1.3 + k * 2.3);
         pts.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr * 0.34]);
       }
-      rastro(ctx, pts, v ? p.cor : '#ffffff', 3.4 - v * 1.1, 0.85 - v * 0.3);
+      a.fio(ctx, pts, v ? p.cor : '#ffffff', lw * (1.6 - v * 0.5), { afina: 0.85 });
     }
     a.bola(ctx, cx, cy, r, t, p.lavada, t * 0.55);
   };
 
   /* 2. faltava — "o lugar ao lado estava vazio de um jeito especifico".
-     O vazio tem a forma exata de alguem, e a poeira se afasta dele. */
+     O vazio tem a forma exata de alguem, e nada em volta encosta nele. */
   S.faltava = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.52, r = H * 0.105, bx = W * 0.34, vx = W * 0.66;
-    a.fundo(ctx, W, H, p.cor, 11, 0.8);
-    const oco = ctx.createRadialGradient(vx, cy, r * 0.15, vx, cy, r * 2.6);
-    oco.addColorStop(0, 'rgba(0,0,0,0.92)');
-    oco.addColorStop(0.42, 'rgba(0,0,0,0.5)');
-    oco.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = oco; ctx.beginPath(); ctx.arc(vx, cy, r * 2.6, 0, TAU); ctx.fill();
-    // o contorno do que falta, desenhado com o que nao esta la
-    ctx.save();
-    ctx.setLineDash([3, 11]); ctx.lineDashOffset = -t * 9;
-    ctx.strokeStyle = u.rgba('#ffffff', 0.3); ctx.lineWidth = 1.2;
+    const a = A(), u = U(), cy = H * 0.52, r = H * 0.105, bx = W * 0.34, vx = W * 0.66, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 11, [0.34, 0.52]);
+    // o oco: um disco mais escuro que o ceu, com a beirada pontilhada
+    ctx.fillStyle = u.rgba(a.ESC, 0.55); ctx.beginPath(); ctx.arc(vx, cy, r * 1.9, 0, TAU); ctx.fill();
+    ctx.fillStyle = u.rgba(a.ESC, 0.8); ctx.beginPath(); ctx.arc(vx, cy, r * 1.25, 0, TAU); ctx.fill();
+    ctx.save(); ctx.setLineDash([lw * 1.2, lw * 3]); ctx.lineDashOffset = -t * lw * 3;
+    ctx.strokeStyle = u.rgba('#ffffff', 0.55); ctx.lineWidth = lw * 0.8; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.arc(vx, cy, r * 1.06, 0, TAU); ctx.stroke();
     ctx.restore();
     // o fio entre os dois lugares, quase apagado
-    ctx.strokeStyle = u.rgba(p.cor, 0.16); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(bx + r * 1.4, cy); ctx.lineTo(vx - r * 1.4, cy); ctx.stroke();
+    pontilhado(ctx, [[bx + r * 1.5, cy], [vx - r * 1.5, cy]], u.rgba(p.cor, 0.5), lw * 0.7, 0);
     a.bola(ctx, bx, cy, r, t, p.lavada, -t * 0.2);
   };
 
   /* 3. escuro — "ela caiu, e o escuro segurou. Nao machucou".
      A concha embaixo e uma mao aberta: o escuro nao e vazio, ele ampara. */
   S.escuro = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.60, r = H * 0.10;
-    a.fundo(ctx, W, H, p.cor, 21, 0.7);
-    const topo = H * 0.70 + Math.sin(t * 0.5) * 4;
-    const g = ctx.createLinearGradient(0, topo - 44, 0, H);
-    g.addColorStop(0, u.rgba(p.cor, 0));
-    g.addColorStop(0.35, u.rgba(p.cor, 0.08));
-    g.addColorStop(1, u.rgba(p.cor, 0.16));
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(0, H); ctx.lineTo(0, H * 0.95);
-    ctx.quadraticCurveTo(cx, topo, W, H * 0.95);
-    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-    ctx.save(); ctx.lineCap = 'round';
-    a.bloom(ctx, p.cor, [[1.4, 0.55], [4, 0.16], [12, 0.06]], () => {
-      ctx.beginPath(); ctx.moveTo(0, H * 0.95);
-      ctx.quadraticCurveTo(cx, topo, W, H * 0.95); ctx.stroke();
-    });
-    // os dedos da concha: dois bracos subindo dos lados, sem fechar
-    [-1, 1].forEach(s => {
-      a.bloom(ctx, p.cor, [[1.2, 0.34], [4, 0.1]], () => {
-        ctx.beginPath();
-        ctx.moveTo(cx + s * W * 0.30, topo + H * 0.06);
-        ctx.quadraticCurveTo(cx + s * W * 0.40, cy, cx + s * W * 0.33, cy - H * 0.10);
-        ctx.stroke();
-      });
-    });
-    ctx.restore();
-    // a queda, ja apagando, e o pouso morno
-    const pts = []; for (let i = 0; i <= 18; i++) pts.push([cx + Math.sin(i * 0.5) * 3, cy - r * 1.5 - i * H * 0.022]);
-    rastro(ctx, pts, '#ffffff', 2, 0.3);
-    a.discoLuz(ctx, cx, cy + r * 0.9, r * 2.4, p.cor, 0.55);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.60, r = H * 0.10, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 21, [0.5, 0.6], { estrelas: 5 });
+    // a concha: uma mao aberta vista de frente, chapada. A palma e uma tigela
+    // larga e os tres dedos sobem so ate a altura dela — o escuro ampara,
+    // nao prende. Respira devagar, sem sair do lugar.
+    const resp = Math.sin(t * 0.5) * H * 0.006;
+    const R = W * 0.36, palma = cy + r * 0.92 + resp;
+    const concha = () => {
+      // a tigela: larga e rasa, para caber ela inteira com folga
+      ctx.beginPath();
+      ctx.moveTo(cx - R, palma);
+      ctx.quadraticCurveTo(cx - R * 0.98, palma + H * 0.16, cx, palma + H * 0.18);
+      ctx.quadraticCurveTo(cx + R * 0.98, palma + H * 0.16, cx + R, palma);
+      // quatro dedos: so uns calombos na beirada, nenhum sobe alto.
+      // Vao da direita para a esquerda, cada um com meio raio de largura.
+      for (let i = 0; i < 4; i++) {
+        ctx.quadraticCurveTo(cx + R * (1 - (i + 0.5) * 0.5), palma - H * 0.055,
+                             cx + R * (1 - (i + 1) * 0.5), palma);
+      }
+      ctx.closePath();
+    };
+    a.forma(ctx, concha, { base: u.mix(p.cor, a.ESC, 0.72), sombra: u.mix(p.cor, a.ESC, 0.88), luz: u.rgba(p.cor, 0.85), lw });
+    // a queda, ja afinando: vem de cima e para em cima dela
+    const pts = []; for (let i = 0; i <= 10; i++) pts.push([cx + Math.sin(i * 0.8) * lw * 0.8, cy - r * 1.6 - i * H * 0.028]);
+    a.fio(ctx, pts.reverse(), '#ffffff', lw, { afina: 0.9 });
     a.bola(ctx, cx, cy, r, t, p.lavada, t * 0.15);
   };
 
   /* 4. cinza — "ela se viu pela primeira vez, e nao tinha cor nenhuma".
      O reflexo e ainda mais lavado que ela: e o que assusta. */
   S.cinza = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.38, r = H * 0.105, cx = W * 0.5;
-    a.fundo(ctx, W, H, p.cor, 33, 0.6);
-    const esp = ctx.createLinearGradient(0, H * 0.56, 0, H);
-    esp.addColorStop(0, u.rgba(p.cor, 0.15)); esp.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = esp; ctx.fillRect(0, H * 0.56, W, H * 0.44);
-    ctx.strokeStyle = u.rgba('#ffffff', 0.16); ctx.lineWidth = 1;
+    const a = A(), u = U(), cy = H * 0.38, r = H * 0.105, cx = W * 0.5, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 33, [0.5, 0.38], { estrelas: 4 });
+    // o espelho: uma faixa chapada com o fio da beirada
+    ctx.fillStyle = u.rgba(p.cor, 0.10); ctx.fillRect(0, H * 0.56, W, H * 0.44);
+    ctx.strokeStyle = u.rgba('#ffffff', 0.4); ctx.lineWidth = lw * 0.6;
     ctx.beginPath(); ctx.moveTo(W * 0.08, H * 0.56); ctx.lineTo(W * 0.92, H * 0.56); ctx.stroke();
     ctx.save();
-    ctx.globalAlpha = 0.32;
+    ctx.globalAlpha = 0.4;
     ctx.translate(0, H * 1.12); ctx.scale(1, -1);
     a.bola(ctx, cx, cy, r, t, 1, 0);
     ctx.restore();
@@ -259,16 +240,14 @@ window.HR = window.HR || {};
   /* 5. apelido — "alguem a chamava assim. Ela nao lembra quem".
      A palavra esta acesa; quem disse e um lugar vazio embaixo dela. */
   S.apelido = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5;
-    a.fundo(ctx, W, H, p.cor, 97, 0.45);
+    const a = A(), u = U(), cx = W * 0.5, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 97, [0.5, 0.42]);
     palavra(ctx, cx, H * 0.42, oTexto(p, 'FAÍSCA'), p.cor, H * 0.165, 1);
-    // de onde veio a voz: um oco sem forma, com o fio chegando ate a palavra
-    const oco = ctx.createRadialGradient(cx, H * 0.74, 0, cx, H * 0.74, H * 0.2);
-    oco.addColorStop(0, 'rgba(0,0,0,0.8)'); oco.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = oco; ctx.beginPath(); ctx.arc(cx, H * 0.74, H * 0.2, 0, TAU); ctx.fill();
-    ctx.save();
-    ctx.setLineDash([2, 9]); ctx.lineDashOffset = -t * 7;
-    ctx.strokeStyle = u.rgba('#ffffff', 0.24); ctx.lineWidth = 1;
+    // de onde veio a voz: um oco escuro, e o fio pontilhado ate a palavra
+    ctx.fillStyle = u.rgba(a.ESC, 0.6); ctx.beginPath(); ctx.arc(cx, H * 0.74, H * 0.13, 0, TAU); ctx.fill();
+    ctx.fillStyle = u.rgba(a.ESC, 0.85); ctx.beginPath(); ctx.arc(cx, H * 0.74, H * 0.075, 0, TAU); ctx.fill();
+    ctx.save(); ctx.setLineDash([lw, lw * 2.6]); ctx.lineDashOffset = -t * lw * 3; ctx.lineCap = 'round';
+    ctx.strokeStyle = u.rgba('#ffffff', 0.5); ctx.lineWidth = lw * 0.7;
     ctx.beginPath(); ctx.moveTo(cx, H * 0.70); ctx.lineTo(cx, H * 0.55); ctx.stroke();
     ctx.beginPath(); ctx.arc(cx, H * 0.74, H * 0.075, 0, TAU); ctx.stroke();
     ctx.restore();
@@ -277,36 +256,27 @@ window.HR = window.HR || {};
   /* 6. berco — "tem cheiro de coisa nova; ninguem usou antes dela".
      Nao e uma galaxia velha: e um lugar ainda se formando, aberto em cima. */
   S.berco = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.58;
-    a.fundo(ctx, W, H, p.cor, 67, 0.4);
-    // colunas de gas: a materia ainda de pe, sem ter virado nada
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    [[0.22, 0.30], [0.78, 0.24], [0.38, 0.16]].forEach((c, i) => {
-      const x = W * c[0], larg = W * c[1] * 0.28;
-      const g = ctx.createLinearGradient(0, H * 0.78, 0, H * 0.20);
-      g.addColorStop(0, u.rgba(p.cor, 0.10)); g.addColorStop(0.45, u.rgba(p.cor, 0.035)); g.addColorStop(1, u.rgba(p.cor, 0));
-      ctx.fillStyle = g;
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.58, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 67, [0.5, 0.55], { estrelas: 0 });
+    // colunas de gas: a materia ainda de pe, chapada, sem contorno
+    [[0.22, 0.30], [0.78, 0.24], [0.40, 0.16]].forEach((c, i) => {
+      const x = W * c[0], larg = W * c[1] * 0.3, osc = Math.sin(t * 0.2 + i) * lw;
+      ctx.fillStyle = u.rgba(p.cor, 0.09);
       ctx.beginPath();
-      ctx.moveTo(x - larg, H * 0.80);
-      ctx.quadraticCurveTo(x - larg * 0.5 + Math.sin(t * 0.2 + i) * 4, H * 0.46, x - larg * 0.18, H * 0.22);
-      ctx.lineTo(x + larg * 0.18, H * 0.22);
-      ctx.quadraticCurveTo(x + larg * 0.5 + Math.sin(t * 0.2 + i) * 4, H * 0.46, x + larg, H * 0.80);
+      ctx.moveTo(x - larg, H * 0.82);
+      ctx.quadraticCurveTo(x - larg * 0.5 + osc, H * 0.46, x - larg * 0.2, H * 0.20);
+      ctx.lineTo(x + larg * 0.2, H * 0.20);
+      ctx.quadraticCurveTo(x + larg * 0.5 + osc, H * 0.46, x + larg, H * 0.82);
       ctx.closePath(); ctx.fill();
     });
-    ctx.restore();
     // o berco: uma concha larga embaixo, aberta para cima
-    ctx.save(); ctx.lineCap = 'round';
-    a.bloom(ctx, p.cor, [[2, 0.5], [6, 0.16], [16, 0.06]], () => {
-      ctx.beginPath(); ctx.ellipse(cx, cy + H * 0.14, W * 0.34, H * 0.16, 0, Math.PI * 0.08, Math.PI * 0.92); ctx.stroke();
-    });
-    ctx.restore();
-    // luz nova acendendo: pontos pequenos, todos do mesmo tamanho, nenhum gasto
-    for (let i = 0; i < 16; i++) {
-      const x = W * (0.16 + a.rnd(i * 7.3) * 0.68), y = H * (0.26 + a.rnd(i * 4.1) * 0.46);
-      const f = 0.35 + 0.65 * Math.abs(Math.sin(t * 0.5 + i));
-      a.discoLuz(ctx, x, y, H * 0.035, '#ffffff', 0.5 * f);
-      ctx.fillStyle = u.rgba('#ffffff', 0.85 * f);
-      ctx.beginPath(); ctx.arc(x, y, 1.5, 0, TAU); ctx.fill();
+    const berco = () => { ctx.beginPath(); ctx.ellipse(cx, cy + H * 0.13, W * 0.34, H * 0.15, 0, Math.PI * 0.06, Math.PI * 0.94); ctx.closePath(); };
+    a.forma(ctx, berco, { base: u.mix(p.cor, a.ESC, 0.7), sombra: u.mix(p.cor, a.ESC, 0.86), luz: u.rgba(p.cor, 0.8), lw });
+    // luz nova acendendo: estrelas pequenas, todas do mesmo tamanho, nenhuma gasta
+    for (let i = 0; i < 14; i++) {
+      const x = W * (0.16 + a.rnd(i * 7.3) * 0.68), y = H * (0.24 + a.rnd(i * 4.1) * 0.40);
+      const f = 0.45 + 0.55 * Math.abs(Math.sin(t * 0.5 + i));
+      a.estrela(ctx, x, y, H * 0.016, '#ffffff', f);
     }
     a.bola(ctx, cx, cy, H * 0.085, t, p.lavada, t * 0.12);
   };
@@ -314,121 +284,84 @@ window.HR = window.HR || {};
   /* 7. maisnovo — "a mare disse a idade que tinha. Era menor que a dela".
      Duas pilhas de marcas: o lugar tem poucas, ela tem muitas. O quadro mede. */
   S.maisnovo = (ctx, W, H, p, t) => {
-    const a = A(), u = U();
-    a.fundo(ctx, W, H, p.cor, 13, 0.5);
+    const a = A(), u = U(), lw = a.LW(H), cy = H * 0.47;
+    a.ceu(ctx, W, H, p.cor, p.ato, 13, [0.5, 0.47], { estrelas: 4 });
+    // a pilha maior tem 9 mares: o passo sai da largura que sobra, contando o
+    // traco do aro, para que nem ela nem a regua encostem na beirada
+    const E = Math.min(H * 0.030, (W * 0.20 - H * 0.055 * 0.86) / (8 * 0.86));
     const pilha = (x, n, cor, rot) => {
       ctx.save(); ctx.lineCap = 'round';
-      for (let i = 0; i < n; i++) {
-        const rr = H * 0.055 + i * H * 0.030;
-        ctx.strokeStyle = u.rgba(cor, 0.18 + (i / n) * 0.42);
-        ctx.lineWidth = 1.4;
-        ctx.beginPath(); ctx.ellipse(x, H * 0.47, rr * 0.86, rr, rot, 0, TAU); ctx.stroke();
+      for (let i = n - 1; i >= 0; i--) {
+        const rr = H * 0.055 + i * E;
+        const el = () => { ctx.beginPath(); ctx.ellipse(x, cy, rr * 0.86, rr, rot, 0, TAU); };
+        ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 1.9; el(); ctx.stroke();
+        ctx.strokeStyle = u.mix(cor, a.ESC, 0.45 - (i / n) * 0.35); ctx.lineWidth = lw * 0.9; el(); ctx.stroke();
       }
       ctx.restore();
-      a.discoLuz(ctx, x, H * 0.47, H * 0.05, cor, 0.9);
+      a.forma(ctx, a.circ(ctx, x, cy, H * 0.028), { base: cor, sombra: u.mix(cor, a.ESC, 0.4), lw: lw * 0.8 });
     };
-    pilha(W * 0.29, 4, '#6f7f9e', -0.12);   // o lugar: quatro mares, e frias
-    pilha(W * 0.71, 9, '#ffd08a', 0.1);     // ela: nove, e quentes
-    // a regua: ate onde cada um chega. E o quadro inteiro e essa comparacao.
-    ctx.save();
-    ctx.lineCap = 'round';
-    [[W * 0.29, 4, '#6f7f9e'], [W * 0.71, 9, '#ffd08a']].forEach(c => {
-      const alto = H * 0.47 - (H * 0.055 + (c[1] - 1) * H * 0.030);
-      ctx.strokeStyle = u.rgba(c[2], 0.5); ctx.lineWidth = 1.2;
-      ctx.setLineDash([3, 5]);
-      ctx.beginPath(); ctx.moveTo(c[0] - W * 0.16, alto); ctx.lineTo(c[0] + W * 0.16, alto); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(c[0] - W * 0.16, alto - H * 0.018); ctx.lineTo(c[0] - W * 0.16, alto + H * 0.018); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(c[0] + W * 0.16, alto - H * 0.018); ctx.lineTo(c[0] + W * 0.16, alto + H * 0.018); ctx.stroke();
+    pilha(W * 0.28, 4, '#8fa2c8', -0.12);   // o lugar: quatro mares, e frias
+    pilha(W * 0.72, 9, '#ffd08a', 0.1);     // ela: nove, e quentes
+    // a regua: ate onde cada um chega. O quadro inteiro e essa comparacao.
+    const meia = Math.min(W * 0.17, W * 0.24);
+    [[W * 0.28, 4, '#8fa2c8'], [W * 0.72, 9, '#ffd08a']].forEach(c => {
+      const alto = cy - (H * 0.055 + (c[1] - 1) * E);
+      a.fio(ctx, [[c[0] - meia, alto], [c[0] + meia, alto]], c[2], lw * 0.7);
+      a.fio(ctx, [[c[0] - meia, alto - H * 0.02], [c[0] - meia, alto + H * 0.02]], c[2], lw * 0.7);
+      a.fio(ctx, [[c[0] + meia, alto - H * 0.02], [c[0] + meia, alto + H * 0.02]], c[2], lw * 0.7);
     });
-    // a linha que liga as duas alturas: da para ver de longe qual e a menor
-    ctx.strokeStyle = u.rgba('#ffffff', 0.16); ctx.lineWidth = 1; ctx.setLineDash([2, 7]);
-    const a1 = H * 0.47 - (H * 0.055 + 3 * H * 0.030), a2 = H * 0.47 - (H * 0.055 + 8 * H * 0.030);
-    ctx.beginPath(); ctx.moveTo(W * 0.29, a1); ctx.lineTo(W * 0.71, a2); ctx.stroke();
-    ctx.restore();
+    const a1 = cy - (H * 0.055 + 3 * E), a2 = cy - (H * 0.055 + 8 * E);
+    pontilhado(ctx, [[W * 0.28, a1], [W * 0.72, a2]], u.rgba('#ffffff', 0.45), lw * 0.6, 0);
   };
 
   /* 8. naofecha — "todo anel tem um arranhao no mesmo lugar, como se alguem
      segurasse para ele nao fechar". O anel tem uma falha, e uma mao nela. */
   S.naofecha = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.54, cy = H * 0.48, R = H * 0.31;
-    a.fundo(ctx, W, H, p.cor, 59, 0.5);
-    // um anel atras, longe e fora de foco: e o que cria profundidade
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = u.rgba(p.cor, 0.09); ctx.lineWidth = 9;
+    const a = A(), u = U(), cx = W * 0.54, cy = H * 0.48, R = H * 0.31, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 59, [0.5, 0.48]);
+    // um anel atras, longe: e o que cria profundidade
+    ctx.strokeStyle = u.rgba(p.cor, 0.22); ctx.lineWidth = lw * 2.5;
     ctx.beginPath(); ctx.ellipse(W * 0.2, cy - H * 0.05, R * 0.3, R * 0.74, -0.1, 0, TAU); ctx.stroke();
-    ctx.restore();
     // o anel da frente, inteiro: ele fechou. O que nao fecha e a mao.
-    ctx.save(); ctx.lineCap = 'round';
-    const elipse = () => { ctx.beginPath(); ctx.ellipse(cx, cy, R * 0.44, R, 0, 0, TAU); };
-    a.bloom(ctx, p.cor, [[3, 0.82], [9, 0.22], [24, 0.09]], () => { elipse(); ctx.stroke(); });
-    const par = ctx.createLinearGradient(cx - R * 0.44, cy - R, cx + R * 0.44, cy + R);
-    par.addColorStop(0, u.rgba('#ffffff', 0.85));
-    par.addColorStop(0.45, u.rgba(p.cor, 0.75));
-    par.addColorStop(1, u.rgba(u.mix(p.cor, '#000000', 0.5), 0.8));
-    ctx.strokeStyle = par; ctx.lineWidth = 5; elipse(); ctx.stroke();
-    ctx.strokeStyle = u.rgba('#ffffff', 0.5); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.ellipse(cx, cy, R * 0.40, R * 0.955, 0, 0, TAU); ctx.stroke();
-    ctx.restore();
-    // a impressao de quem segurou: quatro pontas de dedo acesas no aro, e a
-    // palma como um borrao morno atras delas. Nao se ve a mao — se ve a marca.
-    const bor = ctx.createRadialGradient(cx - R * 0.46, cy - R * 0.10, 0, cx - R * 0.46, cy - R * 0.10, R * 0.62);
-    bor.addColorStop(0, u.rgba('#fff3c2', 0.20)); bor.addColorStop(1, u.rgba('#fff3c2', 0));
-    ctx.fillStyle = bor; ctx.beginPath(); ctx.arc(cx - R * 0.46, cy - R * 0.10, R * 0.62, 0, TAU); ctx.fill();
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    aro(ctx, cx, cy, R * 0.44, R, p.cor, 1, lw * 1.3);
+    // a impressao de quem segurou: a palma como um disco morno atras, e as
+    // quatro pontas de dedo pousadas no aro. Nao se ve a mao — se ve a marca.
+    ctx.fillStyle = u.rgba('#fff3c2', 0.14); ctx.beginPath(); ctx.arc(cx - R * 0.46, cy - R * 0.10, R * 0.55, 0, TAU); ctx.fill();
     for (let i = 0; i < 4; i++) {
       const ang = Math.PI - 0.62 + i * 0.41;
       const fx = cx + Math.cos(ang) * R * 0.44, fy = cy + Math.sin(ang) * R;
-      a.discoLuz(ctx, fx, fy, R * 0.16, '#fff3c2', 0.75);
-      ctx.save();
-      ctx.translate(fx, fy); ctx.rotate(ang + Math.PI / 2);
-      ctx.fillStyle = u.rgba('#fff8dd', 0.75);
-      ctx.beginPath(); ctx.ellipse(0, 0, R * 0.055, R * 0.024, 0, 0, TAU); ctx.fill();
-      ctx.restore();
+      a.forma(ctx, a.elip(ctx, fx, fy, R * 0.075, R * 0.05, ang + Math.PI / 2), { base: '#fff8dd', sombra: '#ffd08a', lw: lw * 0.8 });
     }
-    ctx.restore();
     // o arranhao, sempre no mesmo lugar, do lado de dentro da marca
     const ax = cx - R * 0.40, ay = cy - R * 0.26;
-    ctx.save(); ctx.lineCap = 'round';
-    a.bloom(ctx, '#fff3c2', [[3, 0.9], [8, 0.28], [20, 0.1]], () => {
-      ctx.beginPath(); ctx.moveTo(ax, ay);
-      ctx.quadraticCurveTo(ax + R * 0.28, ay + R * 0.2, ax + R * 0.46, ay + R * 0.54);
-      ctx.stroke();
-    });
-    a.discoLuz(ctx, ax + R * 0.46, ay + R * 0.54, R * 0.10, '#fff3c2', 0.95);
-    ctx.restore();
+    a.fio(ctx, [[ax, ay], [ax + R * 0.2, ay + R * 0.18], [ax + R * 0.46, ay + R * 0.54]], '#fff3c2', lw * 1.3, { luz: '#ffffff' });
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ax + R * 0.46, ay + R * 0.54, lw * 1.1, 0, TAU); ctx.fill();
   };
 
   /* 9. dois — "ela SONHOU com duas luzes". Entao esta fora de foco, dobrado,
      e ela esta dormindo embaixo. Nao e uma lembranca: ainda nao. */
   S.dois = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.42, r = H * 0.10;
-    const afast = p.afast == null ? 0.22 : p.afast;
-    a.fundo(ctx, W, H, p.cor, 41, 0.4);
-    const px = W * (0.5 - afast), mx = W * (0.5 + afast);
+    const a = A(), u = U(), cy = H * 0.42, lw = a.LW(H);
+    const r = Math.min(H * 0.10, W * 0.085);
+    // a copia do sonho e 15% maior e a coroa vai a 1,75 do raio: o afastamento
+    // tem de caber nisso tudo
+    const afastPx = Math.min((p.afast == null ? 0.22 : p.afast) * W, W * 0.5 - r * 2.1);
+    a.ceu(ctx, W, H, p.cor, p.ato, 41, [0.5, 0.42], { estrelas: 4 });
+    const px = W * 0.5 - afastPx, mx = W * 0.5 + afastPx;
     // a camada de sonho: as mesmas duas luzes, deslocadas e fracas
-    ctx.save(); ctx.globalAlpha = 0.22;
-    a.pai(ctx, px - 7, cy + 5, r * 1.18, t, 0.9);
-    a.mae(ctx, mx + 7, cy + 5, r * 1.18, t, 0.9);
-    ctx.restore();
-    ctx.save(); ctx.globalAlpha = 0.62;
-    a.pai(ctx, px, cy, r, t, 1);
-    a.mae(ctx, mx, cy, r, t, 1);
-    ctx.restore();
+    a.pai(ctx, px - lw * 3, cy + lw * 2, r * 1.15, t, 0.22);
+    a.mae(ctx, mx + lw * 3, cy + lw * 2, r * 1.15, t, 0.22);
+    a.pai(ctx, px, cy, r, t, 0.7);
+    a.mae(ctx, mx, cy, r, t, 0.7);
     // a bruma por cima: e isso que faz parecer sonho e nao lembranca
-    const br = ctx.createLinearGradient(0, H * 0.18, 0, H * 0.72);
-    br.addColorStop(0, u.rgba(p.cor, 0.06));
-    br.addColorStop(0.5, u.rgba('#ffffff', 0.05));
-    br.addColorStop(1, u.rgba(p.cor, 0));
-    ctx.fillStyle = br; ctx.fillRect(0, H * 0.18, W, H * 0.54);
+    ctx.fillStyle = u.rgba('#ffffff', 0.06); ctx.fillRect(0, H * 0.22, W, H * 0.42);
     // ela dormindo: parada, sem rastro, e tres aros do sono subindo
     a.bola(ctx, W * 0.5, H * 0.78, H * 0.055, t, Math.min(1, (p.lavada || 0) + 0.2), 0);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.save(); ctx.lineCap = 'round';
     for (let i = 0; i < 3; i++) {
       const k = ((t * 0.25 + i * 0.33) % 1);
-      // nasce e morre em fade: sem pipoco no comeco nem no fim
-      ctx.strokeStyle = u.rgba('#ffffff', 0.2 * Math.sin(k * Math.PI)); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(W * 0.5, H * 0.78, H * 0.07 + k * H * 0.08, -2.4, -0.7); ctx.stroke();
+      ctx.strokeStyle = u.rgba('#ffffff', 0.5 * Math.sin(k * Math.PI)); ctx.lineWidth = lw * 0.7;
+      ctx.beginPath(); ctx.arc(W * 0.5, H * 0.78, H * 0.075 + k * H * 0.08, -2.4, -0.7); ctx.stroke();
     }
     ctx.restore();
   };
@@ -438,125 +371,84 @@ window.HR = window.HR || {};
   /* 10. mesmodia — "nasceram todas juntas; nenhuma e mais velha que a outra".
      Uma fila de sementes do MESMO tamanho, acesas pelo MESMO clarao. */
   S.mesmodia = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.46, n = 7;
-    a.fundo(ctx, W, H, p.cor, 23, 0.5);
-    // o clarao que passou por todas: uma linha so, ainda quente
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createLinearGradient(W * 0.06, cy, W * 0.94, cy);
-    g.addColorStop(0, u.rgba(p.cor, 0)); g.addColorStop(0.5, u.rgba(p.cor, 0.3)); g.addColorStop(1, u.rgba(p.cor, 0));
-    ctx.fillStyle = g; ctx.fillRect(0, cy - H * 0.035, W, H * 0.07);
-    ctx.restore();
+    const a = A(), u = U(), cy = H * 0.46, n = 7, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 23, [0.5, 0.46]);
+    // o clarao que passou por todas: uma faixa chapada, ainda quente
+    ctx.fillStyle = u.rgba(p.cor, 0.14); ctx.fillRect(W * 0.06, cy - H * 0.05, W * 0.88, H * 0.10);
+    ctx.fillStyle = u.rgba(p.cor, 0.18); ctx.fillRect(W * 0.06, cy - H * 0.022, W * 0.88, H * 0.044);
+    const f = 1 + 0.06 * Math.sin(t * 0.8);   // todas respiram JUNTAS
     for (let i = 0; i < n; i++) {
       const x = W * (0.13 + (i / (n - 1)) * 0.74);
-      const f = 0.72 + 0.28 * Math.sin(t * 0.8);   // todas pulsam JUNTAS
-      a.discoLuz(ctx, x, cy, H * 0.075, p.cor, 0.85 * f);
-      const gg = ctx.createRadialGradient(x - 2, cy - 2, 0, x, cy, H * 0.026);
-      gg.addColorStop(0, u.rgba('#ffffff', 0.98)); gg.addColorStop(1, u.rgba(p.cor, 0.8));
-      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, cy, H * 0.026, 0, TAU); ctx.fill();
+      a.forma(ctx, a.circ(ctx, x, cy, H * 0.03 * f), { base: '#ffffff', sombra: u.mix(p.cor, '#ffffff', 0.35), lw });
       // a marca de idade de cada uma: uma risca so, igual em todas
-      ctx.strokeStyle = u.rgba('#ffffff', 0.3); ctx.lineWidth = 1.4;
-      ctx.beginPath(); ctx.moveTo(x, cy + H * 0.07); ctx.lineTo(x, cy + H * 0.10); ctx.stroke();
+      a.fio(ctx, [[x, cy + H * 0.07], [x, cy + H * 0.10]], '#ffffff', lw * 0.7);
     }
-    ctx.strokeStyle = u.rgba('#ffffff', 0.12); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(W * 0.13, cy + H * 0.115); ctx.lineTo(W * 0.87, cy + H * 0.115); ctx.stroke();
+    a.fio(ctx, [[W * 0.13, cy + H * 0.125], [W * 0.87, cy + H * 0.125]], u.rgba('#ffffff', 0.5), lw * 0.6);
   };
 
   /* 11. instante — "houve um instante em que nao havia nada; tudo comecou nele".
-     Comeca vazio de verdade: sem poeira, sem estrela. So o ponto, e o que saiu. */
+     Comeca vazio de verdade: sem grade, sem estrela. So o ponto, e o que saiu. */
   S.instante = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.44;
-    // nada: preto liso, sem fundo estrelado
-    const vaz = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 1.05);
-    vaz.addColorStop(0, '#0b0714'); vaz.addColorStop(1, '#03020a');
-    ctx.fillStyle = vaz; ctx.fillRect(0, 0, W, H);
-    // o que saiu do ponto: raios finos, e a poeira so existe perto dele
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-    for (let i = 0; i < 44; i++) {
-      const ang = (i / 44) * TAU + 0.2, L = H * (0.18 + a.rnd(i * 6.1) * 0.5);
-      const g = ctx.createLinearGradient(cx, cy, cx + Math.cos(ang) * L, cy + Math.sin(ang) * L);
-      g.addColorStop(0, u.rgba('#ffffff', 0.5));
-      g.addColorStop(1, u.rgba(p.cor, 0));
-      ctx.strokeStyle = g; ctx.lineWidth = i % 4 === 0 ? 1.6 : 0.8;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * L, cy + Math.sin(ang) * L); ctx.stroke();
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.44, lw = a.LW(H);
+    ctx.fillStyle = '#07050d'; ctx.fillRect(0, 0, W, H);
+    // o que saiu do ponto: cunhas em dois tamanhos, e a poeira so perto dele
+    ctx.fillStyle = u.rgba(p.cor, 0.07); ctx.beginPath(); ctx.arc(cx, cy, H * 0.42, 0, TAU); ctx.fill();
+    ctx.fillStyle = u.rgba(p.cor, 0.09); ctx.beginPath(); ctx.arc(cx, cy, H * 0.26, 0, TAU); ctx.fill();
+    a.cunhas(ctx, cx, cy, H * 0.05, 20, u.rgba(p.cor, 0.9), lw, { longo: 7.5, curto: 4.2, larg: 0.5, giro: 0.2, contorno: false });
+    a.cunhas(ctx, cx, cy, H * 0.05, 20, '#ffffff', lw, { longo: 3.4, curto: 2.0, larg: 0.22, giro: 0.2, contorno: false });
+    for (let i = 0; i < 40; i++) {
+      const ang = a.rnd(i * 2.7) * TAU, d = H * (0.14 + a.rnd(i * 5.3) * 0.5);
+      a.estrela(ctx, cx + Math.cos(ang) * d, cy + Math.sin(ang) * d * 0.9, H * (0.006 + a.rnd(i * 3.3) * 0.008), a.rnd(i * 9.1) > 0.7 ? '#ffffff' : p.cor, 0.7 * (1 - d / (H * 0.7)));
     }
-    for (let i = 0; i < 70; i++) {
-      const ang = a.rnd(i * 2.7) * TAU, d = H * (0.1 + a.rnd(i * 5.3) * 0.55);
-      ctx.fillStyle = u.rgba(a.rnd(i * 9.1) > 0.8 ? '#ffffff' : p.cor, 0.5 * (1 - d / (H * 0.68)));
-      ctx.beginPath(); ctx.arc(cx + Math.cos(ang) * d, cy + Math.sin(ang) * d * 0.9, 0.6 + a.rnd(i * 3.3) * 1.2, 0, TAU); ctx.fill();
-    }
-    ctx.restore();
     // o ponto: o menor desenho do jogo inteiro, e o mais importante
-    a.discoLuz(ctx, cx, cy, H * 0.22, '#ffffff', 1);
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(cx, cy, H * 0.014 + Math.sin(t * 1.2) * H * 0.002, 0, TAU); ctx.fill();
+    a.discoLuz(ctx, cx, cy, H * 0.16, '#ffffff', 0.8);
+    a.forma(ctx, a.circ(ctx, cx, cy, H * 0.024 + Math.sin(t * 1.2) * H * 0.002), { base: '#ffffff', sombra: u.mix(p.cor, '#ffffff', 0.5), lw });
   };
 
   /* 12. quente — "antes do instante havia calor; lembra de estar DENTRO de
      alguma coisa". Entao ela esta dentro de uma casca, nao no meio do nada. */
   S.quente = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.5;
-    const g0 = ctx.createRadialGradient(cx, cy * 0.9, 0, cx, cy, H * 0.95);
-    g0.addColorStop(0, '#6a3038'); g0.addColorStop(0.55, '#3a1824'); g0.addColorStop(1, '#140812');
-    ctx.fillStyle = g0; ctx.fillRect(0, 0, W, H);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.5, lw = a.LW(H);
+    ctx.fillStyle = '#1c0c12'; ctx.fillRect(0, 0, W, H);
+    // o calor em degraus: cinco discos chapados, cada um um pouco mais claro
     for (let i = 5; i >= 1; i--) {
-      const r = H * (0.13 + i * 0.072) + Math.sin(t * 0.4 + i) * 3;
-      const g = ctx.createRadialGradient(cx, cy, r * 0.62, cx, cy, r);
-      g.addColorStop(0, u.rgba('#ff9d6b', 0.05 * i));
-      g.addColorStop(1, u.rgba('#ff6a4a', 0));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
+      const r = H * (0.13 + i * 0.075) + Math.sin(t * 0.4 + i) * lw * 0.6;
+      ctx.fillStyle = u.mix('#1c0c12', '#ff8a5a', 0.05 + (6 - i) * 0.055);
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.fill();
     }
     // a casca: dois arcos fechando em volta dela, um mais perto que o outro
-    ctx.save(); ctx.lineCap = 'round';
-    [[0.30, 0.34], [0.38, 0.18]].forEach(c => {
-      a.bloom(ctx, '#ffb98a', [[2, c[1]], [7, c[1] * 0.4], [18, c[1] * 0.15]], () => {
-        ctx.beginPath(); ctx.ellipse(cx, cy, H * c[0] * 0.92, H * c[0], 0, 0, TAU); ctx.stroke();
-      });
-    });
-    ctx.restore();
-    a.discoLuz(ctx, cx, cy, H * 0.2, '#ffd0a8', 0.85);
+    [[0.31, 1.3], [0.39, 0.8]].forEach(c => aro(ctx, cx, cy, H * c[0] * 0.92, H * c[0], '#ffb98a', 1, lw * c[1]));
+    a.forma(ctx, a.circ(ctx, cx, cy, H * 0.14), { base: '#ffd0a8', sombra: '#ff9d6b', lw, contorno: '#3a1a1c' });
     a.bola(ctx, cx, cy, H * 0.07, t, Math.min(1, (p.lavada || 0) + 0.3), t * 0.1);
   };
 
   /* 13. delonge — "viu uma linha no ceu que nao era estrela. Doeu olhar".
-     A linha esta longe e fina; o que dói é o brilho dela, nao o tamanho. */
+     A linha esta longe e fina; o que doi e o brilho dela, nao o tamanho. */
   S.delonge = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), r = H * 0.05;
-    a.fundo(ctx, W, H, p.cor, 53, 0.9);
+    const a = A(), u = U(), r = H * 0.05, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 53, [0.5, 0.30]);
+    // o que doi: raios chapados so aqui, em cruz
+    a.cunhas(ctx, W * 0.5, H * 0.30, H * 0.02, 4, '#ffffff', lw, { longo: 16, curto: 9, larg: 0.5, contorno: false, giro: 0 });
     a.horizonte(ctx, W, H, H * 0.30, '#dfe6ff', 0.52, t, p.curva || 16);
-    // o que dói: o clarao de lente, so aqui
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-    [[1, 0], [0, 1], [0.7, 0.7], [-0.7, 0.7]].forEach((d, i) => {
-      const L = H * (i < 2 ? 0.34 : 0.17);
-      const g = ctx.createLinearGradient(W * 0.5 - d[0] * L, H * 0.30 - d[1] * L, W * 0.5 + d[0] * L, H * 0.30 + d[1] * L);
-      g.addColorStop(0, u.rgba('#dfe6ff', 0)); g.addColorStop(0.5, u.rgba('#ffffff', i < 2 ? 0.36 : 0.18)); g.addColorStop(1, u.rgba('#dfe6ff', 0));
-      ctx.strokeStyle = g; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(W * 0.5 - d[0] * L, H * 0.30 - d[1] * L); ctx.lineTo(W * 0.5 + d[0] * L, H * 0.30 + d[1] * L); ctx.stroke();
-    });
-    ctx.restore();
     // ela embaixo, pequena, e o olhar subindo
-    ctx.save();
-    ctx.setLineDash([3, 10]); ctx.lineDashOffset = -t * 6;
-    ctx.strokeStyle = u.rgba('#ffffff', 0.12); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(W * 0.5, H * 0.76 - r * 1.7); ctx.lineTo(W * 0.5, H * 0.35); ctx.stroke();
-    ctx.restore();
+    pontilhado(ctx, [[W * 0.5, H * 0.76 - r * 1.8], [W * 0.5, H * 0.36]], u.rgba('#ffffff', 0.4), lw * 0.6, t);
     a.bola(ctx, W * 0.5, H * 0.76, r, t, p.lavada, t * 0.2);
   };
 
   /* 14. quemsegur — "duas maos, uma de cada lado da linha. Nao lembra o rosto
      de nenhuma". As maos aparecem; os donos, nao. */
   S.quemsegur = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.46;
-    a.fundo(ctx, W, H, p.cor, 43, 0.6);
-    a.horizonte(ctx, W, H, cy, '#e6ecff', 0.18, t, 0);
-    // quem segura: dois vultos sem forma, so escuro mais denso
+    const a = A(), u = U(), cy = H * 0.46, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 43, [0.5, 0.46]);
+    // quem segura: dois vultos sem forma, so escuro mais denso, chapado
     [-1, 1].forEach(s => {
-      const x = W * (0.5 + s * 0.33);
-      const g = ctx.createRadialGradient(x, cy, 0, x, cy, H * 0.3);
-      g.addColorStop(0, 'rgba(0,0,0,0.8)'); g.addColorStop(0.55, 'rgba(0,0,0,0.4)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, H * 0.34, 0, TAU); ctx.fill();
+      const x = W * (0.5 + s * 0.36);
+      ctx.fillStyle = u.rgba(a.ESC, 0.5); ctx.beginPath(); ctx.ellipse(x, cy, H * 0.26, H * 0.36, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = u.rgba(a.ESC, 0.7); ctx.beginPath(); ctx.ellipse(x, cy, H * 0.16, H * 0.26, 0, 0, TAU); ctx.fill();
     });
-    maoLuz(ctx, W * 0.27, cy, H * 0.125, -0.22, '#cfe4ff', 1);
-    maoLuz(ctx, W * 0.73, cy, H * 0.125, Math.PI + 0.22, '#c9b4ff', 1);
+    a.horizonte(ctx, W, H, cy, '#e6ecff', 0.18, t, 0);
+    mao(ctx, W * 0.27, cy, H * 0.12, -0.22, '#cfe4ff', lw);
+    mao(ctx, W * 0.73, cy, H * 0.12, Math.PI + 0.22, '#c9b4ff', lw);
     // ela embaixo, olhando de longe
     a.bola(ctx, W * 0.5, H * 0.80, H * 0.045, t, p.lavada, t * 0.2);
   };
@@ -564,148 +456,109 @@ window.HR = window.HR || {};
   /* 15. contempla — "encontrou quem nao pode ajudar em nada, e mesmo assim
      olha para cima". O assunto nao e a ajuda: e o olhar. */
   S.contempla = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, chao = H * 0.80;
-    a.fundo(ctx, W, H, p.cor, 77, 1.0);
-    // o mundinho: uma curva pequena embaixo, nada mais
-    ctx.save();
-    const g = ctx.createLinearGradient(0, chao - H * 0.05, 0, H);
-    g.addColorStop(0, u.rgba('#3a4a6a', 0.5)); g.addColorStop(1, '#070a14');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, chao + H * 0.06);
-    ctx.quadraticCurveTo(cx, chao - H * 0.055, W, chao + H * 0.06);
-    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-    ctx.lineCap = 'round';
-    a.bloom(ctx, '#8fd0ff', [[1.2, 0.4], [4, 0.12]], () => {
-      ctx.beginPath(); ctx.moveTo(0, chao + H * 0.06);
-      ctx.quadraticCurveTo(cx, chao - H * 0.055, W, chao + H * 0.06); ctx.stroke();
+    const a = A(), u = U(), cx = W * 0.5, base = H * 0.80, lw = a.LW(H);
+    a.ceu(ctx, W, H, '#8fd0ff', p.ato, 77, [0.5, 0.26], { estrelas: 14 });
+    // o olhar: um cone morno e estreito, em dois degraus — ele abre para o
+    // ceu, mas o ceu e que e o assunto, nao o cone
+    const py = base - H * 0.085;
+    [[0.24, 0.05], [0.13, 0.06]].forEach(c => {
+      ctx.fillStyle = u.rgba('#ffe2a8', c[1]);
+      ctx.beginPath(); ctx.moveTo(cx, py - H * 0.03);
+      ctx.lineTo(cx - W * c[0], H * 0.05); ctx.lineTo(cx + W * c[0], H * 0.05); ctx.closePath(); ctx.fill();
     });
-    ctx.restore();
-    // quem olha: uma marca minuscula, sem rosto e sem poder nenhum
-    const py = chao - H * 0.085;
-    a.discoLuz(ctx, cx, py, H * 0.05, '#ffe2a8', 0.55);
-    ctx.strokeStyle = u.rgba('#ffe2a8', 0.95); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx, py + H * 0.022); ctx.lineTo(cx, py - H * 0.012); ctx.stroke();
-    ctx.fillStyle = '#fff6df';
-    ctx.beginPath(); ctx.arc(cx, py - H * 0.024, H * 0.013, 0, TAU); ctx.fill();
-    // o olhar: um cone que se abre para o ceu inteiro
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const co = ctx.createLinearGradient(cx, py, cx, H * 0.10);
-    co.addColorStop(0, u.rgba('#ffe2a8', 0.16)); co.addColorStop(1, u.rgba('#ffe2a8', 0));
-    ctx.fillStyle = co;
-    ctx.beginPath(); ctx.moveTo(cx, py - H * 0.03);
-    ctx.lineTo(cx - W * 0.30, H * 0.08); ctx.lineTo(cx + W * 0.30, H * 0.08); ctx.closePath(); ctx.fill();
-    ctx.restore();
+    // o mundinho: uma curva pequena embaixo, nada mais
+    chao(ctx, W, H, base + H * 0.03, '#8fd0ff', lw, H * 0.09);
+    // quem olha: uma marca minuscula, sem rosto e sem poder nenhum.
+    // Este e o unico brilho difuso do card.
+    a.discoLuz(ctx, cx, py, H * 0.08, '#ffe2a8', 0.55);
+    const corpo = () => {
+      const b = H * 0.014, h = H * 0.042;
+      ctx.beginPath();
+      ctx.moveTo(cx - b * 0.55, py - h * 0.35);
+      ctx.quadraticCurveTo(cx - b * 1.5, py + h * 0.7, cx - b * 1.1, py + h * 0.75);
+      ctx.lineTo(cx + b * 1.1, py + h * 0.75);
+      ctx.quadraticCurveTo(cx + b * 1.5, py + h * 0.7, cx + b * 0.55, py - h * 0.35);
+      ctx.closePath();
+    };
+    a.forma(ctx, corpo, { base: '#ffe2a8', sombra: '#d9a35e', lw: lw * 0.8 });
+    a.forma(ctx, a.circ(ctx, cx, py - H * 0.048, H * 0.017), { base: '#fff6df', sombra: '#ffc98a', lw: lw * 0.8 });
   };
 
   /* 16. pontoazul — "um ponto azul, pequeno, cheio de gente olhando".
      Uma foto de sonda: feixe de luz atravessando e o ponto dentro dele. */
   S.pontoazul = (ctx, W, H, p, t) => {
-    const a = A(), u = U();
-    a.fundo(ctx, W, H, '#20304f', 79, 1.1);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createLinearGradient(W * 0.2, 0, W * 0.9, H);
-    g.addColorStop(0, u.rgba('#ffd9a0', 0));
-    g.addColorStop(0.5, u.rgba('#ffd9a0', 0.11));
-    g.addColorStop(1, u.rgba('#ffd9a0', 0));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const a = A(), u = U(), lw = a.LW(H);
+    a.ceu(ctx, W, H, '#20304f', p.ato, 79, [0.62, 0.44], { estrelas: 10 });
+    // o feixe: uma faixa chapada atravessada
+    ctx.save(); ctx.translate(W * 0.55, H * 0.5); ctx.rotate(0.9);
+    ctx.fillStyle = u.rgba('#ffd9a0', 0.07); ctx.fillRect(-H, -H * 0.16, H * 2, H * 0.32);
+    ctx.fillStyle = u.rgba('#ffd9a0', 0.09); ctx.fillRect(-H, -H * 0.07, H * 2, H * 0.14);
     ctx.restore();
     const px = W * 0.62, py = H * 0.44;
-    a.discoLuz(ctx, px, py, H * 0.10, '#8fd0ff', 0.9);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-    [[1, 0], [0, 1]].forEach(d => {
-      const L = H * 0.13;
-      const g2 = ctx.createLinearGradient(px - d[0] * L, py - d[1] * L, px + d[0] * L, py + d[1] * L);
-      g2.addColorStop(0, u.rgba('#8fd0ff', 0)); g2.addColorStop(0.5, u.rgba('#cfeaff', 0.5)); g2.addColorStop(1, u.rgba('#8fd0ff', 0));
-      ctx.strokeStyle = g2; ctx.lineWidth = 1.1;
-      ctx.beginPath(); ctx.moveTo(px - d[0] * L, py - d[1] * L); ctx.lineTo(px + d[0] * L, py + d[1] * L); ctx.stroke();
-    });
-    ctx.restore();
-    ctx.fillStyle = '#9fd8ff';
-    ctx.beginPath(); ctx.arc(px, py, Math.max(2.6, H * 0.008), 0, TAU); ctx.fill();
-    ctx.fillStyle = u.rgba('#ffffff', 0.95);
-    ctx.beginPath(); ctx.arc(px - 0.9, py - 0.9, Math.max(1.1, H * 0.003), 0, TAU); ctx.fill();
+    a.cunhas(ctx, px, py, H * 0.018, 4, '#cfeaff', lw, { longo: 6, curto: 6, larg: 0.4, contorno: false, alt: false });
+    a.discoLuz(ctx, px, py, H * 0.09, '#8fd0ff', 0.9);
+    a.forma(ctx, a.circ(ctx, px, py, Math.max(2.8, H * 0.011)), { base: '#9fd8ff', sombra: '#4aa0e0', lw: lw * 0.6 });
   };
 
   /* 17. espiral — "girava como algo que ja girou muito, e ainda assim era nova". */
   S.espiral = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.5;
-    a.fundo(ctx, W, H, p.cor, 67, 0.5);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.translate(cx, cy); ctx.rotate(t * 0.06 * (p.sentido || 1)); ctx.scale(1, 0.40);
-    const nb = p.bracos || 4;
-    const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, H * 0.78);
-    halo.addColorStop(0, u.rgba(p.cor, 0.22));
-    halo.addColorStop(0.55, u.rgba(p.cor, 0.07));
-    halo.addColorStop(1, u.rgba(p.cor, 0));
-    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(0, 0, H * 0.78, 0, TAU); ctx.fill();
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.5, lw = a.LW(H), nb = p.bracos || 4;
+    a.ceu(ctx, W, H, p.cor, p.ato, 67, [0.5, 0.5]);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(t * 0.06 * (p.sentido || 1)); ctx.scale(1, 0.42);
+    ctx.fillStyle = u.rgba(p.cor, 0.14); ctx.beginPath(); ctx.arc(0, 0, H * 0.74, 0, TAU); ctx.fill();
+    ctx.fillStyle = u.rgba(p.cor, 0.16); ctx.beginPath(); ctx.arc(0, 0, H * 0.46, 0, TAU); ctx.fill();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (let b = 0; b < nb; b++) {
       ctx.rotate(TAU / nb);
-      for (let i = 0; i < 150; i++) {
-        const k = i / 150, ang = k * 5.4, rr = k * H * 0.70;
-        const esp = (a.rnd(b * 31 + i) - 0.5) * H * 0.07 * (0.4 + k);
-        const x = Math.cos(ang) * rr + Math.cos(ang + 1.57) * esp;
-        const y = Math.sin(ang) * rr + Math.sin(ang + 1.57) * esp;
-        const brilho = 0.45 * (1 - k * 0.55) * (0.5 + a.rnd(i * 7.1) * 0.9);
-        ctx.fillStyle = u.rgba(a.rnd(i * 3.3) > 0.82 ? '#ffffff' : p.cor, brilho);
-        ctx.beginPath(); ctx.arc(x, y, 1.1 + a.rnd(i * 5.9) * 2.4 * (1 - k * 0.4), 0, TAU); ctx.fill();
+      const braco = () => {
+        ctx.beginPath();
+        for (let i = 0; i <= 22; i++) { const k = i / 22, an = k * 4.6, rr = H * 0.06 + k * H * 0.64; i ? ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr) : ctx.moveTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+      };
+      // o braco afina para fora: tres trechos
+      ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 4.4; braco(); ctx.stroke();
+      ctx.strokeStyle = p.cor; ctx.lineWidth = lw * 2.6; braco(); ctx.stroke();
+      ctx.strokeStyle = u.rgba('#ffffff', 0.55); ctx.lineWidth = lw * 0.8;
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) { const k = i / 22, an = k * 4.6, rr = H * 0.06 + k * H * 0.64; i ? ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr) : ctx.moveTo(Math.cos(an) * rr, Math.sin(an) * rr); }
+      ctx.stroke();
+      // as estrelas velhas no braco
+      for (let i = 0; i < 6; i++) {
+        const k = 0.25 + a.rnd(b * 31 + i) * 0.7, an = k * 4.6 + (a.rnd(i * 7.7) - 0.5) * 0.3, rr = H * 0.06 + k * H * 0.64;
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(Math.cos(an) * rr, Math.sin(an) * rr, lw * (0.6 + a.rnd(i * 5.9) * 0.6), 0, TAU); ctx.fill();
       }
     }
     ctx.restore();
-    // a faixa de poeira: e o que faz parecer galaxia de verdade
-    ctx.save();
-    ctx.translate(cx, cy); ctx.rotate(t * 0.06 * (p.sentido || 1) + 0.35);
-    const po = ctx.createLinearGradient(-H * 0.7, 0, H * 0.7, 0);
-    po.addColorStop(0, 'rgba(0,0,0,0)'); po.addColorStop(0.5, 'rgba(0,0,0,0.42)'); po.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = po; ctx.fillRect(-H * 0.7, -H * 0.028, H * 1.4, H * 0.056);
-    ctx.restore();
-    a.discoLuz(ctx, cx, cy, H * 0.22, '#fff3c2', 1);
-    a.discoLuz(ctx, cx, cy, H * 0.07, '#ffffff', 1);
+    // o miolo: novo, branco, chapado
+    a.forma(ctx, a.elip(ctx, cx, cy, H * 0.11, H * 0.06), { base: '#fff3c2', sombra: u.mix(p.cor, '#fff3c2', 0.5), lw });
+    a.forma(ctx, a.circ(ctx, cx, cy, H * 0.025), { base: '#ffffff', sombra: '#fff3c2', lw: lw * 0.7 });
   };
 
   /* 18. eraeu — "o instante tinha um nome, e o nome era o dela".
      O mesmo ponto do fragmento 11 — so que agora da para ler o que esta nele. */
   S.eraeu = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46;
-    const vaz = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 1.05);
-    vaz.addColorStop(0, '#120c16'); vaz.addColorStop(1, '#04030a');
-    ctx.fillStyle = vaz; ctx.fillRect(0, 0, W, H);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
-    for (let i = 0; i < 36; i++) {
-      const ang = (i / 36) * TAU + 0.2, L = H * (0.26 + a.rnd(i * 6.1) * 0.5);
-      const g = ctx.createLinearGradient(cx, cy, cx + Math.cos(ang) * L, cy + Math.sin(ang) * L);
-      g.addColorStop(0, u.rgba(p.cor, 0.42)); g.addColorStop(1, u.rgba(p.cor, 0));
-      ctx.strokeStyle = g; ctx.lineWidth = i % 4 === 0 ? 1.5 : 0.7;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * L, cy + Math.sin(ang) * L); ctx.stroke();
-    }
-    ctx.restore();
-    a.discoLuz(ctx, cx, cy, H * 0.30, p.cor, 0.9);
-    a.discoLuz(ctx, cx, cy, H * 0.15, '#ffffff', 0.8);
-    palavra(ctx, cx, cy, oTexto(p, 'FAÍSCA'), p.cor, H * 0.125, 1);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46, lw = a.LW(H);
+    ctx.fillStyle = '#0d0a12'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = u.rgba(p.cor, 0.08); ctx.beginPath(); ctx.arc(cx, cy, H * 0.46, 0, TAU); ctx.fill();
+    ctx.fillStyle = u.rgba(p.cor, 0.10); ctx.beginPath(); ctx.arc(cx, cy, H * 0.30, 0, TAU); ctx.fill();
+    a.cunhas(ctx, cx, cy, H * 0.16, 18, u.rgba(p.cor, 0.85), lw, { longo: 2.9, curto: 2.0, larg: 0.16, giro: 0.2 + t * 0.02 });
+    a.forma(ctx, a.circ(ctx, cx, cy, H * 0.165), { base: '#ffffff', sombra: u.mix(p.cor, '#ffffff', 0.45), lw });
+    palavra(ctx, cx, cy, oTexto(p, 'FAÍSCA'), p.cor, H * 0.095, 1);
   };
 
   /* 19. fechando — "a linha esta menor do que estava. Devagar, mas esta".
      So da para ver que diminuiu se o tamanho antigo continuar marcado. */
   S.fechando = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.40;
-    a.fundo(ctx, W, H, p.cor, 31, 0.7);
-    // onde a linha chegava antes: o vinco que ficou
-    ctx.save();
-    ctx.setLineDash([4, 7]);
-    ctx.strokeStyle = u.rgba('#ffffff', 0.16); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(W * 0.08, cy); ctx.lineTo(W * 0.92, cy); ctx.stroke();
-    ctx.setLineDash([]);
+    const a = A(), u = U(), cy = H * 0.40, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 31, [0.5, 0.40]);
+    // onde a linha chegava antes: o vinco que ficou, e as setas fechando
+    pontilhado(ctx, [[W * 0.08, cy], [W * 0.92, cy]], u.rgba('#ffffff', 0.4), lw * 0.6, 0);
     [-1, 1].forEach(s => {
       const x = W * (0.5 + s * 0.42);
-      ctx.strokeStyle = u.rgba('#ffffff', 0.3); ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(x, cy - H * 0.035); ctx.lineTo(x, cy + H * 0.035); ctx.stroke();
-      // a seta do fechamento, apontando para dentro
-      ctx.beginPath();
-      ctx.moveTo(x - s * H * 0.05, cy); ctx.lineTo(x - s * H * 0.085, cy);
-      ctx.moveTo(x - s * H * 0.085, cy); ctx.lineTo(x - s * H * 0.062, cy - H * 0.016);
-      ctx.moveTo(x - s * H * 0.085, cy); ctx.lineTo(x - s * H * 0.062, cy + H * 0.016);
-      ctx.strokeStyle = u.rgba(p.cor, 0.5); ctx.stroke();
+      a.fio(ctx, [[x, cy - H * 0.04], [x, cy + H * 0.04]], '#ffffff', lw * 0.8);
+      a.fio(ctx, [[x - s * H * 0.04, cy], [x - s * H * 0.10, cy]], p.cor, lw * 0.8);
+      a.fio(ctx, [[x - s * H * 0.075, cy - H * 0.02], [x - s * H * 0.10, cy], [x - s * H * 0.075, cy + H * 0.02]], p.cor, lw * 0.8);
     });
-    ctx.restore();
     // a linha de hoje: menor
     a.horizonte(ctx, W, H, cy, '#dfe6ff', p.fecha == null ? 0.42 : p.fecha, t, 0);
     a.bola(ctx, W * 0.5, H * 0.76, H * 0.05, t, p.lavada, t * 0.2);
@@ -714,35 +567,30 @@ window.HR = window.HR || {};
   /* 20. queeuabri — "tudo isto cabe numa coisa que ela fez sem querer".
      Entao o quadro mostra TUDO dentro da fenda, e ela do lado de fora. */
   S.queeuabri = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.44;
-    a.fundo(ctx, W, H, p.cor, 37, 0.35);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.44, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 37, [0.5, 0.44], { estrelas: 3 });
     const meia = W * 0.40, alt = H * 0.20;
     const lente = () => {
-      ctx.beginPath();
-      ctx.moveTo(cx - meia, cy);
+      ctx.beginPath(); ctx.moveTo(cx - meia, cy);
       ctx.quadraticCurveTo(cx, cy - alt, cx + meia, cy);
-      ctx.quadraticCurveTo(cx, cy + alt, cx - meia, cy);
-      ctx.closePath();
+      ctx.quadraticCurveTo(cx, cy + alt, cx - meia, cy); ctx.closePath();
     };
+    // o halo da fenda, em degraus
+    ctx.strokeStyle = u.rgba('#ffffff', 0.12); ctx.lineWidth = lw * 5; ctx.lineJoin = 'round'; lente(); ctx.stroke();
     // dentro da fenda: o universo inteiro
-    ctx.save();
-    lente(); ctx.clip();
-    const dentro = ctx.createLinearGradient(0, cy - alt, 0, cy + alt);
-    dentro.addColorStop(0, '#0a1030'); dentro.addColorStop(1, '#04030e');
-    ctx.fillStyle = dentro; ctx.fillRect(cx - meia, cy - alt, meia * 2, alt * 2);
-    for (let i = 0; i < 80; i++) {
+    ctx.save(); lente(); ctx.clip();
+    ctx.fillStyle = '#070a1c'; ctx.fillRect(cx - meia, cy - alt, meia * 2, alt * 2);
+    for (let i = 0; i < 40; i++) {
       const x = cx - meia + a.rnd(i * 4.3) * meia * 2, y = cy - alt + a.rnd(i * 8.7) * alt * 2;
-      ctx.fillStyle = u.rgba(a.rnd(i * 2.1) > 0.8 ? '#ffffff' : p.cor, 0.2 + a.rnd(i * 6.7) * 0.6);
-      ctx.beginPath(); ctx.arc(x, y, 0.5 + a.rnd(i * 3.1) * 1.3, 0, TAU); ctx.fill();
+      a.estrela(ctx, x, y, H * (0.005 + a.rnd(i * 3.1) * 0.008), a.rnd(i * 2.1) > 0.7 ? '#ffffff' : p.cor, 0.8);
     }
-    miniGalaxia(ctx, cx - meia * 0.42, cy - alt * 0.18, H * 0.115, '#9be7ff', t * 0.05);
-    miniGalaxia(ctx, cx + meia * 0.40, cy + alt * 0.20, H * 0.085, '#ff9f43', -t * 0.04 + 1.2);
-    miniGalaxia(ctx, cx + meia * 0.02, cy - alt * 0.44, H * 0.06, '#c9b4ff', t * 0.03 + 2.4);
+    miniGalaxia(ctx, cx - meia * 0.42, cy - alt * 0.18, H * 0.115, '#9be7ff', t * 0.05, lw * 0.7);
+    miniGalaxia(ctx, cx + meia * 0.40, cy + alt * 0.20, H * 0.085, '#ff9f43', -t * 0.04 + 1.2, lw * 0.6);
+    miniGalaxia(ctx, cx + meia * 0.02, cy - alt * 0.44, H * 0.06, '#c9b4ff', t * 0.03 + 2.4, lw * 0.5);
     ctx.restore();
-    // a borda da fenda
-    ctx.save(); ctx.lineCap = 'round';
-    a.bloom(ctx, '#ffffff', [[1.4, 0.8], [5, 0.24], [14, 0.09]], () => { lente(); ctx.stroke(); });
-    ctx.restore();
+    // a borda da fenda: branca, com contorno
+    ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 2.6; lente(); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = lw * 1.3; lente(); ctx.stroke();
     // ela, do lado de fora, pequena: foi sem querer
     a.bola(ctx, W * 0.5, H * 0.80, H * 0.048, t, p.lavada, t * 0.2);
   };
@@ -750,27 +598,19 @@ window.HR = window.HR || {};
   /* 21. ninho — "ha um lugar onde nada pode dar errado. Ela ficou mais do que
      precisava". Um casulo fechado por todos os lados, e ela parada dentro. */
   S.ninho = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48;
-    a.fundo(ctx, W, H, p.cor, 61, 0.3);
-    const gg = ctx.createRadialGradient(cx, cy, 0, cx, cy, H * 0.45);
-    gg.addColorStop(0, u.rgba(p.cor, 0.16)); gg.addColorStop(1, u.rgba(p.cor, 0));
-    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, H * 0.45, 0, TAU); ctx.fill();
-    // o casulo: aros fechados, um dentro do outro, sem nenhuma abertura
-    ctx.save(); ctx.lineCap = 'round';
-    for (let i = 0; i < 5; i++) {
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 61, [0.5, 0.48], { estrelas: 3 });
+    // o casulo: aros fechados, um dentro do outro, em dois tons alternados
+    for (let i = 4; i >= 0; i--) {
       const rr = H * (0.13 + i * 0.062);
-      ctx.strokeStyle = u.rgba(p.cor, 0.34 - i * 0.05); ctx.lineWidth = 1.6 - i * 0.2;
-      ctx.beginPath(); ctx.ellipse(cx, cy, rr * 0.92, rr, Math.sin(i * 1.3) * 0.12, 0, TAU); ctx.stroke();
+      a.forma(ctx, a.elip(ctx, cx, cy, rr * 0.92, rr, Math.sin(i * 1.3) * 0.12),
+        { base: u.mix(p.cor, a.tomAto(p.ato), i % 2 ? 0.82 : 0.72), sombra: u.mix(p.cor, a.ESC, 0.9), luz: u.rgba(p.cor, 0.5), lw: lw * 0.9 });
     }
-    ctx.restore();
     // as marcas do tempo parado: uma risca para cada volta que ela nao deu
-    ctx.save();
-    ctx.strokeStyle = u.rgba('#ffffff', 0.3); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
     for (let i = 0; i < 11; i++) {
-      const x = W * (0.5 - 0.15) + i * W * 0.03;
-      ctx.beginPath(); ctx.moveTo(x, H * 0.85); ctx.lineTo(x, H * 0.885); ctx.stroke();
+      const x = W * 0.35 + i * W * 0.03;
+      a.fio(ctx, [[x, H * 0.85], [x, H * 0.885]], '#ffffff', lw * 0.6);
     }
-    ctx.restore();
     // ela, parada: nenhum rastro, nenhum giro
     a.bola(ctx, cx, cy, H * 0.085, t, p.lavada, 0);
   };
@@ -780,287 +620,216 @@ window.HR = window.HR || {};
   /* 22. asmarcas — "Casco leu os aneis em voz alta: nao eram obstaculos, eram
      recados". Varios aneis em fila, cada um com a sua marca: uma frase. */
   S.asmarcas = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.46, n = 5;
-    a.fundo(ctx, W, H, p.cor, 29, 0.45);
+    const a = A(), u = U(), cy = H * 0.46, n = 5, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 29, [0.5, 0.46]);
+    // o dedo do Casco passando: vai e volta, e acende por perto em vez de
+    // ligar e desligar — assim nada pisca no fim da fila
+    const onde = (n - 1) * (0.5 - 0.5 * Math.cos(t * 0.30));
     for (let i = 0; i < n; i++) {
-      const x = W * (0.16 + (i / (n - 1)) * 0.68);
-      // o dedo do Casco passando: vai e volta, e acende por perto em vez de
-      // ligar e desligar — assim nada pisca no fim da fila
-      const onde = (n - 1) * (0.5 - 0.5 * Math.cos(t * 0.30));
+      const x = W * (0.16 + (i / (n - 1)) * 0.68), R = H * 0.15;
       const lido = Math.max(0, 1 - Math.abs(i - onde) * 0.75);
-      const R = H * 0.15;
-      aro(ctx, x, cy, R * 0.42, R, p.cor, 0.4 + lido * 0.6);
+      aro(ctx, x, cy, R * 0.42, R, u.mix(p.cor, '#ffffff', lido * 0.5), 1, lw * 0.75);
       // a marca de cada anel: todas diferentes, todas no mesmo lugar
       const ax = x - R * 0.36, ay = cy - R * 0.3;
-      ctx.save(); ctx.lineCap = 'round';
-      a.bloom(ctx, '#fff3c2', [[2.2, 0.28 + lido * 0.62], [6, 0.07 + lido * 0.17]], () => {
-        ctx.beginPath(); ctx.moveTo(ax, ay);
-        ctx.quadraticCurveTo(ax + R * (0.2 + a.rnd(i * 3.7) * 0.3), ay + R * (0.2 + a.rnd(i * 5.1) * 0.3),
-                             ax + R * 0.58, ay + R * (0.42 + a.rnd(i * 2.3) * 0.36));
-        ctx.stroke();
-      });
-      ctx.restore();
+      a.fio(ctx, [[ax, ay], [ax + R * (0.2 + a.rnd(i * 3.7) * 0.25), ay + R * (0.2 + a.rnd(i * 5.1) * 0.25)], [ax + R * 0.58, ay + R * (0.42 + a.rnd(i * 2.3) * 0.36)]],
+        u.mix('#fff3c2', p.cor, 0.5 - lido * 0.5), lw * 0.9);
     }
     // a linha de leitura: e uma frase, da esquerda para a direita
-    ctx.save();
-    ctx.setLineDash([2, 7]);
-    ctx.strokeStyle = u.rgba('#ffffff', 0.14); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(W * 0.1, H * 0.70); ctx.lineTo(W * 0.9, H * 0.70); ctx.stroke();
-    ctx.restore();
+    pontilhado(ctx, [[W * 0.1, H * 0.70], [W * 0.9, H * 0.70]], u.rgba('#ffffff', 0.4), lw * 0.6, 0);
+    a.fio(ctx, [[W * 0.1 + (W * 0.8) * (onde / (n - 1)), H * 0.68], [W * 0.1 + (W * 0.8) * (onde / (n - 1)), H * 0.72]], '#fff3c2', lw);
   };
 
   /* 23. letradele — "firme e funda. Quem fez, fez com forca".
      Um anel so, de perto, e um traco curto que afunda. */
   S.letradele = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.46, cy = H * 0.48, R = H * 0.33;
-    a.fundo(ctx, W, H, p.cor, 17, 0.4);
-    aro(ctx, cx, cy, R * 0.44, R, p.cor, 1);
-    // o traco: curto, grosso, e com a pressao aparecendo em volta
-    const ax = cx - R * 0.30, ay = cy - R * 0.22;
-    const bx = cx + R * 0.16, by = cy + R * 0.30;
+    const a = A(), u = U(), cx = W * 0.46, cy = H * 0.48, R = H * 0.33, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 17, [0.46, 0.48]);
+    aro(ctx, cx, cy, R * 0.44, R, p.cor, 1, lw * 1.2);
+    // o traco: curto, grosso, com a pressao aparecendo em volta (uma faixa chapada)
+    const ax = cx - R * 0.30, ay = cy - R * 0.22, bx = cx + R * 0.16, by = cy + R * 0.30;
     ctx.save(); ctx.lineCap = 'round';
-    // a pressao: o metal cedendo em volta do risco
-    const pr = ctx.createLinearGradient(ax, ay, bx, by);
-    pr.addColorStop(0, u.rgba('#ffffff', 0)); pr.addColorStop(0.5, u.rgba('#ffffff', 0.16)); pr.addColorStop(1, u.rgba('#ffffff', 0));
-    ctx.strokeStyle = pr; ctx.lineWidth = R * 0.30;
+    ctx.strokeStyle = u.rgba('#ffffff', 0.12); ctx.lineWidth = R * 0.30;
     ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-    a.bloom(ctx, '#ffffff', [[5.5, 0.95], [12, 0.3], [26, 0.1]], () => {
-      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-    });
-    // o fundo do risco: uma linha escura dentro da clara, que da profundidade
-    ctx.strokeStyle = u.rgba('#7ba4d6', 0.7); ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(ax + 1, ay + 1); ctx.lineTo(bx - 1, by - 1); ctx.stroke();
     ctx.restore();
-    a.discoLuz(ctx, bx, by, R * 0.17, '#ffffff', 0.9);
+    a.fio(ctx, [[ax, ay], [bx, by]], '#ffffff', lw * 2.6, { luz: '#7ba4d6' });
+    // o fundo do risco: a sombra que a forca deixou, deslocada para baixo/direita
+    a.fio(ctx, [[ax + lw * 1.2, ay + lw * 1.2], [bx + lw * 1.2, by + lw * 1.2]], u.rgba(a.ESC, 0.5), lw * 1.2, { contorno: false });
+    a.forma(ctx, a.circ(ctx, bx, by, lw * 1.9), { base: '#ffffff', sombra: '#7ba4d6', lw: lw * 0.7 });
   };
 
   /* 24. letradela — "leve e nao termina. Como quem escreve com pressa para nao
      esquecer". O mesmo anel, e um traco que se desfaz sem acabar. */
   S.letradela = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.54, cy = H * 0.48, R = H * 0.33;
-    a.fundo(ctx, W, H, p.cor, 19, 0.4);
-    aro(ctx, cx, cy, R * 0.44, R, p.cor, 1);
-    // o traco: longo, fino, e apagando no fim — nunca termina
+    const a = A(), cx = W * 0.54, cy = H * 0.48, R = H * 0.33, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 19, [0.54, 0.48]);
+    aro(ctx, cx, cy, R * 0.44, R, p.cor, 1, lw * 1.2);
+    // o traco: longo, fino, e afinando no fim — nunca termina
     const pts = [];
-    for (let i = 0; i <= 40; i++) {
-      const k = i / 40;
-      pts.push([cx - R * 0.30 + k * R * 0.66 + Math.sin(k * 5.2) * R * 0.06,
-                cy - R * 0.38 + k * R * 0.82 - Math.sin(k * 3.1) * R * 0.05]);
+    for (let i = 0; i <= 30; i++) {
+      const k = i / 30;
+      pts.push([cx - R * 0.30 + k * R * 0.66 + Math.sin(k * 5.2) * R * 0.06, cy - R * 0.38 + k * R * 0.82 - Math.sin(k * 3.1) * R * 0.05]);
     }
-    rastro(ctx, pts, '#e8dcff', 3.4, 0.95);
-    ctx.save(); ctx.lineCap = 'round';
-    ctx.strokeStyle = u.rgba('#ffffff', 0.5); ctx.lineWidth = 1;
-    ctx.beginPath();
-    pts.slice(0, 26).forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]));
-    ctx.stroke();
-    ctx.restore();
-    a.discoLuz(ctx, pts[2][0], pts[2][1], R * 0.13, '#e8dcff', 0.8);
+    a.fio(ctx, pts, '#e8dcff', lw * 1.5, { afina: 0.92, luz: '#ffffff' });
+    a.forma(ctx, a.circ(ctx, pts[1][0], pts[1][1], lw * 1.4), { base: '#ffffff', sombra: '#c9b4ff', lw: lw * 0.6 });
   };
 
   /* 25. juntosant — "eles eram UM. O escuro morno de antes de haver espaco".
      Nao sao dois encostados: e um corpo so. E nao ha estrela nenhuma ainda. */
   S.juntosant = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48, R = H * 0.28;
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48, R = H * 0.28, lw = a.LW(H);
     escuroMorno(ctx, W, H, p.cor);
-    a.discoLuz(ctx, cx, cy, R * 2.6, u.mix(p.cor, '#ffd9c0', 0.4), 0.75);
+    a.discoLuz(ctx, cx, cy, R * 2.2, u.mix(p.cor, '#ffd9c0', 0.4), 0.5);
     // o corpo unico: metade acesa por dentro, metade acesa na beirada
-    ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
-    const cl = ctx.createRadialGradient(cx - R * 0.5, cy - R * 0.4, 0, cx - R * 0.35, cy, R * 1.25);
-    cl.addColorStop(0, u.rgba('#ffffff', 0.98));
-    cl.addColorStop(0.45, u.rgba('#e8f2ff', 0.8));
-    cl.addColorStop(1, u.rgba('#6f8fc0', 0.2));
-    ctx.fillStyle = cl; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-    const es = ctx.createRadialGradient(cx + R * 0.45, cy + R * 0.25, R * 0.1, cx + R * 0.4, cy, R * 1.1);
-    es.addColorStop(0, 'rgba(8,5,18,0.96)');
-    es.addColorStop(0.7, 'rgba(14,9,26,0.8)');
-    es.addColorStop(1, 'rgba(20,14,36,0)');
-    ctx.fillStyle = es; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-    // a beirada dela acesa por fora, que e o oposto dele
-    ctx.strokeStyle = u.rgba('#c9b4ff', 0.75); ctx.lineWidth = R * 0.05;
-    ctx.beginPath(); ctx.arc(cx, cy, R * 0.97, -1.2, 1.5); ctx.stroke();
-    ctx.restore();
-    // a costura entre as duas naturezas: uma onda, nao uma reta
-    ctx.save(); ctx.lineCap = 'round'; ctx.globalCompositeOperation = 'lighter';
-    const div = () => {
-      ctx.beginPath(); ctx.moveTo(cx + R * 0.02, cy - R);
-      ctx.bezierCurveTo(cx + R * 0.7, cy - R * 0.4, cx - R * 0.5, cy + R * 0.3, cx + R * 0.1, cy + R);
+    const seam = () => {
+      ctx.beginPath(); ctx.moveTo(cx + R * 0.02, cy - R * 1.05);
+      ctx.bezierCurveTo(cx + R * 0.7, cy - R * 0.4, cx - R * 0.5, cy + R * 0.3, cx + R * 0.1, cy + R * 1.05);
     };
-    ctx.strokeStyle = u.rgba('#ffd9c0', 0.3); ctx.lineWidth = R * 0.14; div(); ctx.stroke();
-    ctx.strokeStyle = u.rgba('#ffffff', 0.55); ctx.lineWidth = 1.4; div(); ctx.stroke();
+    a.forma(ctx, a.circ(ctx, cx, cy, R), { base: '#ffffff', sombra: '#b9d3f2', lw });
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, R - lw * 0.5, 0, TAU); ctx.clip();
+    seam(); ctx.lineTo(cx + R * 1.2, cy + R * 1.2); ctx.lineTo(cx + R * 1.2, cy - R * 1.2); ctx.closePath();
+    ctx.fillStyle = '#150e2a'; ctx.fill();
+    // a sombra dela e a luz de beirada dela: o oposto dele
+    ctx.fillStyle = '#07050f'; ctx.beginPath(); ctx.arc(cx + R * 0.15, cy + R * 0.15, R, 0, TAU);
+    ctx.arc(cx, cy, R * 0.86, 0, TAU, true); ctx.fill();
+    ctx.strokeStyle = '#c9b4ff'; ctx.lineWidth = lw * 1.1; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(cx, cy, R - lw * 0.9, -1.2, 1.5); ctx.stroke();
     ctx.restore();
-    ctx.strokeStyle = u.rgba('#ffffff', 0.22); ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
+    // a costura entre as duas naturezas: uma onda, nao uma reta. Recortada no
+    // circulo, senao as pontas do traco viram dois nos fora dele.
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(cx, cy, R - lw * 0.5, 0, TAU); ctx.clip();
+    ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 1.2; seam(); ctx.stroke();
+    ctx.strokeStyle = '#ffd9c0'; ctx.lineWidth = lw * 0.5; seam(); ctx.stroke();
+    ctx.restore();
+    a.forma(ctx, a.circ(ctx, cx, cy, R), { base: 'rgba(0,0,0,0)', lw });
   };
 
   /* 26. paraeu — "um nao vira dois sozinho. Alguem tem que querer".
      A separacao acontecendo, e a faisca nascendo no meio da fenda. */
   S.paraeu = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.44, R = H * 0.18;
+    const a = A(), u = U(), cy = H * 0.44, R = H * 0.18, lw = a.LW(H);
     const afast = p.afast == null ? 0.17 : p.afast;
     escuroMorno(ctx, W, H, p.cor);
     const px = W * (0.5 - afast), mx = W * (0.5 + afast);
-    // os dois lados, ainda com a forma de quem foi um so: metades, nao circulos
-    ctx.save();
-    ctx.beginPath(); ctx.arc(px, cy, R, 0, TAU); ctx.clip();
-    const cl = ctx.createRadialGradient(px - R * 0.4, cy - R * 0.4, 0, px, cy, R * 1.2);
-    cl.addColorStop(0, u.rgba('#ffffff', 0.98)); cl.addColorStop(1, u.rgba('#7ba4d6', 0.45));
-    ctx.fillStyle = cl; ctx.fillRect(px - R, cy - R, R * 2, R * 2);
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath(); ctx.arc(mx, cy, R, 0, TAU); ctx.clip();
-    const es = ctx.createRadialGradient(mx + R * 0.3, cy + R * 0.2, R * 0.08, mx, cy, R * 1.1);
-    es.addColorStop(0, 'rgba(10,6,20,0.98)'); es.addColorStop(1, 'rgba(26,18,48,0.6)');
-    ctx.fillStyle = es; ctx.fillRect(mx - R, cy - R, R * 2, R * 2);
-    ctx.strokeStyle = u.rgba('#c9b4ff', 0.8); ctx.lineWidth = R * 0.07;
-    ctx.beginPath(); ctx.arc(mx, cy, R * 0.96, 0, TAU); ctx.stroke();
-    ctx.restore();
+    // os dois lados, ainda com a forma de quem foi um so
+    a.forma(ctx, a.circ(ctx, px, cy, R), { base: '#ffffff', sombra: '#b9d3f2', lw });
+    a.forma(ctx, a.circ(ctx, mx, cy, R), { base: '#150e2a', sombra: '#07050f', luz: '#c9b4ff', lw });
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.strokeStyle = '#c9b4ff'; ctx.lineWidth = lw * 1.1;
+    ctx.beginPath(); ctx.arc(mx, cy, R - lw * 0.9, -2.7, -0.9); ctx.stroke();
     // os fios que ainda ligam os dois: o que se rasgou
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     for (let i = 0; i < 5; i++) {
-      const y = cy + (i - 2) * R * 0.30;
-      ctx.strokeStyle = u.rgba('#ffd9c0', 0.6 - Math.abs(i - 2) * 0.13);
-      ctx.lineWidth = 1.8 - Math.abs(i - 2) * 0.3;
-      ctx.beginPath();
-      ctx.moveTo(px + R * 0.92, y);
-      ctx.quadraticCurveTo(W * 0.5, y + Math.sin(i * 1.7 + t * 0.4) * R * 0.12, mx - R * 0.92, y);
-      ctx.stroke();
+      const y = cy + (i - 2) * R * 0.30, f = 1 - Math.abs(i - 2) * 0.22;
+      const pts = [];
+      for (let k = 0; k <= 8; k++) { const q = k / 8; pts.push([px + R * 0.9 + q * (mx - px - R * 1.8), y + Math.sin(q * Math.PI) * Math.sin(i * 1.7 + t * 0.4) * R * 0.12]); }
+      a.fio(ctx, pts, u.rgba('#ffd9c0', f), lw * 0.9 * f);
     }
     ctx.restore();
     // ela: nasce no meio, e e por isso que ha um meio
-    a.discoLuz(ctx, W * 0.5, cy, R * 2.1, '#ffffff', 1);
-    a.discoLuz(ctx, W * 0.5, cy, R * 0.9, '#fff3c2', 0.9);
+    a.discoLuz(ctx, W * 0.5, cy, R * 1.6, '#fff3c2', 0.9);
     a.bola(ctx, W * 0.5, cy, R * 0.42, t, Math.min(1, (p.lavada || 0) + 0.15), t * 0.4);
   };
 
   /* 27. opreco — "se os dois se encostarem de novo, o espaco fecha. E tudo que
      esta dentro fecha junto". O que esta dentro precisa aparecer. */
   S.opreco = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cy = H * 0.46, R = H * 0.155;
-    const afast = p.afast == null ? 0.26 : p.afast;
-    a.fundo(ctx, W, H, p.cor, 71, 0.4);
-    const px = W * (0.5 - afast), mx = W * (0.5 + afast);
-    const meia = (mx - px) * 0.5 - R * 0.95, cxm = W * 0.5;
+    const a = A(), u = U(), cy = H * 0.46, lw = a.LW(H);
+    // as duas luzes tem coroa e halo: o raio e o afastamento saem da largura,
+    // senao a coroa do pai sai pela beirada num quadro estreito
+    const R = Math.min(H * 0.13, W * 0.105);
+    const afastPx = Math.min((p.afast == null ? 0.26 : p.afast) * W, W * 0.5 - R * 2.0);
+    a.ceu(ctx, W, H, p.cor, p.ato, 71, [0.5, 0.46], { estrelas: 4 });
+    const px = W * 0.5 - afastPx, mx = W * 0.5 + afastPx;
+    // a fresta comeca onde a coroa do pai acaba: e ela que tem de ser lida
+    const meia = afastPx - R * 1.72, cxm = W * 0.5;
     // a fresta, e o universo apertado dentro dela
     if (meia > 4) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(cxm - meia, cy);
-      ctx.quadraticCurveTo(cxm, cy - H * 0.20, cxm + meia, cy);
-      ctx.quadraticCurveTo(cxm, cy + H * 0.20, cxm - meia, cy);
-      ctx.closePath(); ctx.clip();
-      ctx.fillStyle = '#05040e'; ctx.fillRect(cxm - meia, cy - H * 0.2, meia * 2, H * 0.4);
-      for (let i = 0; i < 46; i++) {
-        const x = cxm - meia + a.rnd(i * 4.3) * meia * 2, y = cy - H * 0.2 + a.rnd(i * 8.7) * H * 0.4;
-        ctx.fillStyle = u.rgba(a.rnd(i * 2.1) > 0.75 ? '#ffffff' : '#9be7ff', 0.25 + a.rnd(i * 6.7) * 0.6);
-        ctx.beginPath(); ctx.arc(x, y, 0.5 + a.rnd(i * 3.1) * 1.2, 0, TAU); ctx.fill();
-      }
-      miniGalaxia(ctx, cxm, cy, Math.min(meia * 0.9, H * 0.10), '#9be7ff', t * 0.05);
-      ctx.restore();
-      ctx.save(); ctx.lineCap = 'round';
-      a.bloom(ctx, '#ff8fa8', [[1.3, 0.7], [4.5, 0.2], [12, 0.08]], () => {
-        ctx.beginPath();
-        ctx.moveTo(cxm - meia, cy);
+      const fresta = () => {
+        ctx.beginPath(); ctx.moveTo(cxm - meia, cy);
         ctx.quadraticCurveTo(cxm, cy - H * 0.20, cxm + meia, cy);
-        ctx.quadraticCurveTo(cxm, cy + H * 0.20, cxm - meia, cy);
-        ctx.stroke();
-      });
+        ctx.quadraticCurveTo(cxm, cy + H * 0.20, cxm - meia, cy); ctx.closePath();
+      };
+      ctx.save(); fresta(); ctx.clip();
+      ctx.fillStyle = '#070a1c'; ctx.fillRect(cxm - meia, cy - H * 0.2, meia * 2, H * 0.4);
+      for (let i = 0; i < 22; i++) {
+        const x = cxm - meia + a.rnd(i * 4.3) * meia * 2, y = cy - H * 0.2 + a.rnd(i * 8.7) * H * 0.4;
+        a.estrela(ctx, x, y, H * (0.005 + a.rnd(i * 3.1) * 0.007), a.rnd(i * 2.1) > 0.7 ? '#ffffff' : '#9be7ff', 0.8);
+      }
+      miniGalaxia(ctx, cxm, cy, Math.min(meia * 0.9, H * 0.10), '#9be7ff', t * 0.05, lw * 0.6);
+      ctx.restore();
+      ctx.save(); ctx.lineJoin = 'round';
+      ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 2.4; fresta(); ctx.stroke();
+      ctx.strokeStyle = '#ff8fa8'; ctx.lineWidth = lw * 1.1; fresta(); ctx.stroke();
       ctx.restore();
     }
     a.pai(ctx, px, cy, R, t, 1);
     a.mae(ctx, mx, cy, R, t, 1);
     // as setas de quem esta vindo: o preco e isso acontecer
-    ctx.save(); ctx.lineCap = 'round';
-    ctx.strokeStyle = u.rgba('#ff8fa8', 0.55); ctx.lineWidth = 1.5;
     [-1, 1].forEach(s => {
-      const x = W * 0.5 + s * (afast * W + R * 1.5);
-      ctx.beginPath();
-      ctx.moveTo(x, H * 0.76); ctx.lineTo(x - s * H * 0.07, H * 0.76);
-      ctx.moveTo(x - s * H * 0.07, H * 0.76); ctx.lineTo(x - s * H * 0.045, H * 0.745);
-      ctx.moveTo(x - s * H * 0.07, H * 0.76); ctx.lineTo(x - s * H * 0.045, H * 0.775);
-      ctx.stroke();
+      const x = W * 0.5 + s * Math.min(afastPx + R * 1.3, W * 0.42), y = H * 0.76;
+      a.fio(ctx, [[x, y], [x - s * H * 0.08, y]], '#ff8fa8', lw * 0.8);
+      a.fio(ctx, [[x - s * H * 0.05, y - H * 0.022], [x - s * H * 0.08, y], [x - s * H * 0.05, y + H * 0.022]], '#ff8fa8', lw * 0.8);
     });
-    ctx.restore();
   };
 
   /* 28. muitasmaos — "ela nao veio sozinha. Nunca tinha reparado nisso". */
   S.muitasmaos = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48, R = H * 0.30;
-    a.fundo(ctx, W, H, p.cor, 83, 0.6);
-    const n = 22;
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48, R = H * 0.30, lw = a.LW(H), n = 22;
+    a.ceu(ctx, W, H, p.cor, p.ato, 83, [0.5, 0.5]);
+    // o fio de cada um ate ela: e isso que ela nunca tinha reparado
+    for (let i = 0; i < n; i++) {
+      const ang = (i / n) * TAU + t * 0.05;
+      ctx.strokeStyle = u.rgba(p.cor, 0.25); ctx.lineWidth = lw * 0.5;
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(ang) * R, cy + Math.sin(ang) * R * 0.92); ctx.lineTo(cx, cy + H * 0.06); ctx.stroke();
+    }
     for (let i = 0; i < n; i++) {
       const ang = (i / n) * TAU + t * 0.05;
       const x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R * 0.92;
-      const rr = H * (0.020 + a.rnd(i * 2.3) * 0.015);
-      a.discoLuz(ctx, x, y, rr * 2.6, p.cor, 0.5);
-      const g = ctx.createRadialGradient(x - rr * 0.3, y - rr * 0.3, 0, x, y, rr);
-      g.addColorStop(0, u.rgba('#ffffff', 0.9));
-      g.addColorStop(1, u.rgba(p.cor, 0.7));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill();
-      // o fio de cada um ate ela: e isso que ela nunca tinha reparado
-      ctx.strokeStyle = u.rgba(p.cor, 0.10); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(cx, cy + H * 0.06); ctx.stroke();
+      const rr = H * (0.020 + a.rnd(i * 2.3) * 0.014);
+      a.forma(ctx, a.circ(ctx, x, y, rr), { base: '#ffffff', sombra: u.mix(p.cor, '#ffffff', 0.3), lw: lw * 0.8 });
     }
     a.bola(ctx, cx, cy + H * 0.06, H * 0.075, t, p.lavada, t * 0.2);
   };
 
   /* 29. costura — "ha um fio atravessando tudo. Da para segui-lo sem soltar". */
   S.costura = (ctx, W, H, p, t) => {
-    const a = A(), u = U();
-    a.fundo(ctx, W, H, p.cor, 89, 0.5);
-    ctx.save(); ctx.lineCap = 'round';
-    const caminho = () => {
-      ctx.beginPath();
-      for (let i = 0; i <= 60; i++) {
-        const k = i / 60, x = k * W;
-        const y = H * 0.5 + Math.sin(k * 5 + t * 0.5) * H * 0.22 * Math.sin(k * Math.PI);
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      }
-    };
-    a.bloom(ctx, p.cor, [[1.6, 0.9], [5, 0.25], [14, 0.08]], () => { caminho(); ctx.stroke(); });
-    ctx.strokeStyle = u.rgba('#ffffff', 0.7); ctx.lineWidth = 0.9;
-    caminho(); ctx.stroke();
+    const a = A(), u = U(), lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 89, [0.5, 0.5]);
+    const ponto = k => [k * W, H * 0.5 + Math.sin(k * 5 + t * 0.5) * H * 0.22 * Math.sin(k * Math.PI)];
+    const pts = []; for (let i = 0; i <= 40; i++) pts.push(ponto(i / 40));
+    a.fio(ctx, pts, p.cor, lw * 1.4, { luz: '#ffffff' });
     // os pontos da costura: o fio passa POR dentro das coisas
     for (let i = 1; i < 6; i++) {
-      const k = i / 6, x = k * W;
-      const y = H * 0.5 + Math.sin(k * 5 + t * 0.5) * H * 0.22 * Math.sin(k * Math.PI);
-      ctx.strokeStyle = u.rgba('#ffffff', 0.3); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(x, y, H * 0.035, 0, TAU); ctx.stroke();
+      const q = ponto(i / 6);
+      a.forma(ctx, a.circ(ctx, q[0], q[1], H * 0.035), { base: 'rgba(0,0,0,0)', contorno: u.rgba('#ffffff', 0.6), lw: lw * 0.6 });
     }
-    ctx.restore();
     // vai e volta pelo fio: da para segui-lo sem soltar, e sem salto no fim
-    const k = 0.5 - 0.5 * Math.cos(t * 0.22), x = k * W;
-    const y = H * 0.5 + Math.sin(k * 5 + t * 0.5) * H * 0.22 * Math.sin(k * Math.PI);
-    a.bola(ctx, x, y, H * 0.045, t, p.lavada, t * 0.3);
+    const q = ponto(0.5 - 0.5 * Math.cos(t * 0.22));
+    a.bola(ctx, q[0], q[1], H * 0.045, t, p.lavada, t * 0.3);
   };
 
   /* 30. aporta — "o fim do caminho e uma porta. Do outro lado, duas luzes paradas". */
   S.aporta = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46, R = H * 0.27;
-    a.fundo(ctx, W, H, p.cor, 73, 0.6);
-    ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
-    const dentro = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-    dentro.addColorStop(0, u.rgba('#1a1736', 1));
-    dentro.addColorStop(1, u.rgba('#05030c', 1));
-    ctx.fillStyle = dentro; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-    a.pai(ctx, cx - R * 0.42, cy, R * 0.28, t, 0.9);
-    a.mae(ctx, cx + R * 0.42, cy, R * 0.28, t, 0.9);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46, R = H * 0.27, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 73, [0.5, 0.46]);
+    // a porta: um arco chapado com contorno grosso; dentro, outro ceu
+    const porta = () => { ctx.beginPath(); ctx.moveTo(cx - R, cy + R * 1.1); ctx.lineTo(cx - R, cy); ctx.arc(cx, cy, R, Math.PI, 0); ctx.lineTo(cx + R, cy + R * 1.1); ctx.closePath(); };
+    ctx.strokeStyle = u.rgba(p.cor, 0.18); ctx.lineWidth = lw * 6; ctx.lineJoin = 'round'; porta(); ctx.stroke();
+    ctx.save(); porta(); ctx.clip();
+    ctx.fillStyle = '#100c22'; ctx.fillRect(cx - R, cy - R, R * 2, R * 2.2);
+    ctx.fillStyle = u.rgba('#3a2a70', 0.5); ctx.beginPath(); ctx.arc(cx, cy, R * 0.8, 0, TAU); ctx.fill();
+    a.pai(ctx, cx - R * 0.42, cy + R * 0.05, R * 0.26, 0, 1);
+    a.mae(ctx, cx + R * 0.42, cy + R * 0.05, R * 0.26, 0, 1);
     ctx.restore();
-    ctx.save(); ctx.lineCap = 'round';
-    a.bloom(ctx, p.cor, [[2.4, 0.9], [7, 0.25], [18, 0.1]], () => {
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
-    });
-    ctx.strokeStyle = u.rgba('#ffffff', 0.55); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.stroke();
-    ctx.restore();
-    // o caminho que acaba aqui, e ela no fim dele
-    ctx.save();
-    ctx.setLineDash([4, 9]); ctx.lineDashOffset = -t * 8;
-    ctx.strokeStyle = u.rgba('#ffffff', 0.14); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(cx, H * 0.84); ctx.lineTo(cx, cy + R * 1.12); ctx.stroke();
-    ctx.restore();
-    a.bola(ctx, cx, H * 0.87, H * 0.042, t, p.lavada, t * 0.2);
+    ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 3.2; porta(); ctx.stroke();
+    ctx.strokeStyle = p.cor; ctx.lineWidth = lw * 1.8; porta(); ctx.stroke();
+    ctx.strokeStyle = u.rgba('#ffffff', 0.8); ctx.lineWidth = lw * 0.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(cx, cy, R - lw * 0.5, -2.9, -1.3); ctx.stroke();
+    // a soleira e o caminho que acaba aqui, e ela no fim dele
+    a.fio(ctx, [[cx - R * 1.15, cy + R * 1.1], [cx + R * 1.15, cy + R * 1.1]], p.cor, lw * 0.9);
+    pontilhado(ctx, [[cx, H * 0.85], [cx, cy + R * 1.16]], u.rgba('#ffffff', 0.45), lw * 0.6, t);
+    a.bola(ctx, cx, H * 0.88, H * 0.042, t, p.lavada, t * 0.2);
   };
 
   /* ================= DEPOIS DO FIM ================= */
@@ -1068,16 +837,16 @@ window.HR = window.HR || {};
   /* 31. nomeinteir — "o nome e o que gira em volta de algo maior que si".
      Entao a palavra tem uma orbita, e ela e que esta girando. */
   S.nomeinteir = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48;
-    a.fundo(ctx, W, H, p.cor, 101, 0.45);
-    a.discoLuz(ctx, cx, cy, H * 0.34, p.cor, 0.7);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.48, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 101, [0.5, 0.48]);
+    ctx.fillStyle = u.rgba(p.cor, 0.10); ctx.beginPath(); ctx.ellipse(cx, cy, W * 0.36, H * 0.20, 0, 0, TAU); ctx.fill();
     // a orbita em volta da palavra
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    [[0.40, 0.30], [0.46, 0.16]].forEach(c => {
-      ctx.strokeStyle = u.rgba(p.cor, c[1]); ctx.lineWidth = 1.2;
+    [[0.40, 1.0], [0.46, 0.6]].forEach(c => {
+      ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 1.6 * c[1];
+      ctx.beginPath(); ctx.ellipse(cx, cy, W * c[0], H * c[0] * 0.52, -0.16, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = p.cor; ctx.lineWidth = lw * 0.8 * c[1];
       ctx.beginPath(); ctx.ellipse(cx, cy, W * c[0], H * c[0] * 0.52, -0.16, 0, TAU); ctx.stroke();
     });
-    ctx.restore();
     palavra(ctx, cx, cy, oTexto(p, 'ORBO'), p.cor, H * 0.20, 1);
     // ela, girando em volta do proprio nome
     const ang = t * 0.35;
@@ -1088,44 +857,45 @@ window.HR = window.HR || {};
   /* 32. oqueficou — "ela voltou com cor. Foi preciso ir duas vezes para ver as
      duas metades". Dois caminhos, vindos de lados opostos, no mesmo ponto. */
   S.oqueficou = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46, r = H * 0.115;
-    a.fundo(ctx, W, H, p.cor, 103, 0.6);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.46, r = H * 0.115, lw = a.LW(H);
+    a.ceu(ctx, W, H, p.cor, p.ato, 103, [0.5, 0.46]);
     // os dois caminhos: um claro pela esquerda, um escuro pela direita
     [[-1, '#f2f6ff'], [1, '#b79bff']].forEach(c => {
       const pts = [];
-      for (let i = 0; i <= 34; i++) {
-        const k = i / 34;
-        pts.push([cx + c[0] * (r * 1.4 + k * W * 0.42),
-                  cy + Math.sin(k * 2.6) * H * 0.13 * c[0] + k * H * 0.05]);
+      for (let i = 0; i <= 24; i++) {
+        const k = i / 24;
+        pts.push([cx + c[0] * (r * 1.5 + k * W * 0.40), cy + Math.sin(k * 2.6) * H * 0.13 * c[0] + k * H * 0.05]);
       }
-      rastro(ctx, pts, c[1], 2.6, 0.55);
+      a.fio(ctx, pts, c[1], lw * 1.3, { afina: 0.8 });
     });
-    a.discoLuz(ctx, cx, cy, r * 3, p.cor, 0.7);
+    a.discoLuz(ctx, cx, cy, r * 2.4, p.cor, 0.6);
     a.bola(ctx, cx, cy, r, t, 0, t * 0.3);
-    // as duas metades, marcadas de leve em volta
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = u.rgba('#ffffff', 0.32); ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.arc(cx, cy, r * 1.35, -2.6, -0.5); ctx.stroke();
-    ctx.strokeStyle = u.rgba('#b79bff', 0.32);
-    ctx.beginPath(); ctx.arc(cx, cy, r * 1.35, 0.5, 2.6); ctx.stroke();
+    // as duas metades, marcadas em volta
+    ctx.save(); ctx.lineCap = 'round';
+    ctx.strokeStyle = a.ESC; ctx.lineWidth = lw * 1.8;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.4, -2.6, -0.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.4, 0.5, 2.6); ctx.stroke();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = lw * 0.8;
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.4, -2.6, -0.5); ctx.stroke();
+    ctx.strokeStyle = '#b79bff';
+    ctx.beginPath(); ctx.arc(cx, cy, r * 1.4, 0.5, 2.6); ctx.stroke();
     ctx.restore();
   };
 
   /* 33. todasmaos — "os quatro caminhos levam ao mesmo lugar. A diferenca e
      quem chega junto". Quatro entradas, um ponto, e as maos em volta. */
   S.todasmaos = (ctx, W, H, p, t) => {
-    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.47;
-    a.fundo(ctx, W, H, p.cor, 107, 0.5);
+    const a = A(), u = U(), cx = W * 0.5, cy = H * 0.47, lw = a.LW(H);
+    a.ceu(ctx, W, H, '#ffcf4a', p.ato, 107, [0.5, 0.47]);
     // os quatro caminhos, de quatro cantos, chegando no mesmo ponto
     const cantos = [[-1, -1, '#9be7ff'], [1, -1, '#ffd93d'], [-1, 1, '#7cff6b'], [1, 1, '#ff7ad9']];
     cantos.forEach((c, i) => {
       const pts = [];
-      for (let k = 0; k <= 26; k++) {
-        const q = k / 26;
-        pts.push([cx + c[0] * (1 - q) * W * 0.44 + Math.sin(q * 3 + i) * W * 0.02,
-                  cy + c[1] * (1 - q) * H * 0.34]);
+      for (let k = 0; k <= 16; k++) {
+        const q = k / 16;
+        pts.push([cx + c[0] * (1 - q) * W * 0.42 + Math.sin(q * 3 + i) * W * 0.02, cy + c[1] * (1 - q) * H * 0.33]);
       }
-      rastro(ctx, pts.slice().reverse(), c[2], 2.4, 0.6);
+      a.fio(ctx, pts.reverse(), c[2], lw * 1.3, { afina: 0.8 });
     });
     // as maos em volta: quem chega junto
     const n = 16;
@@ -1133,12 +903,9 @@ window.HR = window.HR || {};
       const ang = (i / n) * TAU + t * 0.04;
       const x = cx + Math.cos(ang) * H * 0.32, y = cy + Math.sin(ang) * H * 0.30;
       const rr = H * (0.017 + a.rnd(i * 2.3) * 0.012);
-      a.discoLuz(ctx, x, y, rr * 2.6, p.cor, 0.45);
-      const g = ctx.createRadialGradient(x - rr * 0.3, y - rr * 0.3, 0, x, y, rr);
-      g.addColorStop(0, u.rgba('#ffffff', 0.9)); g.addColorStop(1, u.rgba(p.cor, 0.7));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill();
+      a.forma(ctx, a.circ(ctx, x, y, rr), { base: '#ffffff', sombra: u.mix(cantos[i % 4][2], '#ffffff', 0.3), lw: lw * 0.7 });
     }
-    a.discoLuz(ctx, cx, cy, H * 0.16, '#ffffff', 0.95);
+    a.discoLuz(ctx, cx, cy, H * 0.16, '#ffffff', 0.9);
     a.bola(ctx, cx, cy, H * 0.07, t, 0, t * 0.2);
   };
 

@@ -49,7 +49,7 @@
     if (!s.unlocked(i)) return 'locked';
     if (l.passed) return 'passed';
     if (!s.passageDone(i)) return 'passage';
-    if (!l.path || s.reconcileReady(i) && false) return 'talk';
+    if (!l.path || s.reconcileReady(i)) return 'talk';   // na reconciliacao o Arconte ouve de novo (o && false anulava isto)
     return 'trial';
   }
   function statusText(i) {

@@ -12,16 +12,18 @@ HR.UI = {
   svg(name) { const map = { back: 'arrowLeft' }; return HR.icon(map[name] || name); },
 
   game: null, current: 'splash', stack: [], shopTab: 'skins', missionsTab: 'daily', lbTab: 'journey', achTab: 'all',
-  previews: [], previewRaf: null, adResolve: null, adTimer: null, reviveTimer: null, lastSummary: null, pendingUps: [], abandon: false, missionTimerInt: null,
+  previews: [], previewRaf: null, adResolve: null, adTimer: null, reviveTimer: null, lastSummary: null, pendingUps: [], abandon: false, missionTimerInt: null, endTimers: [],
   PANELS: ['shop', 'galaxy', 'region', 'system', 'singularity', 'abilities', 'missions', 'achievements', 'daily', 'leaderboard', 'settings'],
 
   /* ---------------- inicialização ---------------- */
   init(game) {
     this.game = game;
     if (HR.Brand) HR.Brand.mount();
-    $$('[data-icon]').forEach(el => { el.innerHTML = this.svg(el.getAttribute('data-icon')); });
+    // quem ja recebeu o glifo do v5.8 fica como esta: redesenhar aqui apagava o icone vivo
+    $$('[data-icon]').forEach(el => { if (el.dataset.g58) return; el.innerHTML = this.svg(el.getAttribute('data-icon')); });
     $$('[data-open]').forEach(el => el.addEventListener('click', e => { e.stopPropagation(); HR.Audio.sfx('click'); this.open(el.getAttribute('data-open'), el.getAttribute('data-tab')); }));
-    $$('[data-back]').forEach(el => el.addEventListener('click', () => { HR.Audio.sfx('click'); this.back(); }));
+    // telas criadas por outros arquivos ja ligam o proprio Voltar (dataset.wired): sem isto o back() rodava duas vezes
+    $$('[data-back]').forEach(el => { if (el.dataset.wired) return; el.dataset.wired = '1'; el.addEventListener('click', () => { HR.Audio.sfx('click'); this.back(); }); });
     this.wireTabs('shop-tabs', t => { this.shopTab = t; this.renderShop(); });
     this.wireTabs('missions-tabs', t => { this.missionsTab = t; this.renderMissions(); });
     this.wireTabs('lb-tabs', t => { this.lbTab = t; this.renderLeaderboard(); });
@@ -94,6 +96,21 @@ HR.UI = {
   bindHtml(name, html) { $$('[data-bind="' + name + '"]').forEach(el => { el.innerHTML = html; }); },
   fill(name, frac) { $$('[data-bind="' + name + '"]').forEach(el => { el.style.width = (HR.U.clamp(frac, 0, 1) * 100).toFixed(1) + '%'; }); },
   isModalOpen() { return !!$('.modal.visible') || $('#screen-tutorial').classList.contains('visible'); },
+  // Os cartoes do fim de partida (nivel novo, Eco, Arconte) abrem com 0,9-1,2 s de
+  // atraso. Quem tocava "Jogar de novo"/"Proxima" antes disso via o modal nascer
+  // sobre o HUD da partida nova, e o isModalOpen() prendia o toque de inicio.
+  // Agora cada timer fica guardado (cortado ao comecar outra partida) e o callback
+  // desiste se o jogo ja esta rodando — o cartao de nivel espera o proximo goMenu().
+  endTimer(fn, ms) {
+    const id = setTimeout(() => {
+      this.endTimers = this.endTimers.filter(t => t !== id);
+      if (this.current === 'hud') return;
+      fn();
+    }, ms);
+    this.endTimers.push(id);
+    return id;
+  },
+  clearEndTimers() { this.endTimers.forEach(clearTimeout); this.endTimers = []; },
   esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); },
 
   /* ---------------- telas ---------------- */
@@ -104,7 +121,10 @@ HR.UI = {
     this.closePanels(); this.showScreen(id); this.current = id; this.baseAt = Date.now();
     if (id !== 'hud' && this.stopHud) this.stopHud();
   },
-  closePanels() { this.PANELS.forEach(s => this.hideScreen(s)); this.stack = []; this.stopPreviews(); },
+  closePanels() { this.PANELS.forEach(s => this.hideScreen(s)); this.stack = []; this.stopPreviews(); this.marcaPainel(); },
+  // o :has() nao existe no iOS 15, entao quem diz "tem painel na frente" e esta classe:
+  // sem ela os cometas e a poeira do menu continuavam animando embaixo dos paineis
+  marcaPainel() { document.documentElement.classList.toggle('panel-open', this.stack.length > 0); },
   // a pilha de painéis pode sair de sincronia com o que está na tela; sem isso o
   // botão do painel some em silêncio e só volta ao trocar de tela
   syncStack() {
@@ -127,6 +147,7 @@ HR.UI = {
     HR.Audio.sfx('open');
     const fn = { shop: 'renderShop', missions: 'renderMissions', daily: 'renderDaily', leaderboard: 'renderLeaderboard', settings: 'renderSettings', galaxy: 'renderGalaxy', region: 'renderRegion', system: 'renderSystem', singularity: 'renderSingularity', abilities: 'renderAbilities', achievements: 'renderAchievements' }[panel];
     if (fn && this[fn]) this[fn](arg);
+    this.marcaPainel();
     HR.Analytics.log('open_' + panel, panel === 'region' ? { ri: arg } : undefined);
   },
   back() {
@@ -136,6 +157,7 @@ HR.UI = {
     if (p === 'missions') { clearInterval(this.missionTimerInt); this.missionTimerInt = null; }
     if (p === 'region' && HR.Music && this.current === 'menu') HR.Music.play('menu');
     if (this.stack.length) { const top = this.stack[this.stack.length - 1]; if (top === 'galaxy' && this.renderGalaxy) this.renderGalaxy(); if (top === 'region' && this.renderRegion) this.renderRegion(); if (top === 'system' && this.renderSystem) this.renderSystem(); }
+    this.marcaPainel();
     if (this.current === 'menu') this.refreshMenu();
   },
   startPreviews() {}, stopPreviews() { if (this.previewRaf) cancelAnimationFrame(this.previewRaf); this.previewRaf = null; this.previews = []; },
@@ -192,7 +214,9 @@ HR.UI = {
     $$('[data-bind="xpRing"]').forEach(c => { c.style.strokeDashoffset = (125.7 * (1 - p.frac)).toFixed(1); });
     const lr = $('.level-ring'); if (lr) lr.title = p.title + ' · ' + HR.U.fmt(p.xp) + ' / ' + HR.U.fmt(p.need) + ' XP';
     this.bind('best', HR.U.fmt(d.best));
-    this.bind('rank', d.best > 0 ? '#' + HR.Leaderboard.global().myRank : '#–');
+    // a mesma conta da tela de ranking (HR.Online): os bots de HR.Leaderboard davam outra posição
+    const rc = HR.Online && HR.Online.cache && HR.Online.cache.endless;
+    this.bind('rank', d.best > 0 && rc ? '#' + rc.v.myRank : '#–');
     this.bind('starsTotal', HR.Campaign.totalStars());
     const daily = HR.Daily.status().canClaim;
     $('[data-badge="missions"]').classList.toggle('on', HR.Missions.hasClaimable());
@@ -309,11 +333,25 @@ HR.UI = {
   /* ---------------- fluxo do jogo ---------------- */
   play() {
     const mode = HR.Store.data.mode || 'endless';
-    if (mode === 'campaign') { this.open('galaxy'); return; }
+    if (mode === 'campaign') {
+      // v8: JOGAR entra direto na fase atual. Eram quatro toques ate a primeira
+      // partida (menu, galaxia, sistema, ficha da fase); o mapa continua no
+      // icone da Galaxia e no selo do rodape.
+      const cur = HR.Campaign && HR.Campaign.currentLevel && HR.Campaign.currentLevel();
+      if (cur && HR.Campaign.isUnlocked(cur.id)) {
+        // a entrada da galaxia (cena gN) era mostrada ao abrir o mapa; sem o
+        // mapa no caminho, ela entra aqui, antes da fase
+        const ent = HR.Story && HR.Story.entrance ? HR.Story.entrance(cur.ri) : null;
+        if (ent && this.storyScene) { this.storyScene(ent, () => this.startLevel(cur.id)); return; }
+        this.startLevel(cur.id); return;
+      }
+      this.open('galaxy'); return;
+    }
     this.startGame(mode);
   },
   startGame(mode) {
     HR.Audio.unlock();
+    this.clearEndTimers();
     this.closePanels(); this.hideModals();
     HR.Ads.banner(false);
     this.game.prepareRun({ mode });
@@ -327,6 +365,7 @@ HR.UI = {
     const level = sg ? HR.Singularity.level(id) : HR.Campaign.level(id); if (!level) return;
     if (sg ? !HR.Singularity.canPlay(id) : !HR.Campaign.isUnlocked(id)) { this.toast(HR.icon('lock') + ' ' + HR.t('locked'), 'bad'); return; }
     HR.Audio.unlock();
+    this.clearEndTimers();
     if (!sg) { HR.Store.data.campaign.last = id; HR.Store.data.campaign.lastRegion = level.ri; HR.Store.data.mode = 'campaign'; HR.Store.data.hints.galaxy = true; }
     HR.Store.save();
     this.closePanels(); this.hideModals();
@@ -337,10 +376,13 @@ HR.UI = {
     HR.Analytics.log('run_start', { mode: 'campaign', levelId: id });
   },
   restartRun() {
-    const s = this.lastSummary, run = this.game.run;
+    // a partida em curso manda; o lastSummary é da última partida CONCLUÍDA e
+    // reiniciava a fase anterior (ou jogava no Infinito quem estava numa fase)
+    const run = this.game.run, s = this.lastSummary;
+    const cur = { mode: run && run.mode, levelId: run && run.level && run.level.id };
     if (['playing', 'ready', 'transition', 'paused', 'perk'].includes(this.game.state)) { this.abandon = true; this.game.finishRun(false); }
-    const mode = (s && s.mode) || run.mode || 'endless';
-    if (mode === 'campaign') this.startLevel((s && s.levelId) || (run.level && run.level.id) || HR.Campaign.currentLevel().id);
+    const mode = cur.mode || (s && s.mode) || 'endless';
+    if (mode === 'campaign') this.startLevel(cur.levelId || (s && s.levelId) || HR.Campaign.currentLevel().id);
     else this.startGame(mode);
   },
   finishTutorial() { HR.Store.data.tutorialDone = true; HR.Store.save(); this.hideScreen('tutorial'); this.setReadyHint(true); HR.Analytics.log('tutorial_done'); },
@@ -375,6 +417,10 @@ HR.UI = {
     this.layoutShowcase(); setTimeout(() => this.layoutShowcase(), 120);
     HR.Ads.banner(true); HR.Audio.setIntensity(0);
     if (HR.Music) HR.Music.play('menu');
+    // o chip #RANKING sai da mesma lista da tela de ranking; a primeira vez pede a lista
+    if (HR.Online && HR.Online.cache && !HR.Online.cache.endless) HR.Online.top('endless').then(() => { if (this.current === 'menu') this.refreshMenu(); });
+    // níveis ganhos numa partida abandonada: o cartão aparece aqui, no menu
+    if (this.pendingUps.length) setTimeout(() => { if (this.current === 'menu' && this.pendingUps.length) this.nextLevelUp(true); }, 400);
   },
 
   /* ---------------- continuar ---------------- */
@@ -448,19 +494,25 @@ HR.UI = {
   },
   grantXp(n) { const ups = HR.Progress.addXp(n); if (ups.length) { this.pendingUps = ups; setTimeout(() => this.nextLevelUp(true), 300); } this.refreshMenu(); },
   onGameOver(s) {
+    const antes = HR.Progress.info();   // antes do XP entrar: a barra parte daqui
     const res = this.processRunEnd(s);
     this.lastSummary = s;
     HR.Audio.setIntensity(0.1);
-    if (this.abandon) { this.abandon = false; this.goMenu(); res.ach.forEach((a, i) => this.achToast(a, i)); return; }
-    const d = HR.Store.data, before = HR.Progress.info();
+    if (this.abandon) {
+      this.abandon = false;
+      if (res.ups.length) this.pendingUps = res.ups;   // o cartão aparece no menu (goMenu)
+      this.goMenu(); res.ach.forEach((a, i) => this.achToast(a, i)); return;
+    }
+    const d = HR.Store.data, before = antes;
     this.bind('overBest', HR.U.fmt(d.best));
     $('[data-bind="recordTag"]').classList.toggle('show', res.isRecord);
     this.bind('overCoins', '+' + HR.U.fmt(s.coins) + (s.mode === 'practice' ? ' (½)' : ''));
     this.bind('overPerfects', s.perfects); this.bind('overCombo', s.maxCombo); this.bind('overPhase', s.phase); this.bind('overMisses', s.misses); this.bind('overPickups', s.pickups);
     this.bind('overXp', '+' + s.xp + ' XP' + (s.xpBonus ? ' · ×2' : ''));
     this.renderBuild($('[data-bind="overBuild"]'), s.perks);
-    const xpFrac = res.ups.length ? 1 : HR.Progress.info().frac;
-    this.bind('overLevel', before.level); this.fill('overXpFill', Math.max(0, before.frac - (s.xp / before.need)));
+    // com level-up a barra mostrava cheia; o certo é a fração do nível NOVO
+    const xpFrac = HR.Progress.info().frac;
+    this.bind('overLevel', before.level); this.fill('overXpFill', before.frac);
     const dbl = $('#btn-double-coins');
     dbl.style.display = (s.mode !== 'practice' && s.coins >= HR.CONFIG.ADS.doubleCoinsMin && HR.Ads.isRewardedReady()) ? '' : 'none';
     dbl.disabled = false;
@@ -471,7 +523,7 @@ HR.UI = {
     setTimeout(() => { const after = HR.Progress.info(); this.bind('overLevel', after.level); this.fill('overXpFill', xpFrac); }, 400);
     if (res.isRecord) { HR.Audio.sfx('record'); HR.U.vibrate([30, 40, 30, 40, 60]); }
     res.ach.forEach((a, i) => this.achToast(a, i));
-    if (res.ups.length) { this.pendingUps = res.ups; setTimeout(() => this.nextLevelUp(true), 1100); }
+    if (res.ups.length) { this.pendingUps = res.ups; this.endTimer(() => this.nextLevelUp(true), 1100); }
   },
   async afterOver(next) { await HR.Ads.maybeInterstitial('game_over'); next(); },
   async doubleCoins() {
@@ -482,6 +534,9 @@ HR.UI = {
     else btn.disabled = false;
   },
   nextLevelUp(first) {
+    // partida nova em curso: o cartao nao entra por cima do HUD; pendingUps fica
+    // cheio e o goMenu() seguinte mostra tudo
+    if (first && this.current === 'hud') return;
     const modal = $('#modal-levelup');
     if (!first) { modal.classList.remove('visible'); HR.Audio.sfx('click'); }
     const up = this.pendingUps.shift();
@@ -587,7 +642,9 @@ HR.UI = {
           list.appendChild(row);
         });
         const rk = body.querySelector('.lb-me-rank'); if (rk) rk.textContent = '#' + v.myRank;
-        list.appendChild(HR.U.el('p', 'lb-note', HR.t(v.online ? 'lb_online' : 'lb_offline')));
+        list.appendChild(HR.U.el('p', 'lb-note', HR.t(v.erro ? 'lb_error' : v.online ? 'lb_online' : 'lb_offline')));
+        // rede ruim ou fora do ar: o jogador pode pedir de novo sem sair da tela
+        if (v.erro) { const rb = HR.U.el('button', 'btn btn-ghost small-btn', '<span class="btn-label">' + this.esc(HR.t('lb_retry')) + '</span>'); rb.addEventListener('click', e => { e.stopPropagation(); HR.Audio.sfx('click'); O.cache = {}; this.renderLeaderboard(); }); list.appendChild(rb); }
       });
     } else {
       const list = HR.Leaderboard.local();
@@ -643,6 +700,20 @@ HR.UI = {
     body.appendChild(HR.U.el('div', 'section-title', HR.t('account')));
     if (d.noAds || d.vip) body.appendChild(HR.U.el('p', 'lb-note', (d.vip ? HR.t('vip_active') : HR.t('no_ads_active'))));
     link(HR.t('restore'), () => HR.IAP.restore());
+    // cópia de segurança do progresso: no Safari em aba o sistema apaga o storage
+    // depois de dias sem uso, e o save só morava lá
+    link(HR.t('backup_copy'), () => {
+      const j = HR.Store.export();
+      const pronto = () => this.toast(HR.icon('check') + ' ' + HR.t('copied'), 'good');
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(j).then(pronto, () => window.prompt(HR.t('backup_copy'), j));
+      else window.prompt(HR.t('backup_copy'), j);
+    });
+    link(HR.t('backup_paste'), () => {
+      const j = window.prompt(HR.t('backup_paste_d'));
+      if (!j) return;
+      if (HR.Store.import(j)) location.reload();
+      else this.toast(HR.t('backup_bad'), 'bad');
+    });
     if (d.vip) link(HR.t('manage_sub'), () => HR.IAP.manage());
     link(HR.t('privacy'), () => window.open(HR.CONFIG.SHARE_URL + '/privacidade', '_blank'));
     link(HR.t('terms'), () => window.open(HR.CONFIG.SHARE_URL + '/termos', '_blank'));
@@ -662,7 +733,8 @@ Object.assign(HR.I18N.pt, {
   tip_11: 'Raspar a borda de um arco conta como "por um fio" — há uma conquista secreta.', tip_12: 'A Égide absorve um erro por 30 s. O Jato só pode ser usado antes do primeiro arco.',
   load_fonts: 'Carregando fontes', load_audio: 'Preparando áudio', load_save: 'Lendo progresso', load_ready: 'Pronto', load_galaxy: 'Desenhando a galáxia',
   abilities_short: 'Poderes', near_miss: 'POR UM FIO', audio: 'Áudio', sfx_vol: 'Volume dos sons', music_vol: 'Volume da música', profile: 'Perfil', account: 'Conta',
-  title: 'Título', title_d: 'Aparece no menu, abaixo do nome do jogo', weekly_note: 'Alvos maiores, prêmios ×4. Renovam na segunda.', reroll_left: '{n} trocas de missão restantes hoje (anúncio)'
+  title: 'Título', title_d: 'Aparece no menu, abaixo do nome do jogo',
+  backup_copy: 'Copiar código de backup', backup_paste: 'Colar código de backup', backup_paste_d: 'Cole aqui o código de backup do seu progresso.', backup_bad: 'Código inválido.', weekly_note: 'Alvos maiores, prêmios ×4. Renovam na segunda.', reroll_left: '{n} trocas de missão restantes hoje (anúncio)'
 });
 Object.assign(HR.I18N.en, {
   tip_1: 'Pass through the ring center for a PERFECT and a bigger combo.', tip_2: 'Tap the corner buttons to use abilities. They recharge on their own.',
@@ -673,7 +745,8 @@ Object.assign(HR.I18N.en, {
   tip_11: 'Grazing a ring rim counts as "by a hair" — there is a secret achievement.', tip_12: 'The Aegis absorbs one mistake for 30 s. The Jet can only be used before the first ring.',
   load_fonts: 'Loading fonts', load_audio: 'Preparing audio', load_save: 'Reading progress', load_ready: 'Ready', load_galaxy: 'Drawing the galaxy',
   abilities_short: 'Powers', near_miss: 'BY A HAIR', audio: 'Audio', sfx_vol: 'Sound volume', music_vol: 'Music volume', profile: 'Profile', account: 'Account',
-  title: 'Title', title_d: 'Shown in the menu, under the game name', weekly_note: 'Bigger targets, ×4 rewards. Reset on Monday.', reroll_left: '{n} mission swaps left today (ad)'
+  title: 'Title', title_d: 'Shown in the menu, under the game name',
+  backup_copy: 'Copy backup code', backup_paste: 'Paste backup code', backup_paste_d: 'Paste your progress backup code here.', backup_bad: 'Invalid code.', weekly_note: 'Bigger targets, ×4 rewards. Reset on Monday.', reroll_left: '{n} mission swaps left today (ad)'
 });
 Object.assign(HR.I18N.es, {
   tip_1: 'Pasa por el centro del aro para un PERFECTO y más combo.', tip_2: 'Toca los botones de las esquinas para usar habilidades. Se recargan solas.',
@@ -684,5 +757,6 @@ Object.assign(HR.I18N.es, {
   tip_11: 'Rozar el borde de un aro cuenta como "por un pelo": hay un logro secreto.', tip_12: 'La Égida absorbe un error durante 30 s. El Propulsor solo se usa antes del primer aro.',
   load_fonts: 'Cargando fuentes', load_audio: 'Preparando audio', load_save: 'Leyendo progreso', load_ready: 'Listo', load_galaxy: 'Dibujando la galaxia',
   abilities_short: 'Poderes', near_miss: 'POR UN PELO', audio: 'Audio', sfx_vol: 'Volumen de sonidos', music_vol: 'Volumen de música', profile: 'Perfil', account: 'Cuenta',
-  title: 'Título', title_d: 'Aparece en el menú, bajo el nombre del juego', weekly_note: 'Objetivos mayores, premios ×4. Se renuevan el lunes.', reroll_left: '{n} cambios de misión restantes hoy (anuncio)'
+  title: 'Título', title_d: 'Aparece en el menú, bajo el nombre del juego',
+  backup_copy: 'Copiar código de respaldo', backup_paste: 'Pegar código de respaldo', backup_paste_d: 'Pega aquí el código de respaldo de tu progreso.', backup_bad: 'Código inválido.', weekly_note: 'Objetivos mayores, premios ×4. Se renuevan el lunes.', reroll_left: '{n} cambios de misión restantes hoy (anuncio)'
 });

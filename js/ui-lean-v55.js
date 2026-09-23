@@ -60,6 +60,7 @@
       const ic = ROW_IC[key]; if (!ic) return;
       const label = HR.t(key);
       first.removeAttribute('data-i18n');
+      first.setAttribute('data-lean-key', key);   // trocar o idioma nos Ajustes renomeia a dica (ver relabel)
       const gc = HR.glyphColor && HR.glyphColor(ic), draw = HR.glyph || HR.icon;
       first.innerHTML = '<span class="lean-ic"' + (gc ? ' style="--ic:' + gc + '"' : '') + '>' + draw(ic, '', ic === 'coin') + '</span>';
       first.setAttribute('data-tip', label); first.setAttribute('data-tip-tap', '1');
@@ -98,6 +99,13 @@
   wrap(HR.UI, 'openLevelDetail', function () { leanLevelDetail(); lean($('#item-detail')); });
   wrap(HR.UI, 'openSingularityDetail', function () { lean($('#item-detail')); });
   wrap(HR.UI, 'hudInit', function () { leanLevelEnd(); });
+
+  // o data-i18n saiu dos rotulos, entao a troca de idioma passava longe deles
+  function relabel() {
+    $$('[data-lean-key]').forEach(el => el.setAttribute('data-tip', HR.t(el.getAttribute('data-lean-key'))));
+  }
+  const origI18n = HR.applyI18n;
+  if (typeof origI18n === 'function') HR.applyI18n = function () { const r = origI18n.apply(this, arguments); try { relabel(); } catch (_) { /* nada */ } return r; };
 
   Object.assign(HR.I18N.pt, { star_s_finish: '60 % dos arcos', star_s_perfects: '40 % perfeitos', star_s_flawless: 'Sem dano', help: 'Como funciona' });
   Object.assign(HR.I18N.en, { star_s_finish: '60% of rings', star_s_perfects: '40% perfects', star_s_flawless: 'No damage', help: 'How it works' });

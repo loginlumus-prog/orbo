@@ -5,9 +5,16 @@
    ===================================================================== */
 window.HR = window.HR || {};
 const RU = () => HR.U;
+// setLineDash aloca um array a cada chamada: estes ficam prontos uma vez so
+const D_SHATTER = [8, 14], D_ANOM = [10, 14], D_GOLD = [6, 10], D_EMBER = [4, 9],
+  D_ABYSS = [2, 9], D_VORTEX = [12, 12], D_DUST = [2, 6], D_SNOW = [1, 7],
+  D_MATRIX = [6, 5], D_AUTO = [6, 6], D_OFF = [];
+// "objetos": 0 = Baixo/Normal (bola, arcos, rastro e orbes desenham menos)
+const OBJ = () => (!HR.Perf || HR.Perf.obj);
 
 HR.Render = {
   RX: 0.26, // "espessura" da elipse do arco (visto de lado)
+  DASH: { auto: D_AUTO, off: D_OFF },
 
   /* ---------------- Bola ---------------- */
   drawBall(ctx, x, y, r, skin, t, o) {
@@ -19,8 +26,13 @@ HR.Render = {
     ctx.save();
     ctx.globalAlpha = alpha;
 
+    // v6.6: no Baixo e no Normal a bola nao tem halo nem aura de combo. Sao dois
+    // gradientes grandes por quadro; o que diz "estou em chamas" (a cor quente do
+    // rastro e os numeros do HUD) continua la.
+    const obj = OBJ();
+
     // brilho externo
-    if (o.glow !== false) {
+    if (o.glow !== false && obj) {
       const g = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 1.9);
       g.addColorStop(0, U.rgba(skin.glow, 0.35));
       g.addColorStop(1, U.rgba(skin.glow, 0));
@@ -28,7 +40,7 @@ HR.Render = {
     }
 
     // aura de combo (cresce com a sequência de perfeitos) e aura de estrela (invencível)
-    if (o.heat) {
+    if (o.heat && obj) {
       const h = o.heat, rr = r * (1.5 + h * 0.9) * (1 + 0.04 * Math.sin(t * 4));
       const ag = ctx.createRadialGradient(x, y, r * 0.9, x, y, rr);
       ag.addColorStop(0, U.rgba('#ffcf4a', 0.10 + h * 0.22)); ag.addColorStop(1, U.rgba('#ffcf4a', 0));
@@ -36,8 +48,11 @@ HR.Render = {
     }
     if (o.star) {
       const k = Math.min(1, o.star / 1.2), blink = o.star < 1.5 ? (Math.floor(t * 8) % 2 ? 1 : 0.3) : 1;
-      const sg = ctx.createRadialGradient(x, y, r, x, y, r * 2.6); sg.addColorStop(0, 'rgba(255,226,122,' + (0.22 * blink).toFixed(2) + ')'); sg.addColorStop(1, 'rgba(255,226,122,0)');
-      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, r * 2.6, 0, Math.PI * 2); ctx.fill();
+      // os raios ficam em todo nivel (dizem "invencivel"); só o halo do gradiente sai no Baixo
+      if (obj) {
+        const sg = ctx.createRadialGradient(x, y, r, x, y, r * 2.6); sg.addColorStop(0, 'rgba(255,226,122,' + (0.22 * blink).toFixed(2) + ')'); sg.addColorStop(1, 'rgba(255,226,122,0)');
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, r * 2.6, 0, Math.PI * 2); ctx.fill();
+      }
       ctx.save(); ctx.globalAlpha = alpha * (0.45 + 0.55 * k) * blink; ctx.lineCap = 'round';
       for (let i = 0; i < 12; i++) { const a0 = t * 3 + i * Math.PI / 6; ctx.strokeStyle = U.hsl((t * 200 + i * 30) % 360, 95, 65, 0.9); ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, r * 1.45, a0, a0 + Math.PI / 9); ctx.stroke(); }
       ctx.restore();
@@ -238,22 +253,39 @@ HR.Render = {
     }
   },
 
+  // metade dos pontos do rastro, num array reaproveitado (nada de lixo por quadro).
+  // O ultimo ponto entra sempre: e o que encosta na bola.
+  _thin: [],
+  thin(pts) {
+    const out = HR.Render._thin, n = pts.length;
+    out.length = 0;
+    for (let i = n % 2; i < n; i += 2) out.push(pts[i]);
+    if (out[out.length - 1] !== pts[n - 1]) out.push(pts[n - 1]);
+    return out;
+  },
+
   // orbes de poder: pequenas esferas com cauda girando em volta da bola (uma configuração por poder ativo);
   // quando o poder está acabando (T < 1,5 s) piscam
   drawOrbs(ctx, x, y, br, orbs, t) {
-    const U = RU();
+    const U = RU(), obj = OBJ();
+    // v6.6: o brilho de cada orbe era um gradiente radial por orbe por quadro
+    // (12 com quatro poderes ativos). Dois circulos com alpha dao o mesmo halo
+    // por uma fracao do custo. No Baixo a cauda tem 2 pontos em vez de 4.
+    const nCauda = obj ? 4 : 2;
     ctx.save(); ctx.lineCap = 'round';
     orbs.forEach((o, oi) => {
       const ending = o.T != null && o.T < 1.5, blink = ending ? (Math.floor(t * 8) % 2 ? 1 : 0.25) : 1;
       const R = br * o.rad;
+      const halo1 = U.rgba(o.color, 0.16 * blink), halo2 = U.rgba(o.color, 0.3 * blink);
+      const nucleo = U.rgba(o.wisp ? '#ffffff' : o.color, blink), luz = U.rgba('#ffffff', 0.8 * blink);
       for (let i = 0; i < o.n; i++) {
         const a = t * o.speed + i * Math.PI * 2 / o.n + oi * 0.9;
         const ox = x + Math.cos(a) * R, oy = y + Math.sin(a) * R * 0.78;
-        for (let k = 1; k <= 4; k++) { const ak = a - k * 0.13 * Math.sign(o.speed || 1); ctx.fillStyle = U.rgba(o.color, blink * (0.35 - k * 0.07)); ctx.beginPath(); ctx.arc(x + Math.cos(ak) * R, y + Math.sin(ak) * R * 0.78, o.size * (1 - k * 0.15), 0, 6.283); ctx.fill(); }
-        const g = ctx.createRadialGradient(ox, oy, 0, ox, oy, o.size * 3); g.addColorStop(0, U.rgba(o.color, 0.5 * blink)); g.addColorStop(1, U.rgba(o.color, 0));
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, o.size * 3, 0, 6.283); ctx.fill();
-        ctx.fillStyle = U.rgba(o.wisp ? '#ffffff' : o.color, blink); ctx.beginPath(); ctx.arc(ox, oy, o.size, 0, 6.283); ctx.fill();
-        ctx.fillStyle = U.rgba('#ffffff', 0.8 * blink); ctx.beginPath(); ctx.arc(ox - o.size * 0.3, oy - o.size * 0.3, o.size * 0.35, 0, 6.283); ctx.fill();
+        for (let k = 1; k <= nCauda; k++) { const ak = a - k * 0.13 * Math.sign(o.speed || 1); ctx.fillStyle = U.rgba(o.color, blink * (0.35 - k * 0.07)); ctx.beginPath(); ctx.arc(x + Math.cos(ak) * R, y + Math.sin(ak) * R * 0.78, o.size * (1 - k * 0.15), 0, 6.283); ctx.fill(); }
+        ctx.fillStyle = halo1; ctx.beginPath(); ctx.arc(ox, oy, o.size * 2.6, 0, 6.283); ctx.fill();
+        ctx.fillStyle = halo2; ctx.beginPath(); ctx.arc(ox, oy, o.size * 1.7, 0, 6.283); ctx.fill();
+        ctx.fillStyle = nucleo; ctx.beginPath(); ctx.arc(ox, oy, o.size, 0, 6.283); ctx.fill();
+        ctx.fillStyle = luz; ctx.beginPath(); ctx.arc(ox - o.size * 0.3, oy - o.size * 0.3, o.size * 0.35, 0, 6.283); ctx.fill();
       }
     });
     ctx.restore();
@@ -264,6 +296,8 @@ HR.Render = {
     heat = heat || 0;
     if (pts.length < 2) return;
     const U = RU();
+    // no Baixo/Normal o rastro usa metade dos pontos: mesma fita, metade dos strokes
+    if (!OBJ() && pts.length > 6) pts = HR.Render.thin(pts);
     const n = pts.length;
     ctx.save();
     if (trailId === 'none') {
@@ -334,7 +368,7 @@ HR.Render = {
     const w = Math.max(6, r * 0.11);
     const a0 = half === 'back' ? Math.PI / 2 : -Math.PI / 2;
     const a1 = half === 'back' ? Math.PI * 1.5 : Math.PI / 2;
-    if (ring.shatterT) { const k = Math.min(1, ring.shatterT / 0.5); ctx.save(); ctx.translate(ring.x, ring.y); ctx.rotate(ring.tilt); ctx.globalAlpha = alpha * (1 - k); ctx.setLineDash([8, 14]); ctx.lineDashOffset = k * 40; ctx.strokeStyle = color; ctx.lineWidth = w * (1 - k * 0.5); ctx.beginPath(); ctx.ellipse(0, 0, rx * (1 + k * 0.7), r * (1 + k * 0.7), 0, a0, a1); ctx.stroke(); ctx.restore(); return; }
+    if (ring.shatterT) { const k = Math.min(1, ring.shatterT / 0.5); ctx.save(); ctx.translate(ring.x, ring.y); ctx.rotate(ring.tilt); ctx.globalAlpha = alpha * (1 - k); ctx.setLineDash(D_SHATTER); ctx.lineDashOffset = k * 40; ctx.strokeStyle = color; ctx.lineWidth = w * (1 - k * 0.5); ctx.beginPath(); ctx.ellipse(0, 0, rx * (1 + k * 0.7), r * (1 + k * 0.7), 0, a0, a1); ctx.stroke(); ctx.restore(); return; }
     ctx.save();
     ctx.translate(ring.x, ring.y); ctx.rotate(ring.tilt);
     const sc = 1 + flash * 0.1; ctx.scale(sc, sc);
@@ -346,14 +380,18 @@ HR.Render = {
       ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke();
       ctx.strokeStyle = '#ff3d2e'; ctx.lineWidth = w;
       ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,205,190,0.85)'; ctx.lineWidth = w * 0.3; ctx.setLineDash([10, 14]); ctx.lineDashOffset = -t * 60;
-      ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.94, r * 0.94, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(255,205,190,0.85)'; ctx.lineWidth = w * 0.3; ctx.setLineDash(D_ANOM); ctx.lineDashOffset = -t * 60;
+      ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.94, r * 0.94, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF);
       ctx.restore(); return;
     }
     if (water && half === 'back') { ctx.fillStyle = U.rgba(color, 0.07); ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, 0, Math.PI * 2); ctx.fill(); }
-    // halo
-    ctx.strokeStyle = U.rgba(color, 0.22 + flash * 0.3); ctx.lineWidth = w * 2.8;
-    ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke();
+    // halo (no Baixo/Normal sai: e um stroke de largura w*2,8 por metade de arco,
+    // o corpo e o brilho interno continuam dizendo onde o arco esta)
+    const obj = OBJ();
+    if (obj || flash > 0.02) {
+      ctx.strokeStyle = U.rgba(color, 0.22 + flash * 0.3); ctx.lineWidth = w * 2.8;
+      ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke();
+    }
     // corpo
     if (ring.type === 'guardian') { ctx.strokeStyle = U.rgba('#ffffff', 0.12 + 0.08 * Math.sin(t * 3)); ctx.lineWidth = w * 4.2; ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); }
     ctx.strokeStyle = color; ctx.lineWidth = water ? w * 1.15 : ring.type === 'guardian' ? w * 1.5 : w;
@@ -361,8 +399,8 @@ HR.Render = {
     // brilho interno
     ctx.strokeStyle = U.rgba('#ffffff', (water ? 0.65 : 0.5) + flash * 0.5); ctx.lineWidth = w * 0.32;
     ctx.beginPath(); ctx.ellipse(-w * 0.15, -w * 0.15, rx * 0.9, r * 0.93, 0, a0, a1); ctx.stroke();
-    if (ring.type === 'gold') { ctx.strokeStyle = U.rgba('#fff6c8', 0.5 + 0.3 * Math.sin(t * 6)); ctx.lineWidth = w * 0.5; ctx.setLineDash([6, 10]); ctx.lineDashOffset = t * 40; ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); }
-    this.drawRingBiome(ctx, ring, half, rx, r, w, a0, a1, t, color);
+    if (ring.type === 'gold') { ctx.strokeStyle = U.rgba('#fff6c8', 0.5 + 0.3 * Math.sin(t * 6)); ctx.lineWidth = w * 0.5; ctx.setLineDash(D_GOLD); ctx.lineDashOffset = t * 40; ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); }
+    if (obj) this.drawRingBiome(ctx, ring, half, rx, r, w, a0, a1, t, color);
     ctx.restore();
   },
   // bioma no arco (v4): detalhe discreto sobre o corpo, nunca muda a cor-linguagem do tipo
@@ -371,8 +409,8 @@ HR.Render = {
     if (!fx || fx === 'water') return;
     switch (fx) {
       case 'ember':
-        ctx.strokeStyle = U.rgba('#fff2a0', 0.4 + 0.25 * Math.sin(t * 5 + idx)); ctx.lineWidth = w * 0.32; ctx.setLineDash([4, 9]); ctx.lineDashOffset = -t * 25;
-        ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.8, r * 0.85, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+        ctx.strokeStyle = U.rgba('#fff2a0', 0.4 + 0.25 * Math.sin(t * 5 + idx)); ctx.lineWidth = w * 0.32; ctx.setLineDash(D_EMBER); ctx.lineDashOffset = -t * 25;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.8, r * 0.85, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); break;
       case 'crystal': {
         ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = w * 0.26; ctx.lineJoin = 'miter'; ctx.beginPath();
         for (let k = 0; k <= 7; k++) { const a = a0 + (a1 - a0) * k / 7; const x = Math.cos(a) * rx * 1.02, y = Math.sin(a) * r * 1.02; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
@@ -388,11 +426,11 @@ HR.Render = {
         for (let k = 0; k < 3; k++) { const a = a0 + (a1 - a0) * (0.2 + k * 0.3) + Math.sin(t + idx) * 0.05; ctx.save(); ctx.translate(Math.cos(a) * rx, Math.sin(a) * r); ctx.rotate(a + 0.8); ctx.beginPath(); ctx.ellipse(0, 0, w * 0.9, w * 0.4, 0, 0, 6.283); ctx.fill(); ctx.restore(); }
         break;
       case 'abyss':
-        ctx.strokeStyle = U.rgba('#9be7ff', 0.55 + 0.3 * Math.sin(t * 4 + idx)); ctx.lineWidth = w * 0.5; ctx.setLineDash([2, 9]); ctx.lineDashOffset = t * 30;
-        ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+        ctx.strokeStyle = U.rgba('#9be7ff', 0.55 + 0.3 * Math.sin(t * 4 + idx)); ctx.lineWidth = w * 0.5; ctx.setLineDash(D_ABYSS); ctx.lineDashOffset = t * 30;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); break;
       case 'vortex':
-        ctx.strokeStyle = U.rgba(color, 0.6); ctx.lineWidth = w * 0.4; ctx.setLineDash([12, 12]); ctx.lineDashOffset = t * 90;
-        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.14, r * 1.1, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+        ctx.strokeStyle = U.rgba(color, 0.6); ctx.lineWidth = w * 0.4; ctx.setLineDash(D_VORTEX); ctx.lineDashOffset = t * 90;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.14, r * 1.1, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); break;
       case 'horizon':
         ctx.strokeStyle = 'rgba(255,243,194,0.35)'; ctx.lineWidth = w * 0.3;
         ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.24, r * 1.15, 0, a0, a1); ctx.stroke(); break;
@@ -407,20 +445,20 @@ HR.Render = {
         ctx.strokeStyle = 'rgba(255,94,207,0.75)'; ctx.lineWidth = w * 0.3; ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.16, r * 1.1, 0, a0, a1); ctx.stroke();
         ctx.strokeStyle = 'rgba(76,240,255,0.55)'; ctx.lineWidth = w * 0.22; ctx.beginPath(); ctx.ellipse(0, 0, rx * 0.84, r * 0.9, 0, a0, a1); ctx.stroke(); break;
       case 'dust':
-        ctx.strokeStyle = 'rgba(255,170,120,0.55)'; ctx.lineWidth = w * 0.34; ctx.setLineDash([2, 6]); ctx.lineDashOffset = -t * 20;
-        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.1, r * 1.06, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+        ctx.strokeStyle = 'rgba(255,170,120,0.55)'; ctx.lineWidth = w * 0.34; ctx.setLineDash(D_DUST); ctx.lineDashOffset = -t * 20;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.1, r * 1.06, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); break;
       case 'sakura':
         for (let k = 0; k < 4; k++) { const a = a0 + (a1 - a0) * (0.12 + k * 0.25) + Math.sin(t * 0.8 + idx + k) * 0.04; ctx.save(); ctx.translate(Math.cos(a) * rx, Math.sin(a) * r); ctx.rotate(a + t); ctx.fillStyle = 'rgba(255,183,213,0.9)'; ctx.beginPath(); ctx.ellipse(0, 0, w * 0.8, w * 0.45, 0, 0, 6.283); ctx.fill(); ctx.restore(); }
         break;
       case 'snow':
-        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = w * 0.22; ctx.setLineDash([1, 7]);
-        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.06, r * 1.04, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = w * 0.22; ctx.setLineDash(D_SNOW);
+        ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.06, r * 1.04, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); break;
       case 'cosmos':
         for (let k = 0; k < 7; k++) { const a = a0 + (a1 - a0) * (k + 0.5) / 7, tw = 0.4 + 0.6 * Math.abs(Math.sin(t * 3 + k + idx)); ctx.fillStyle = 'rgba(255,255,255,' + tw.toFixed(2) + ')'; ctx.beginPath(); ctx.arc(Math.cos(a) * rx * 1.12, Math.sin(a) * r * 1.08, w * 0.22, 0, 6.283); ctx.fill(); }
         break;
       case 'matrix':
-        ctx.strokeStyle = 'rgba(53,226,154,0.7)'; ctx.lineWidth = w * 0.3; ctx.setLineDash([6, 5]); ctx.lineDashOffset = t * 40;
-        ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash([]); break;
+        ctx.strokeStyle = 'rgba(53,226,154,0.7)'; ctx.lineWidth = w * 0.3; ctx.setLineDash(D_MATRIX); ctx.lineDashOffset = t * 40;
+        ctx.beginPath(); ctx.ellipse(0, 0, rx, r, 0, a0, a1); ctx.stroke(); ctx.setLineDash(D_OFF); break;
       case 'flare':
         ctx.strokeStyle = U.rgba('#ffcf7a', 0.35 + 0.25 * Math.sin(t * 6 + idx)); ctx.lineWidth = w * 0.9;
         ctx.beginPath(); ctx.ellipse(0, 0, rx * 1.18, r * 1.1, 0, a0, a1); ctx.stroke(); break;
@@ -570,7 +608,7 @@ HR.Render.Background = class {
   build() {
     if (!this.theme || !this.W) return;
     const U = RU(), W = this.W, H = this.H;
-    this.grad = null; this.baseLayer = null; this.baseC = null;
+    this.grad = null; this.baseLayer = null; this.baseC = null; this.vig = null; this.bioG = null;
     // v6.2: o nível de gráfico decide quantos elementos o fundo tem
     const q = HR.Perf && HR.Perf.bg ? HR.Perf.bg() : 1, qn = (v, min) => Math.max(min || 0, Math.round(v * q));
     this.stars = [];
@@ -592,6 +630,15 @@ HR.Render.Background = class {
     this.scroll = Math.hypot(this.sx, this.sy);
   }
   wrap(v, size) { return ((v % size) + size) % size; }
+  // Gradiente de bioma guardado por chave: os do abismo, da neblina e da erupcao
+  // tem raio fixo e so mudam de lugar. Desenhar com translate + este gradiente
+  // troca 36 criacoes por quadro (abyss) por nenhuma.
+  bioGrad(ctx, key, r, c0, c1) {
+    const M = this.bioG || (this.bioG = {});
+    let g = M[key];
+    if (!g) { g = ctx.createRadialGradient(0, 0, 0, 0, 0, r); g.addColorStop(0, c0); g.addColorStop(1, c1); M[key] = g; }
+    return g;
+  }
   // biomas (v4): cada fx tem objetos próprios (gerados uma vez) e um desenho discreto sobre o tema
   drawBiome(ctx, t, fx, sx, sy) {
     const U = RU(), W = this.W, H = this.H;
@@ -620,9 +667,10 @@ HR.Render.Background = class {
     } else if (fx === 'mist') {
       O.forEach((o, i) => {
         const x = this.wrap(o.x * W * 1.6 + sx * 0.05 * o.v, W * 1.6) - W * 0.3, y = this.wrap(o.y * H * 1.3 + sy * 0.05 * o.v, H * 1.3) - H * 0.15;
+        const R = 240 + i * 40;
         ctx.save(); ctx.translate(x, y); ctx.scale(1, 0.28);
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 240 + i * 40); g.addColorStop(0, 'rgba(200,205,255,0.10)'); g.addColorStop(1, 'rgba(200,205,255,0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 240 + i * 40, 0, 6.283); ctx.fill(); ctx.restore();
+        ctx.fillStyle = this.bioGrad(ctx, 'mist' + i, R, 'rgba(200,205,255,0.10)', 'rgba(200,205,255,0)');
+        ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
       });
     } else if (fx === 'crystal') {
       O.forEach(o => {
@@ -650,8 +698,11 @@ HR.Render.Background = class {
       O.forEach(o => {
         const x = this.wrap(o.x * W + sx * 0.05 + Math.sin(t * 0.4 + o.p) * 12, W), y = this.wrap(o.y * H - t * o.v * 6 + sy * 0.05, H);
         const a = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(t * 1.6 * o.v + o.p)), col = o.s > 1 ? '76,240,255' : '91,108,255';
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 4 + o.s * 5); g.addColorStop(0, 'rgba(' + col + ',' + a + ')'); g.addColorStop(1, 'rgba(' + col + ',0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 4 + o.s * 5, 0, 6.283); ctx.fill();
+        // o gradiente vem pronto (cor cheia) e o brilho entra pelo globalAlpha
+        const R = Math.round(4 + o.s * 5);
+        ctx.save(); ctx.translate(x, y); ctx.globalAlpha = a;
+        ctx.fillStyle = this.bioGrad(ctx, 'ab' + col + R, R, 'rgba(' + col + ',1)', 'rgba(' + col + ',0)');
+        ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.283); ctx.fill(); ctx.restore();
       });
     } else if (fx === 'vortex') {
       const cx = W * 0.5, cy = H * 0.46;
@@ -699,7 +750,10 @@ HR.Render.Background = class {
     } else if (fx === 'matrix') {
       O.forEach((o, i) => { const x = (i + 0.5) * W / O.length + sx * 0.02 % 4, head = this.wrap(o.y * H + t * (60 + o.v * 90), H + 200); for (let k = 0; k < 10; k++) { const y = head - k * 16; if (y < -10 || y > H) continue; ctx.fillStyle = k === 0 ? 'rgba(200,255,210,0.6)' : 'rgba(53,226,154,' + (0.28 - k * 0.025).toFixed(3) + ')'; ctx.fillRect(x - 3, y, 6, 9 - (k % 3)); } });
     } else if (fx === 'flare') {
-      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(W, H) * 0.8); g.addColorStop(0, 'rgba(255,190,90,0.3)'); g.addColorStop(0.4, 'rgba(255,110,40,0.08)'); g.addColorStop(1, 'rgba(255,110,40,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      const M = this.bioG || (this.bioG = {});
+      let g = M.flare;
+      if (!g) { g = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(W, H) * 0.8); g.addColorStop(0, 'rgba(255,190,90,0.3)'); g.addColorStop(0.4, 'rgba(255,110,40,0.08)'); g.addColorStop(1, 'rgba(255,110,40,0)'); M.flare = g; }
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
       O.forEach((o, i) => { const k = (t * 0.2 * o.v + o.p) % 1, R0 = 80 + i * 55; ctx.strokeStyle = 'rgba(255,' + (150 + i * 12) + ',80,' + (0.18 * Math.sin(k * Math.PI)).toFixed(3) + ')'; ctx.lineWidth = 6 + o.s * 5; ctx.beginPath(); ctx.arc(0, 0, R0 + k * 60, 0.1 + o.a * 0.1, 1.45 - o.a * 0.08); ctx.stroke(); });
     }
     ctx.restore();
@@ -844,10 +898,13 @@ HR.Render.Background = class {
     if (this.drawScene && (!HR.Perf || !HR.Perf.scenes || HR.Perf.scenes())) this.drawScene(ctx, t);
     if (!HR.Perf || !HR.Perf.flowLayers || HR.Perf.flowLayers()) this.drawFlowLayers(ctx, t);
     if (this.season && HR.Seasons) HR.Seasons.sprinkle(ctx, W, H, t, this.season.sprinkle);
-    // vinheta
-    const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.85);
-    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    // vinheta: o gradiente so depende de W/H, entao fica guardado entre quadros
+    if (!this.vig || this.vigW !== W || this.vigH !== H) {
+      const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.85);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+      this.vig = vg; this.vigW = W; this.vigH = H;
+    }
+    ctx.fillStyle = this.vig; ctx.fillRect(0, 0, W, H);
   }
 };
 
@@ -873,47 +930,47 @@ HR.Render.Particles = class {
   }
   update(dt) {
     const L = this.list;
-    for (let i = L.length - 1; i >= 0; i--) {
+    // compacta em vez de splice: com 50 particulas mortas no mesmo quadro o
+    // splice movia a lista inteira 50 vezes
+    let w = 0;
+    for (let i = 0; i < L.length; i++) {
       const p = L[i];
       p.life += dt;
-      if (p.life >= p.max) { L.splice(i, 1); continue; }
+      if (p.life >= p.max) continue;
+      if (w !== i) L[w] = p;
+      w++;
       p.vy += p.g * dt;
       const dr = Math.pow(p.drag, dt * 60);
       p.vx *= dr; p.vy *= dr;
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.rot += (p.vr || 0) * dt;
     }
+    L.length = w;
   }
-  // textos flutuantes desenhados em espaço de tela (ficam "em pé" mesmo com o mundo girado)
+  // textos flutuantes em espaço de tela (ficam "em pé" mesmo com o mundo girado):
+  // e o mesmo desenho do draw(), com as coordenadas passadas pelo mapFn
   drawText(ctx, mapFn) {
-    const U = RU();
-    this.list.forEach(p => {
-      if (p.type !== 'text') return;
-      const k = 1 - p.life / p.max;
-      const pos = mapFn ? mapFn(p.x, p.y) : { x: p.x, y: p.y };
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, k * 1.4);
-      const s = p.life < 0.15 ? U.easeOutBack(p.life / 0.15) : 1;
-      ctx.translate(pos.x, pos.y - (p.max - (p.max - p.life)) * 0); ctx.scale(s, s);
-      ctx.font = '900 ' + p.size + 'px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.strokeText(p.text, 0, 0);
-      ctx.fillStyle = p.color; ctx.fillText(p.text, 0, 0);
-      ctx.restore();
-    });
+    this.draw(ctx, TEXTO, mapFn);
   }
-  draw(ctx, filter) {
-    const U = RU();
-    this.list.forEach(p => {
-      if (filter && !filter(p)) return;
+  // Só 'text' e 'shard' precisam de transformação; o resto desenha em coordenadas
+  // absolutas, então basta repor o globalAlpha no fim (um par save/restore por
+  // quadro em vez de um por partícula — com 300 delas isso pesava).
+  draw(ctx, filter, mapFn) {
+    const U = RU(), L = this.list, a0 = ctx.globalAlpha;
+    for (let i = 0; i < L.length; i++) {
+      const p = L[i];
+      if (filter && !filter(p)) continue;
       const k = 1 - p.life / p.max;
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, k * 1.4);
+      ctx.globalAlpha = a0 * Math.min(1, k * 1.4);
       if (p.type === 'text') {
         const s = p.life < 0.15 ? U.easeOutBack(p.life / 0.15) : 1;
-        ctx.translate(p.x, p.y); ctx.scale(s, s);
+        const pos = mapFn ? mapFn(p.x, p.y) : p;
+        ctx.save();
+        ctx.translate(pos.x, pos.y); ctx.scale(s, s);
         ctx.font = '900 ' + p.size + 'px Rubik, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.strokeText(p.text, 0, 0);
         ctx.fillStyle = p.color; ctx.fillText(p.text, 0, 0);
+        ctx.restore();
       } else if (p.type === 'bubble') {
         ctx.strokeStyle = U.rgba(p.color, Math.min(1, k * 0.9)); ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1 + (1 - k) * 0.8), 0, Math.PI * 2); ctx.stroke();
@@ -926,12 +983,15 @@ HR.Render.Particles = class {
         ctx.strokeStyle = p.color; ctx.lineWidth = p.size * 0.4; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.04, p.y - p.vy * 0.04); ctx.stroke();
       } else if (p.type === 'shard') {
+        ctx.save();
         ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color;
         ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
       } else {
         ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * k, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.restore();
-    });
+    }
+    ctx.globalAlpha = a0;
   }
 };
+const TEXTO = p => p.type === 'text';

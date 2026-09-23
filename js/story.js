@@ -105,6 +105,9 @@ HR.STORY_CAST = {
         s.axis[ax] = (s.axis[ax] || 0) + this.weight(id);
         if (/b10$/.test(id)) s.marks[this.galaxyOf(id)] = ax;
       }
+      // a porta e a unica cena que pode ser revivida: a marca dela vale
+      // sempre a ultima resposta (o eixo, esse, so conta na primeira vez)
+      if (id === 'g10b10' && ax && AX.indexOf(ax) >= 0) s.marks[10] = ax;
       s.seen[id] = 1;
       HR.Store.save();
     },
@@ -121,6 +124,32 @@ HR.STORY_CAST = {
     },
     total() { const a = this.axis(); return (a.U || 0) + (a.Q || 0) + (a.F || 0); },
 
+    /* ---------------- os quatro finais (v8) ----------------
+       Tres saem do eixo dominante. O quarto, Muitas Maos, nao e um eixo:
+       e o que sobra de quem parou no caminho. As tres bandeiras secretas
+       — ficar no Ninho, olhar na Contemplacao e seguir a Costura — dizem,
+       cada uma, que a pessoa perdeu tempo com alguem. Quem tem as tres
+       chega acompanhada, e ai a porta e outra. */
+    ENDING_FLAGS: ['ninho', 'contempla', 'costura'],
+    accompanied() { const f = data().flags; return this.ENDING_FLAGS.every(k => !!f[k]); },
+    // a resposta dada NA porta manda; quem pulou a pergunta cai no eixo
+    // que somou mais no jogo inteiro; as tres bandeiras passam na frente
+    ending() {
+      if (this.accompanied()) return 'M';
+      const m = data().marks[10];
+      return AX.indexOf(m) >= 0 ? m : this.dominant();
+    },
+    // guarda o final visto; a porta continua aberta, entao a lista cresce
+    seeEnding(e) {
+      const s = data();
+      s.ending = e;
+      s.endings = s.endings || [];
+      if (s.endings.indexOf(e) < 0) s.endings.push(e);
+      HR.Store.save();
+      return e;
+    },
+    endingsSeen() { return (data().endings || []).slice(); },
+
     /* ---------------- o que aparece e quando ---------------- */
     // entrada de uma galáxia (ri = 0..9), ao abrir a galáxia pela primeira vez
     entrance(ri) { const id = 'g' + (ri + 1); return this.mode() !== 'off' && !this.seen(id) && this.exists(id) ? id : null; },
@@ -134,6 +163,8 @@ HR.STORY_CAST = {
       const id = 'g' + (ri + 1) + 'b' + (si + 1), big = si === 9;
       if (this.mode() === 'off') return null;
       if (this.mode() === 'short' && !big) return null;
+      // a porta fica aberta: quem voltar a 10-10-10 escolhe de novo
+      if (id === 'g10b10') return this.exists(id) ? id : null;
       return !this.seen(id) && this.exists(id) ? id : null;
     },
     letterFor(ri) { const id = 'g' + (ri + 1) + 'c'; return this.mode() !== 'off' && !this.seen(id) && this.exists(id) ? id : null; },

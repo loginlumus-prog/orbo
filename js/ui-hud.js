@@ -41,13 +41,10 @@
       HR.Input.onAegis = () => { if (this.current === 'hud') this.game.useAegis(); };
       HR.Input.onJet = () => { if (this.current === 'hud') this.game.useJet(HR.Consumables.count('jet') > 0 ? 'jet' : 'megajet'); };
       game.on('gear', () => this.renderGear(this.game.run));
-      const ctrl = $('#btn-ctrl'); if (ctrl) ctrl.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.cycleControl(); });
-      HR.Input.onControl = () => { if (this.current === 'hud') this.cycleControl(); };
     },
 
     /* ---------- estado do HUD ---------- */
     hudReady(run) {
-      this.refreshControlBtn();
       this.bind('score', run.score); this.bind('runCoins', run.coins);
       $('[data-bind="combo"]').classList.remove('show');
       this.setReadyHint(true);
@@ -58,7 +55,22 @@
       $('#boss-bar').classList.toggle('show', !!isBoss);
       $('#hud-progress').classList.toggle('boss', !!isBoss);
       if (isBoss) { this.bind('bossName', HR.t('boss_' + run.level.boss)); $('[data-bind="bossIcon"]').innerHTML = HR.icon(HR.BOSSES[run.level.boss].icon); this.fill('bossFill', 1 - run.ringsPassed / run.level.rings); }
+      this.hudCache();
       this.startHudLoop();
+    },
+    // O laço do HUD procurava 24 elementos por quadro (querySelector força
+    // recálculo de estilo quando o quadro anterior escreveu no DOM). Agora eles
+    // são achados uma vez, aqui e em renderGear/renderAbilityButtons.
+    hudCache() {
+      const E = this.hudEls || (this.hudEls = {});
+      E.screen = $('#screen-hud');
+      E.vignette = $('#fx-vignette');
+      E.jets = $('#hud-jets');
+      E.aegis = $('#gear-aegis');
+      E.aegisCd = E.aegis && E.aegis.querySelector('.gb-cd');
+      E.aegisCount = E.aegis && E.aegis.querySelector('.gb-count');
+      E.abs = $$('#hud-abilities .ab-btn').map(btn => ({ btn, cd: $('.ab-cd', btn), slot: +btn.dataset.slot }));
+      return E;
     },
     hudScore(run, perfect) {
       const sc = $('[data-bind="score"]'); sc.textContent = run.score; sc.classList.remove('pop'); void sc.offsetWidth; sc.classList.add('pop');
@@ -120,6 +132,7 @@
         host.appendChild(btn);
       });
       host.classList.toggle('two', run.abilities.length > 1);
+      if (this.hudEls) this.hudCache();   // os botões são novos: refaz o cache do laço
     },
     // Égide (botão com contador e recarga) e Jatos (só antes do 1º arco)
     renderGear(run) {
@@ -143,6 +156,7 @@
       });
       jets.innerHTML = jh;
       $$('.jet-btn', jets).forEach(btn => btn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); this.game.useJet(btn.dataset.jet); }));
+      if (this.hudEls) this.hudCache();   // a Égide foi redesenhada: o cache aponta para o botão novo
     },
     hudAbilityFx(info) {
       const btn = $$('#hud-abilities .ab-btn')[info.slot]; if (!btn) return;
@@ -176,19 +190,6 @@
         this.banner(HR.t(info.ok ? 'ev_done' : info.id === 'guardian' ? 'ev_escaped' : 'ev_fail'), sub, info.ok ? E.color : '#8d97b3');
       }
     },
-    updateStick() {
-      const hud = $('#screen-hud'), on = this.game.controlMode() === 'stick';
-      hud.classList.toggle('stick-on', on);
-      if (!on) return;
-      const S = HR.Input.stick, st = this.game.state, live = st === 'playing' || st === 'ready' || st === 'transition';
-      const el = $('#hud-stick'), knob = $('#stick-knob'), T = 34, m = Math.min(1, Math.hypot(S.x, S.y));
-      el.classList.toggle('held', S.active && live);
-      el.classList.toggle('dim', live && this.game.run.autoT > 0 && !this.game.run.anomalyActive);
-      const x = S.active ? S.x * T : 0, y = S.active ? S.y * T : 0;
-      const tr = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
-      if (knob._tr !== tr) { knob._tr = tr; knob.style.transform = tr; }
-      this.setVar(el, '--m', (S.active ? m : 0).toFixed(2));
-    },
     // escreve a variavel de estilo so quando o valor muda: escrever igual
     // invalida o estilo da arvore inteira sem motivo
     setVar(el, name, value) {
@@ -202,31 +203,34 @@
       const tick = () => {
         this.hudRaf = null;
         if (this.current !== 'hud') return;
-        const run = this.game.run;
-        $$('#hud-abilities .ab-btn').forEach(btn => {
-          const ab = run.abilities[+btn.dataset.slot]; if (!ab) return;
+        const run = this.game.run, E = this.hudEls || this.hudCache();
+        E.abs.forEach(a => {
+          const ab = run.abilities[a.slot]; if (!ab) return;
           const total = HR.Abilities.cooldown(ab.id, run);
           const p = total > 0 ? 1 - ab.cd / total : 1;
-          this.setVar(btn, '--p', p.toFixed(3));
-          btn.classList.toggle('ready', ab.cd <= 0);
-          btn.classList.toggle('active', ab.active > 0);
-          const cd = $('.ab-cd', btn); if (cd) cd.textContent = ab.cd > 0 ? Math.ceil(ab.cd) : '';
+          this.setVar(a.btn, '--p', p.toFixed(3));
+          a.btn.classList.toggle('ready', ab.cd <= 0);
+          a.btn.classList.toggle('active', ab.active > 0);
+          // comparar antes de escrever: escrever o mesmo texto invalida o estilo à toa
+          if (a.cd) { const txt = ab.cd > 0 ? String(Math.ceil(ab.cd)) : ''; if (a.cd.textContent !== txt) a.cd.textContent = txt; }
         });
-        const gb = $('#gear-aegis');
+        const gb = E.aegis;
         if (gb) {
           const G = HR.GEAR.consumables.aegis, n = HR.Consumables.count('aegis'), active = run.aegisT > 0, cd = run.aegisCd > 0;
           gb.classList.toggle('active', active); gb.classList.toggle('ending', active && run.aegisT < 3); gb.classList.toggle('cd', cd);
           gb.classList.toggle('empty', !active && !cd && n <= 0); gb.classList.toggle('ready', !active && !cd && n > 0 && this.game.state === 'playing');
           this.setVar(gb, '--p', active ? (run.aegisT / G.dur).toFixed(3) : cd ? (1 - run.aegisCd / G.cd).toFixed(3) : '1');
-          const cdEl = gb.querySelector('.gb-cd'), txt = cd ? String(Math.ceil(run.aegisCd)) : active ? String(Math.ceil(run.aegisT)) : ''; if (cdEl.textContent !== txt) cdEl.textContent = txt;
-          const ce = gb.querySelector('.gb-count'); if (ce.textContent !== String(n)) ce.textContent = n;
+          const cdEl = E.aegisCd, txt = cd ? String(Math.ceil(run.aegisCd)) : active ? String(Math.ceil(run.aegisT)) : ''; if (cdEl && cdEl.textContent !== txt) cdEl.textContent = txt;
+          const ce = E.aegisCount; if (ce && ce.textContent !== String(n)) ce.textContent = n;
         }
-        const jetsEl = $('#hud-jets'); if (jetsEl) jetsEl.classList.toggle('show', !!jetsEl.childElementCount && (!run.jetUsed || run.jetLeft > 0) && run.ringsResolved === 0 && (this.game.state === 'ready' || this.game.state === 'playing'));
-        this.updateStick();
-        this.setVar($('#screen-hud'), '--flow', run.flowV.toFixed(2));
+        const jetsEl = E.jets; if (jetsEl) jetsEl.classList.toggle('show', !!jetsEl.childElementCount && (!run.jetUsed || run.jetLeft > 0) && run.ringsResolved === 0 && (this.game.state === 'ready' || this.game.state === 'playing'));
+        // --flow entra em text-shadow e box-shadow (css/hud.css): escrever a cada
+        // quadro repintava sombras a 60 Hz. Um passo de 0,05 nao se ve.
+        const fl = Math.round(run.flowV * 20) / 20;
+        this.setVar(E.screen, '--flow', fl.toFixed(2));
         this.hudPowers(run);
         const ev = this.game.event; if (ev && ev.dur) this.fill('evFill', 1 - ev.t / ev.dur); else if (ev && ev.id === 'guardian') this.fill('evFill', 1 - ev.passed / 3);
-        const v = $('#fx-vignette');
+        const v = E.vignette;
         v.classList.toggle('slowmo', run.slowmoT > 0);
         v.classList.toggle('ghost', run.ghostT > 0);
         v.classList.toggle('freeze', run.freezeT > 0);
@@ -280,31 +284,6 @@
       $('#btn-perk-reroll').style.display = HR.Ads.isRewardedReady() ? '' : 'none';
     },
 
-    // v5.1: troca de controle sem sair da partida (botão no HUD, tecla C e seletor na pausa)
-    CONTROLS: [['relative', 'ctrlDrag']],
-    setControl(mode, silent) {
-      const d = HR.Store.data; d.settings.control = mode;
-      if (d.stats5) { d.stats5.controlsUsed = d.stats5.controlsUsed || []; if (!d.stats5.controlsUsed.includes(mode)) d.stats5.controlsUsed.push(mode); }
-      HR.Store.save(); HR.Input.reset(); this.updateStick(); this.refreshControlBtn();
-      const c = this.CONTROLS.find(x => x[0] === mode);
-      if (!silent) { HR.Audio.sfx('click'); this.toast(HR.icon(c[1]) + ' ' + HR.t('control') + ': ' + HR.t('control_' + mode)); }
-    },
-    cycleControl() { const cur = this.game.controlMode(), i = this.CONTROLS.findIndex(c => c[0] === cur); this.setControl(this.CONTROLS[(i + 1) % this.CONTROLS.length][0]); },
-    refreshControlBtn() {
-      const b = $('#btn-ctrl'); if (!b) return;
-      const m = this.game.controlMode(), c = this.CONTROLS.find(x => x[0] === m) || this.CONTROLS[0];
-      b.innerHTML = '<span class="ic">' + HR.icon(c[1]) + '</span>';
-      b.setAttribute('data-tip', HR.t('control') + ': ' + HR.t('control_' + m)); b.setAttribute('aria-label', HR.t('control'));
-    },
-    renderPauseControl() {
-      const host = $('#pause-ctrl'); if (!host) return;
-      const m = this.game.controlMode(); host.innerHTML = '';
-      this.CONTROLS.forEach(([mode, ic]) => {
-        const b = HR.U.el('button', 'pc-opt' + (mode === m ? ' active' : ''), HR.icon(ic) + '<span>' + HR.t('control_' + mode) + '</span>'); b.type = 'button';
-        b.addEventListener('click', e => { e.stopPropagation(); this.setControl(mode, true); HR.Audio.sfx('click'); this.renderPauseControl(); });
-        host.appendChild(b);
-      });
-    },
     refreshAutoPerk() {
       const el = $('#perk-auto'); if (!el) return;
       const run = this.game.run, ok = run.perksOffered >= HR.CONFIG.AUTOPERK.afterOffers;
@@ -350,13 +329,15 @@
       sh.style.display = level.sg ? 'none' : '';
       const next = level.sg ? HR.Singularity.nextLevel(level) : HR.Campaign.next(level.id);
       $('#btn-le-next').style.display = (s.success && next && (level.sg ? HR.Singularity.canPlay(next.id) : HR.Campaign.isUnlocked(next.id))) ? '' : 'none';
-      if (level.sg && s.sgEcoNew && HR.UI.showEco) setTimeout(() => HR.UI.showEco(level.archon, level.passage), 900);
-      if (level.sg && out && out.passed && HR.UI.showArchonAfter) setTimeout(() => HR.UI.showArchonAfter(level.archon, out), 1200);
+      // endTimer: quem toca "Proxima" antes de 1,2 s nao leva o cartao para dentro
+      // da partida nova (o modal prendia o toque de inicio)
+      if (level.sg && s.sgEcoNew && HR.UI.showEco) this.endTimer(() => HR.UI.showEco(level.archon, level.passage), 900);
+      if (level.sg && out && out.passed && HR.UI.showArchonAfter) this.endTimer(() => HR.UI.showArchonAfter(level.archon, out), 1200);
       this.setBase('levelend');
       if (s.success) { HR.Audio.sfx('win'); HR.U.vibrate([30, 40, 30, 40, 60]); if (stars === 3) setTimeout(() => HR.Audio.sfx('levelup'), 700); }
       else HR.Audio.sfx('error');
       res.ach.forEach((a, i) => this.achToast(a, i));
-      if (res.ups.length) { this.pendingUps = res.ups; setTimeout(() => this.nextLevelUp(true), 1200); }
+      if (res.ups.length) { this.pendingUps = res.ups; this.endTimer(() => this.nextLevelUp(true), 1200); }
       HR.Audio.setIntensity(0.1);
     },
     levelEndNext() {

@@ -121,11 +121,10 @@
 
 /* ---------- navegadores sem color-mix(): fundos simples para continuar legível ---------- */
 @supports not (color: color-mix(in srgb, red 50%, blue)) {
-  .gx-disc { background: radial-gradient(circle at 35% 30%, #ffffff 0%, var(--wa) 45%, #1a1f33 100%); }
   .shop-featured { background: linear-gradient(135deg, rgba(76,240,255,0.14), rgba(0,0,0,0.3)); }
   .shop-card { background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03)); }
   .shop-ab, .gear-card { background: linear-gradient(180deg, rgba(22,30,62,0.95), rgba(10,14,32,0.95)); }
-  .lv-node.is-done .lv-circle, .lv-detail-num, .sg-pass-node.done { background: var(--wa, #4cf0ff); }
+  .sg-pass-node.done { background: var(--wa, #4cf0ff); }
   .sg-dots em.trial.half { background: rgba(255,207,74,0.6); }
   .sg-layer.is-passed, .sg-opt:hover { background: rgba(255,255,255,0.06); }
   .tr-sheet-card, .trophy-pop { background: linear-gradient(180deg, #151d42, #080c1e); }
