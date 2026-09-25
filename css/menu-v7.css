@@ -287,3 +287,15 @@
 .barreira-card .gate-bar { height: 6px; border-radius: 3px; }
 .barreira-card .gate-bar span, .bar-seal .gate-bar span { background: #ffcf4a; }
 .bar-seal.ok .gate-bar span { background: #35e29a; }
+
+/* ===== v9: provar antes de comprar ===== */
+.shop-detail-art .provar-cena { display: block; margin: 0 auto; border-radius: 16px; box-shadow: 0 6px 0 rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(255,255,255,0.08); }
+.shop-detail-art .provar-legenda { display: block; margin-top: 6px; font-size: 11px; color: var(--muted); text-align: center; }
+.provar-btn { width: 100%; margin: 4px 0 8px; }
+.provar-btn .ic svg { color: #4cf0ff; }
+#provar-faixa { position: absolute; left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 64px); z-index: 60; display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; border-radius: 18px; background: rgba(9,13,30,0.92); box-shadow: 0 4px 0 rgba(0,0,0,0.4), inset 0 0 0 1.5px rgba(76,240,255,0.45); }
+#provar-faixa .provar-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+#provar-faixa .provar-txt small { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #4cf0ff; }
+#provar-faixa .provar-txt b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#provar-faixa .btn { flex: none; }
+.shop-detail-art.provar-art { display: flex; flex-direction: column; align-items: center; width: 100%; height: auto; min-height: 0; }
