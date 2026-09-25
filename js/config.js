@@ -7,12 +7,13 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '8.1.0',
+  VERSION: '9.0.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
   LEGACY_SAVE_KEY: 'halorush.save.v1',
-  SHARE_URL: 'https://playorbo.app',      // troque pelo link da loja / site
+  SHARE_URL: 'https://loginlumus-prog.github.io/orbo/',
+  PRIVACY_URL: 'https://loginlumus-prog.github.io/politica-de-privacidade.html',
   WORLD_H: 800,                            // altura lógica do mundo (px)
   MAX_ASPECT: 0.85,                        // largura/altura máxima (desktop vira "celular")
 

@@ -460,8 +460,8 @@ window.HR = window.HR || {};
     a.ceu(ctx, W, H, '#8fd0ff', p.ato, 77, [0.5, 0.26], { estrelas: 14 });
     // o olhar: um cone morno e estreito, em dois degraus — ele abre para o
     // ceu, mas o ceu e que e o assunto, nao o cone
-    const py = base - H * 0.085;
-    [[0.24, 0.05], [0.13, 0.06]].forEach(c => {
+    const py = base - H * 0.12;
+    [[0.26, 0.07], [0.14, 0.09]].forEach(c => {
       ctx.fillStyle = u.rgba('#ffe2a8', c[1]);
       ctx.beginPath(); ctx.moveTo(cx, py - H * 0.03);
       ctx.lineTo(cx - W * c[0], H * 0.05); ctx.lineTo(cx + W * c[0], H * 0.05); ctx.closePath(); ctx.fill();
@@ -470,9 +470,9 @@ window.HR = window.HR || {};
     chao(ctx, W, H, base + H * 0.03, '#8fd0ff', lw, H * 0.09);
     // quem olha: uma marca minuscula, sem rosto e sem poder nenhum.
     // Este e o unico brilho difuso do card.
-    a.discoLuz(ctx, cx, py, H * 0.08, '#ffe2a8', 0.55);
+    a.discoLuz(ctx, cx, py, H * 0.14, '#ffe2a8', 0.6);
     const corpo = () => {
-      const b = H * 0.014, h = H * 0.042;
+      const b = H * 0.03, h = H * 0.09;
       ctx.beginPath();
       ctx.moveTo(cx - b * 0.55, py - h * 0.35);
       ctx.quadraticCurveTo(cx - b * 1.5, py + h * 0.7, cx - b * 1.1, py + h * 0.75);
@@ -480,8 +480,9 @@ window.HR = window.HR || {};
       ctx.quadraticCurveTo(cx + b * 1.5, py + h * 0.7, cx + b * 0.55, py - h * 0.35);
       ctx.closePath();
     };
-    a.forma(ctx, corpo, { base: '#ffe2a8', sombra: '#d9a35e', lw: lw * 0.8 });
-    a.forma(ctx, a.circ(ctx, cx, py - H * 0.048, H * 0.017), { base: '#fff6df', sombra: '#ffc98a', lw: lw * 0.8 });
+    a.forma(ctx, corpo, { base: '#ffe2a8', sombra: '#d9a35e', lw });
+    // a cabeca virada para cima: o rosto nao aparece, o gesto sim
+    a.forma(ctx, a.circ(ctx, cx, py - H * 0.075, H * 0.036), { base: '#fff6df', sombra: '#ffc98a', luz: '#ffffff', lw });
   };
 
   /* 16. pontoazul — "um ponto azul, pequeno, cheio de gente olhando".
@@ -491,13 +492,20 @@ window.HR = window.HR || {};
     a.ceu(ctx, W, H, '#20304f', p.ato, 79, [0.62, 0.44], { estrelas: 10 });
     // o feixe: uma faixa chapada atravessada
     ctx.save(); ctx.translate(W * 0.55, H * 0.5); ctx.rotate(0.9);
-    ctx.fillStyle = u.rgba('#ffd9a0', 0.07); ctx.fillRect(-H, -H * 0.16, H * 2, H * 0.32);
-    ctx.fillStyle = u.rgba('#ffd9a0', 0.09); ctx.fillRect(-H, -H * 0.07, H * 2, H * 0.14);
+    ctx.fillStyle = u.rgba('#ffd9a0', 0.1); ctx.fillRect(-H, -H * 0.16, H * 2, H * 0.32);
+    ctx.fillStyle = u.rgba('#ffd9a0', 0.14); ctx.fillRect(-H, -H * 0.07, H * 2, H * 0.14);
     ctx.restore();
     const px = W * 0.62, py = H * 0.44;
     a.cunhas(ctx, px, py, H * 0.018, 4, '#cfeaff', lw, { longo: 6, curto: 6, larg: 0.4, contorno: false, alt: false });
     a.discoLuz(ctx, px, py, H * 0.09, '#8fd0ff', 0.9);
-    a.forma(ctx, a.circ(ctx, px, py, Math.max(2.8, H * 0.011)), { base: '#9fd8ff', sombra: '#4aa0e0', lw: lw * 0.6 });
+    // o ponto: continua pequeno (e o que a frase diz), mas agora e um mundo —
+    // azul, com terra e com o brilho de desenho
+    const pr = Math.max(4, H * 0.032);
+    a.forma(ctx, a.circ(ctx, px, py, pr), { base: '#5fb4ff', sombra: '#2f6fcf', luz: '#dff2ff', lw: lw * 0.7 });
+    ctx.save(); a.circ(ctx, px, py, pr)(); ctx.clip();
+    ctx.fillStyle = '#6fd67a'; ctx.beginPath(); ctx.ellipse(px - pr * 0.35, py - pr * 0.1, pr * 0.42, pr * 0.28, 0.5, 0, TAU); ctx.ellipse(px + pr * 0.45, py + pr * 0.4, pr * 0.3, pr * 0.2, -0.3, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(px - pr * 0.4, py - pr * 0.45, pr * 0.24, pr * 0.13, -0.7, 0, TAU); ctx.fill();
   };
 
   /* 17. espiral — "girava como algo que ja girou muito, e ainda assim era nova". */

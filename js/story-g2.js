@@ -91,7 +91,7 @@ Object.assign(HR.I18N.pt, {
   st_g2b6_rQ: 'Para todos. Eu sou a hora de todo mundo.',
   st_g2b6_rF: 'Você não seria a primeira a tentar.',
 
-  st_g2b7_1: '~A cometa passou rasgando. A maré inteira desencontrou.',
+  st_g2b7_1: '~Íris passou rasgando. A maré inteira desencontrou.',
   st_g2b7_ask: 'Viu o que uma pressa faz?',
   st_g2b7_oU: 'Vi. Eu ajudo a acertar.',
   st_g2b7_oQ: 'Quem vai consertar?',
@@ -115,7 +115,7 @@ Object.assign(HR.I18N.pt, {
   st_g2b9_oF: 'Pela frente. Como todo mundo.',
   st_g2b9_rU: 'Acordar não é nascer. Você dormiu muito.',
   st_g2b9_rQ: 'Dormindo eu conto melhor. E não te contei.',
-  st_g2b9_rF: 'Pela frente eu vi entrar quatro marés. Você, não.',
+  st_g2b9_rF: 'Pela frente eu vejo todo mundo entrar. Você, não.',
 
   /* ---------------- chefe da galáxia ---------------- */
   st_g2b10_k: 'Leviatã',
@@ -223,7 +223,7 @@ Object.assign(HR.I18N.en, {
   st_g2b6_rQ: 'For everyone. I am everyone’s hour.',
   st_g2b6_rF: 'You would not be the first to try.',
 
-  st_g2b7_1: '~The comet tore through. The whole tide fell out of step.',
+  st_g2b7_1: '~Iris tore through. The whole tide fell out of step.',
   st_g2b7_ask: 'See what hurry does?',
   st_g2b7_oU: 'I see. I will help fix it.',
   st_g2b7_oQ: 'Who will fix it?',
@@ -247,7 +247,7 @@ Object.assign(HR.I18N.en, {
   st_g2b9_oF: 'Through the front. Like everyone.',
   st_g2b9_rU: 'Waking is not being born. You slept a long time.',
   st_g2b9_rQ: 'Asleep, I count better. And I did not count you.',
-  st_g2b9_rF: 'Through the front I saw four tides come in. Not you.',
+  st_g2b9_rF: 'I see everyone come in through the front. Not you.',
 
   st_g2b10_k: 'Leviathan',
   st_g2b10_1: '~The whole tide rises. You cannot pierce it: you can rise with it.',
@@ -353,7 +353,7 @@ Object.assign(HR.I18N.es, {
   st_g2b6_rQ: 'Para todos. Soy la hora de todos.',
   st_g2b6_rF: 'No serías la primera en intentarlo.',
 
-  st_g2b7_1: '~La cometa pasó rasgando. Toda la marea se desacompasó.',
+  st_g2b7_1: '~Iris pasó rasgando. Toda la marea se desacompasó.',
   st_g2b7_ask: '¿Viste lo que hace una prisa?',
   st_g2b7_oU: 'Lo vi. Ayudo a acomodarla.',
   st_g2b7_oQ: '¿Quién va a arreglarlo?',
@@ -377,7 +377,7 @@ Object.assign(HR.I18N.es, {
   st_g2b9_oF: 'Por el frente. Como todos.',
   st_g2b9_rU: 'Despertar no es nacer. Dormiste mucho.',
   st_g2b9_rQ: 'Dormido cuento mejor. Y a ti no te conté.',
-  st_g2b9_rF: 'Por el frente vi entrar cuatro mareas. A ti, no.',
+  st_g2b9_rF: 'Por el frente veo entrar a todos. A ti, no.',
 
   st_g2b10_k: 'Leviatán',
   st_g2b10_1: '~Toda la marea sube. No se puede atravesar: se puede subir con ella.',

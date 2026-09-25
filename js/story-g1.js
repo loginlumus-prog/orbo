@@ -72,7 +72,7 @@ Object.assign(HR.I18N.pt, {
   st_g1b1_oU: 'Para onde a falta aponta.',
   st_g1b1_oQ: 'Para fora. Tem um fora?',
   st_g1b1_oF: 'Para o meio do escuro.',
-  st_g1b1_rU: 'Devagar é como se chega longe.',
+  st_g1b1_rU: 'Falta aponta longe. Vá devagar.',
   st_g1b1_rQ: 'Tem. É por isso que eu não quero que vá.',
   st_g1b1_rF: 'O escuro também já ouviu isso.',
 
@@ -227,7 +227,7 @@ Object.assign(HR.I18N.en, {
   st_g1b1_oU: 'Where the absence points.',
   st_g1b1_oQ: 'Out. Is there an out?',
   st_g1b1_oF: 'Into the middle of the dark.',
-  st_g1b1_rU: 'Slowly is how you get far.',
+  st_g1b1_rU: 'A lack points far. Go slowly.',
   st_g1b1_rQ: 'There is. That is why I do not want you to go.',
   st_g1b1_rF: 'The dark has heard that before.',
 
@@ -380,7 +380,7 @@ Object.assign(HR.I18N.es, {
   st_g1b1_oU: 'Adonde apunta la falta.',
   st_g1b1_oQ: 'Afuera. ¿Hay un afuera?',
   st_g1b1_oF: 'Al medio de lo oscuro.',
-  st_g1b1_rU: 'Despacio es como se llega lejos.',
+  st_g1b1_rU: 'La falta apunta lejos. Ve despacio.',
   st_g1b1_rQ: 'Lo hay. Por eso no quiero que vayas.',
   st_g1b1_rF: 'Lo oscuro también ya oyó eso.',
 

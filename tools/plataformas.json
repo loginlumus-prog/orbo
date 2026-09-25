@@ -1,0 +1,6 @@
+{
+  "_leia": "Links de apoio. Deixe vazio enquanto a pagina do jogo nao existir: o botao so aparece quando ha link. Depois de preencher, rode de novo: node tools/build.js",
+  "crazygames": {},
+  "itch": { "apoio": "" },
+  "newgrounds": { "apoio": "" }
+}

@@ -41,7 +41,7 @@ Object.assign(HR.I18N.pt, {
   st_g6v6_who: 'casco', st_g6v6_k: 'O primeiro sintoma',
   st_g6v6_1: 'Estes anéis estão mais apertados que os do Berço.',
   st_g6v6_2: '@faisca Aqui é só mais difícil.',
-  st_g6v6_3: 'Não é a fase. O risco está mais fundo. Alguém aperta mais.',
+  st_g6v6_3: 'Não é o lugar. O risco está mais fundo. Alguém aperta mais.',
   st_g6v6_4: '@faisca Ou segura mais forte.',
   st_g6v6_5: '…Menina. Você está começando a ler.',
 
@@ -80,7 +80,7 @@ Object.assign(HR.I18N.pt, {
   st_g6b3_rQ: 'Vejo em partes. Você vê inteiro. Me conta depois.',
   st_g6b3_rF: '@poeira Você olhou. Eu vi.',
 
-  st_g6b4_1: '~Uma fase inteira sem nada: poucos anéis, devagar. Só o ponto azul, ao fundo.',
+  st_g6b4_1: '~Um trecho inteiro sem nada: poucos anéis, devagar. Só o ponto azul, ao fundo.',
   st_g6b4_ask: 'O que você fez com o silêncio?',
   st_g6b4_oU: 'Olhei. Eles olharam de volta.',
   st_g6b4_oQ: 'Era para fazer alguma coisa?',
@@ -90,7 +90,7 @@ Object.assign(HR.I18N.pt, {
   st_g6b4_rF: 'Eles não passam. Eles olham. Você ia gostar deles.',
 
   st_g6b5_k: 'Íris, de longe',
-  st_g6b5_ask: 'Uma cometa passou por mim faz pouco. Saiu numa cor só. Amiga sua?',
+  st_g6b5_ask: 'Uma luz de cometa passou por mim faz pouco. Saiu numa cor só. Amiga sua?',
   st_g6b5_oU: 'Amiga. Ela era de várias.',
   st_g6b5_oQ: 'Uma cor só é ruim?',
   st_g6b5_oF: 'Ela é rápida. Não é minha.',
@@ -167,7 +167,7 @@ Object.assign(HR.I18N.pt, {
   st_g6c_5: '~Na margem, a outra letra, leve:',
   st_g6c_6: '@ancora olha para cima de vez em quando',
   st_g6c_7: '@poeira As duas. Na mesma folha.',
-  st_g6c_8: '@casco Duas letras. Uma folha só.'
+  st_g6c_8: '@casco Então eles ainda escrevem juntos.'
 });
 
 Object.assign(HR.I18N.en, {
@@ -195,7 +195,7 @@ Object.assign(HR.I18N.en, {
   st_g6v6_who: 'casco', st_g6v6_k: 'The first symptom',
   st_g6v6_1: 'These rings are tighter than the ones in the Cradle.',
   st_g6v6_2: '@faisca It is just harder here.',
-  st_g6v6_3: 'It is not the level. The scratch is deeper. Someone is gripping harder.',
+  st_g6v6_3: 'It is not this place. The scratch is deeper. Someone is gripping harder.',
   st_g6v6_4: '@faisca Or holding on tighter.',
   st_g6v6_5: '…Kid. You are starting to read.',
 
@@ -233,7 +233,7 @@ Object.assign(HR.I18N.en, {
   st_g6b3_rQ: 'I see it in parts. You see it whole. Tell me later.',
   st_g6b3_rF: '@poeira You looked. I saw.',
 
-  st_g6b4_1: '~A whole level with nothing in it: few rings, slow. Only the blue dot, far behind.',
+  st_g6b4_1: '~A whole stretch with nothing in it: few rings, slow. Only the blue dot, far behind.',
   st_g6b4_ask: 'What did you do with the silence?',
   st_g6b4_oU: 'I looked. They looked back.',
   st_g6b4_oQ: 'Was I supposed to do something?',
@@ -243,7 +243,7 @@ Object.assign(HR.I18N.en, {
   st_g6b4_rF: 'They do not pass. They look. You would like them.',
 
   st_g6b5_k: 'Iris, from far away',
-  st_g6b5_ask: 'A comet crossed me a while back. Came out in one color. Friend of yours?',
+  st_g6b5_ask: 'A comet light crossed me a while back. Came out in one color. Friend of yours?',
   st_g6b5_oU: 'A friend. She was many.',
   st_g6b5_oQ: 'Is one color bad?',
   st_g6b5_oF: 'She is fast. She is not mine.',
@@ -318,7 +318,7 @@ Object.assign(HR.I18N.en, {
   st_g6c_5: '~In the margin, the other hand, light:',
   st_g6c_6: '@ancora look up once in a while',
   st_g6c_7: '@poeira Both. On the same page.',
-  st_g6c_8: '@casco Two hands. One page.'
+  st_g6c_8: '@casco So they still write together.'
 });
 
 Object.assign(HR.I18N.es, {
@@ -346,7 +346,7 @@ Object.assign(HR.I18N.es, {
   st_g6v6_who: 'casco', st_g6v6_k: 'El primer síntoma',
   st_g6v6_1: 'Estos aros están más apretados que los de la Cuna.',
   st_g6v6_2: '@faisca Aquí solo es más difícil.',
-  st_g6v6_3: 'No es el nivel. La raya está más honda. Alguien aprieta más.',
+  st_g6v6_3: 'No es el lugar. La raya está más honda. Alguien aprieta más.',
   st_g6v6_4: '@faisca O sujeta más fuerte.',
   st_g6v6_5: '…Niña. Estás empezando a leer.',
 
@@ -384,7 +384,7 @@ Object.assign(HR.I18N.es, {
   st_g6b3_rQ: 'Lo veo en partes. Tú lo ves entero. Cuéntame después.',
   st_g6b3_rF: '@poeira Miraste. Yo lo vi.',
 
-  st_g6b4_1: '~Un nivel entero sin nada: pocos aros, despacio. Solo el punto azul, al fondo.',
+  st_g6b4_1: '~Un tramo entero sin nada: pocos aros, despacio. Solo el punto azul, al fondo.',
   st_g6b4_ask: '¿Qué hiciste con el silencio?',
   st_g6b4_oU: 'Miré. Ellos miraron de vuelta.',
   st_g6b4_oQ: '¿Había que hacer algo?',
@@ -394,7 +394,7 @@ Object.assign(HR.I18N.es, {
   st_g6b4_rF: 'Ellos no pasan. Miran. Te caerían bien.',
 
   st_g6b5_k: 'Iris, de lejos',
-  st_g6b5_ask: 'Una cometa me cruzó hace poco. Salió en un solo color. ¿Amiga tuya?',
+  st_g6b5_ask: 'Una luz de cometa me cruzó hace poco. Salió en un solo color. ¿Amiga tuya?',
   st_g6b5_oU: 'Amiga. Ella era de varios.',
   st_g6b5_oQ: '¿Un solo color es malo?',
   st_g6b5_oF: 'Es rápida. No es mía.',
@@ -469,5 +469,5 @@ Object.assign(HR.I18N.es, {
   st_g6c_5: '~En el margen, la otra letra, leve:',
   st_g6c_6: '@ancora mira hacia arriba de vez en cuando',
   st_g6c_7: '@poeira Las dos. En la misma hoja.',
-  st_g6c_8: '@casco Dos letras. Una sola hoja.'
+  st_g6c_8: '@casco Entonces todavía escriben juntos.'
 });

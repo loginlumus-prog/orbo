@@ -37,9 +37,12 @@ window.HR = window.HR || {};
   A.bubble = (ctx, x, y, R, sk, t, u) => {
     inside(ctx, x, y, R, () => {
       for (let k = 0; k < 18; k++) { const a0 = k * TAU / 18 + t * 0.4; ctx.strokeStyle = u.hsl(Math.round((k * 20 + t * 60) % 360), 90, 70, 0.26); ctx.lineWidth = R * 0.2; ctx.beginPath(); ctx.arc(x, y, R * 0.92, a0, a0 + TAU / 18 + 0.02); ctx.stroke(); }
-      const g = ctx.createRadialGradient(x, y, R * 0.2, x, y, R); g.addColorStop(0, 'rgba(255,255,255,0.02)'); g.addColorStop(1, 'rgba(255,255,255,0.12)'); ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+      const g = ctx.createRadialGradient(x, y, R * 0.2, x, y, R); g.addColorStop(0, 'rgba(255,255,255,0.02)'); g.addColorStop(1, u.rgba(sk.color, 0.16)); ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
     });
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.stroke();
+    // a bolha ignorava a cor do item: Coral saia identica a Bolha. O aro agora
+    // leva a cor (clareada), e a pelicula por dentro tambem
+    ctx.strokeStyle = u.rgba(sk.color, 0.25); ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(x, y, R + 0.5, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = u.rgba(u.mix(sk.color, '#ffffff', 0.45), 0.9); ctx.lineWidth = 1.8; ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(x - R * 0.42, y - R * 0.48, R * 0.16, R * 0.08, -0.7, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.arc(x + R * 0.5, y + R * 0.45, R * 0.05, 0, TAU); ctx.fill();
   };

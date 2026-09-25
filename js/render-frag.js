@@ -163,28 +163,86 @@ window.HR = window.HR || {};
   /* ---------------- 1. o ceu ---------------- */
   // fundo chapado na cor do ato, clareira em degraus e uma grade de pontos.
   // foco = [x, y] em fracao: onde a clareira fica (o assunto do card)
+  // v9: o ceu de desenho animado. Cada ato tem o seu ceu (antes todos eram
+  // o mesmo azul-escuro chapado), com nuvens de contorno, um planeta ao longe
+  // e estrelas de quatro pontas. A clareira e a grade de pontos continuam: a
+  // clareira aponta o assunto, a grade e a retícula de gibi.
+  const CEU = { 1: ['#2d78b3', '#0c1a36'], 2: ['#6f3fa3', '#170c2e'], 3: ['#b04052', '#210b18'], 4: ['#b98f3c', '#1d1428'] };
+  function nuvem(ctx, x, y, s, cor, lw) {
+    const u = U(), bolas = [[0, 0, 1], [-0.9, 0.25, 0.72], [0.95, 0.2, 0.78], [-0.35, -0.45, 0.7], [0.45, -0.38, 0.62]];
+    const caminho = () => { ctx.beginPath(); bolas.forEach(b => { ctx.moveTo(x + b[0] * s + b[2] * s, y + b[1] * s); ctx.arc(x + b[0] * s, y + b[1] * s, b[2] * s, 0, TAU); }); };
+    ctx.save();
+    caminho(); ctx.strokeStyle = u.rgba(ESC, 0.45); ctx.lineWidth = lw * 2.2; ctx.stroke();
+    caminho(); ctx.fillStyle = u.rgba(cor, 0.9); ctx.fill();
+    // sombra chapada embaixo e brilho em cima: o volume de desenho
+    ctx.save(); caminho(); ctx.clip();
+    ctx.fillStyle = u.rgba(ESC, 0.16); ctx.fillRect(x - s * 2.2, y + s * 0.28, s * 4.4, s * 1.4);
+    ctx.fillStyle = u.rgba('#ffffff', 0.22); ctx.beginPath(); ctx.ellipse(x - s * 0.35, y - s * 0.55, s * 0.9, s * 0.32, -0.15, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+  }
+  function planeta(ctx, x, y, r, cor, lw) {
+    const u = U();
+    ctx.save(); ctx.lineCap = 'round';
+    // o anel de tras
+    ctx.strokeStyle = ESC; ctx.lineWidth = lw * 2.4; ctx.beginPath(); ctx.ellipse(x, y, r * 1.75, r * 0.5, -0.35, Math.PI, TAU); ctx.stroke();
+    ctx.strokeStyle = u.mix(cor, '#ffffff', 0.45); ctx.lineWidth = lw * 1.2; ctx.beginPath(); ctx.ellipse(x, y, r * 1.75, r * 0.5, -0.35, Math.PI, TAU); ctx.stroke();
+    forma(ctx, circ(ctx, x, y, r), { base: u.mix(cor, '#ffffff', 0.18), sombra: u.mix(cor, '#000000', 0.35), luz: u.rgba('#ffffff', 0.7), lw });
+    // faixa do planeta
+    ctx.save(); circ(ctx, x, y, r)(); ctx.clip(); ctx.fillStyle = u.rgba('#ffffff', 0.16); ctx.fillRect(x - r, y - r * 0.18, r * 2, r * 0.22); ctx.restore();
+    // o anel da frente
+    ctx.strokeStyle = ESC; ctx.lineWidth = lw * 2.4; ctx.beginPath(); ctx.ellipse(x, y, r * 1.75, r * 0.5, -0.35, 0, Math.PI); ctx.stroke();
+    ctx.strokeStyle = u.mix(cor, '#ffffff', 0.45); ctx.lineWidth = lw * 1.2; ctx.beginPath(); ctx.ellipse(x, y, r * 1.75, r * 0.5, -0.35, 0, Math.PI); ctx.stroke();
+    ctx.restore();
+  }
   function ceu(ctx, W, H, cor, ato, semente, foco, o) {
-    const u = U(), tom = tomAto(ato); o = o || {};
-    ctx.fillStyle = u.mix(tom, cor, 0.10); ctx.fillRect(0, 0, W, H);
+    const u = U(); o = o || {};
+    const par = CEU[ato] || CEU[1], alto = u.mix(par[0], cor, 0.28), baixo = par[1], lw = LW(H) * 0.7;
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, alto); g.addColorStop(0.58, u.mix(baixo, alto, 0.4)); g.addColorStop(1, baixo);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     const fx = W * (foco ? foco[0] : 0.5), fy = H * (foco ? foco[1] : 0.46);
-    // a clareira: tres degraus chapados, o de dentro um pouco mais forte
+    // retícula de gibi: pontos que crescem para baixo
+    const passo = Math.max(7, H * 0.05);
+    for (let j = 0, y = passo * 0.6; y < H; y += passo, j++) {
+      const k = y / H, pt = Math.max(0.8, H * (0.002 + k * 0.005));
+      ctx.fillStyle = u.rgba('#000000', 0.06 + k * 0.08);
+      for (let x = passo * (j % 2 ? 0.5 : 1); x < W; x += passo) { ctx.beginPath(); ctx.arc(x, y, pt, 0, TAU); ctx.fill(); }
+    }
+    // o planeta ao longe, num canto que nao e o do assunto
+    if (o.planeta !== false && rnd(semente * 1.7) > 0.55) {
+      // lado sorteado; se o assunto estiver daquele lado, vai para o outro
+      let esq = rnd(semente * 4.9) > 0.5;
+      if (esq && fx < W * 0.4) esq = false; else if (!esq && fx > W * 0.6) esq = true;
+      const px = W * (esq ? 0.15 : 0.85), py = H * (0.17 + rnd(semente * 2.3) * 0.08);
+      planeta(ctx, px, py, H * (0.04 + rnd(semente * 3.1) * 0.018), u.mix(cor, par[0], 0.4), lw);
+    }
+    // nuvens: duas, nas beiradas de baixo, longe do assunto
+    if (o.nuvens !== false) {
+      const cn = u.mix(par[0], '#ffffff', 0.22);
+      [[0.1, 0.86], [0.9, 0.9], [0.5, 0.97]].forEach((c, i) => {
+        if (i === 2 && rnd(semente + 9) < 0.5) return;
+        if (Math.abs(c[0] * W - fx) < W * 0.2 && Math.abs(c[1] * H - fy) < H * 0.25) return;
+        nuvem(ctx, W * c[0], H * c[1], H * (0.075 + rnd(semente + i * 4.1) * 0.03), cn, lw);
+      });
+    }
+    // a clareira: tres degraus chapados, claros, em volta do assunto
     if (o.clareira !== false) {
-      [[1.05, 0.045], [0.72, 0.05], [0.42, 0.06]].forEach(c => {
-        ctx.fillStyle = u.rgba(cor, c[1]);
+      [[1.05, 0.06], [0.72, 0.07], [0.42, 0.08]].forEach(c => {
+        ctx.fillStyle = u.rgba(u.mix(cor, '#ffffff', 0.35), c[1]);
         ctx.beginPath(); ctx.ellipse(fx, fy, H * c[0] * 1.15, H * c[0] * 0.82, 0, 0, TAU); ctx.fill();
       });
     }
-    // a grade de pontos: textura de papel impresso, e custa quase nada
-    const passo = Math.max(7, H * 0.055), pt = Math.max(1, H * 0.004);
-    ctx.fillStyle = u.rgba('#ffffff', 0.075);
-    for (let j = 0, y = passo * 0.6; y < H; y += passo, j++) {
-      for (let x = passo * (j % 2 ? 0.6 : 1.1); x < W; x += passo) ctx.fillRect(x, y, pt, pt);
-    }
-    // umas poucas estrelas de quatro pontas, so em cima, nunca no assunto
-    const n = o.estrelas == null ? 7 : o.estrelas;
+    // estrelas de quatro pontas, maiores, algumas na cor do card
+    const n = o.estrelas == null ? 9 : o.estrelas;
     for (let i = 0; i < n; i++) {
-      const x = W * (0.08 + rnd(semente + i * 3.1) * 0.84), y = H * (0.06 + rnd(semente + i * 7.7) * 0.30);
-      estrela(ctx, x, y, H * (0.008 + rnd(semente + i * 5.3) * 0.010), i % 3 ? '#ffffff' : cor, 0.55);
+      const x = W * (0.06 + rnd(semente + i * 3.1) * 0.88), y = H * (0.05 + rnd(semente + i * 7.7) * 0.4);
+      if (Math.abs(x - fx) < H * 0.22 && Math.abs(y - fy) < H * 0.2) continue;
+      estrela(ctx, x, y, H * (0.012 + rnd(semente + i * 5.3) * 0.018), i % 3 ? '#ffffff' : u.mix(cor, '#ffffff', 0.5), 0.9);
+    }
+    for (let i = 0; i < 14; i++) {
+      ctx.fillStyle = u.rgba('#ffffff', 0.35 + rnd(semente + i * 1.3) * 0.4);
+      ctx.beginPath(); ctx.arc(W * rnd(semente + i * 2.9), H * rnd(semente + i * 6.1) * 0.55, Math.max(0.8, H * 0.004), 0, TAU); ctx.fill();
     }
   }
 
@@ -446,6 +504,10 @@ window.HR = window.HR || {};
     ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
     ctx.strokeStyle = u.rgba('#ffffff', 0.85 - L * 0.3); ctx.lineWidth = lw * 0.55;
     ctx.beginPath(); ctx.arc(x, y, r - lw * 0.9, -2.7, -1.1); ctx.stroke();
+    // v9: o reflexo de desenho animado — uma gota branca e um ponto
+    ctx.fillStyle = u.rgba('#ffffff', 0.8 - L * 0.35);
+    ctx.beginPath(); ctx.ellipse(x - r * 0.38, y - r * 0.42, r * 0.24, r * 0.13, -0.7, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x - r * 0.12, y - r * 0.6, r * 0.06, 0, TAU); ctx.fill();
     ctx.restore();
   }
 
@@ -513,10 +575,13 @@ window.HR = window.HR || {};
     ctx.save();
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     // a sombra da borda (por baixo), a borda, e a hairline de dentro
-    ctx.strokeStyle = u.rgba(ESC, 0.7); ctx.lineWidth = lw * 3.2;
+    ctx.strokeStyle = u.rgba(ESC, 0.85); ctx.lineWidth = lw * 4.6;
     rr(ctx, m, mt, W - 2 * m, H - mt - m, R * 0.7); ctx.stroke();
-    ctx.strokeStyle = cor; ctx.lineWidth = lw * 1.5;
+    ctx.strokeStyle = cor; ctx.lineWidth = lw * 2.6;
     rr(ctx, m, mt, W - 2 * m, H - mt - m, R * 0.7); ctx.stroke();
+    // v9: o bisel da moldura, um fio claro em cima da faixa (volume de desenho)
+    ctx.strokeStyle = u.rgba(u.mix(cor, '#ffffff', 0.6), 0.75); ctx.lineWidth = lw * 0.8;
+    rr(ctx, m - lw * 0.45, mt - lw * 0.45, W - 2 * m, H - mt - m, R * 0.7); ctx.stroke();
     const mi = m + lw * 3.4, mti = mt + lw * 3.4;
     ctx.strokeStyle = u.rgba(cor, 0.42); ctx.lineWidth = lw * 0.7;
     rr(ctx, mi, mti, W - 2 * mi, H - mti - mi, Math.max(2, R * 0.45)); ctx.stroke();

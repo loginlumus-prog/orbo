@@ -35,7 +35,10 @@ window.HR = window.HR || {};
   // cauda: gota alongada a partir de (0,0) no sentido +x; bend curva a ponta para +y
   function tail(ctx, len, w, bend, col, a) {
     ctx.fillStyle = rgba(col, a);
-    ctx.beginPath(); ctx.moveTo(0, -w);
+    // a base da cauda era um corte reto em x=0: aparecia como uma linha vertical
+    // em cima e embaixo do nucleo. Agora ela nasce redonda, por tras da coma.
+    ctx.beginPath(); ctx.moveTo(0, w);
+    ctx.arc(0, 0, w, Math.PI / 2, Math.PI * 1.5, false);
     ctx.quadraticCurveTo(len * 0.45, -w * 0.85 + bend * 0.4, len, bend);
     ctx.quadraticCurveTo(len * 0.45, w * 0.85 + bend * 0.4, 0, w);
     ctx.closePath(); ctx.fill();
@@ -101,12 +104,11 @@ window.HR = window.HR || {};
     coma(ctx, cr, sk.base, sk.glow, cm === 'atlas3i' ? 0.7 : 0.92);
     ctx.lineCap = 'round';
     if (cm === 'halley') {
-      // nucleo escuro em forma de amendoim, com jatos claros do lado do sol (+x)
-      ctx.save(); ctx.rotate(rot * 0.12);
-      ctx.fillStyle = sk.dark; ctx.beginPath(); ctx.ellipse(-r * 0.1, 0, r * 0.2, r * 0.13, 0.2, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(r * 0.12, r * 0.03, r * 0.16, r * 0.11, -0.3, 0, TAU); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = r * 0.04;
-      for (let i = 0; i < 3; i++) { const a = (i - 1) * 0.45 + Math.sin(t * 2 + i) * 0.1; ctx.beginPath(); ctx.moveTo(r * 0.2, 0); ctx.lineTo(r * 0.2 + Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45); ctx.stroke(); }
-      ctx.restore();
+      // o nucleo escuro com tres riscos brancos lia como um inseto dentro da
+      // coma. Halley agora tem o nucleo claro dos outros, com um halo azul fino
+      // do gas — o que o diferencia e a cauda dupla, nao o miolo.
+      ctx.strokeStyle = rgba(ion, 0.45); ctx.lineWidth = r * 0.05; ctx.beginPath(); ctx.arc(0, 0, r * 0.3, 0, TAU); ctx.stroke();
+      circle(ctx, 0, 0, r * 0.17, '#ffffff');
     } else if (cm === 'atlas3i') {
       // jatos finos de gas saindo do nucleo, girando devagar
       ctx.strokeStyle = rgba(sk.ion || '#bffff0', 0.6); ctx.lineWidth = r * 0.035;
@@ -178,7 +180,7 @@ window.HR = window.HR || {};
   /* ================= Errante: planeta sem estrela ================= */
   S.rogue = function (ctx, r, sk, t) {
     const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.05, 0, 0, r);
-    g.addColorStop(0, U().mix(sk.base, '#8fb8ff', 0.22)); g.addColorStop(0.55, sk.base); g.addColorStop(1, sk.dark);
+    g.addColorStop(0, U().mix(sk.base, '#8fb8ff', 0.4)); g.addColorStop(0.55, U().mix(sk.base, '#8fb8ff', 0.12)); g.addColorStop(1, sk.dark);
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
     ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
     // faixas quase invisiveis, andando devagar
@@ -203,7 +205,9 @@ window.HR = window.HR || {};
     });
     ctx.restore();
     // luz fria das estrelas de longe, so na borda
-    ctx.strokeStyle = rgba('#8fb8ff', 0.2); ctx.lineWidth = r * 0.05; ctx.beginPath(); ctx.arc(0, 0, r * 0.96, Math.PI * 1.12, Math.PI * 1.62); ctx.stroke();
+    // a bola nao pode sumir no fundo: um contorno frio inteiro, mais forte do lado da luz
+    ctx.strokeStyle = rgba('#8fb8ff', 0.28); ctx.lineWidth = Math.max(1, r * 0.05); ctx.beginPath(); ctx.arc(0, 0, r * 0.97, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = rgba('#cfe2ff', 0.45); ctx.lineWidth = Math.max(1, r * 0.06); ctx.beginPath(); ctx.arc(0, 0, r * 0.96, Math.PI * 1.1, Math.PI * 1.65); ctx.stroke();
   };
 
   /* ================= RASTROS ================= */
@@ -211,12 +215,12 @@ window.HR = window.HR || {};
 
   // aneis pequenos, como os arcos do jogo, que ficam para tras e desbotam
   T.rings = (ctx, pts, sk, t, heat) => {
-    const u = U(), n = pts.length, st = lite() ? 4 : 3;
+    const u = U(), n = pts.length, st = lite() ? 3 : 2;
     for (let i = n - 2; i >= 0; i -= st) {
-      const p = pts[i], k = i / n, age = t - p.t, rr = (3 + k * 8) * (1 + heat * 0.4), tilt = Math.sin(age * 2.2 + i) * 0.55, a = Math.min(1, k * 1.1) * Math.max(0, 1 - age * 0.9);
+      const p = pts[i], k = i / n, age = t - p.t, rr = (5 + k * 11) * (1 + heat * 0.4), tilt = Math.sin(age * 2.2 + i) * 0.55, a = Math.min(1, 0.25 + k * 1.1) * Math.max(0, 1 - age * 0.9);
       if (a <= 0) continue;
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(tilt);
-      ctx.strokeStyle = u.rgba(sk.glow, a * 0.85); ctx.lineWidth = 1.4 + k * 1.6; ctx.beginPath(); ctx.ellipse(0, 0, rr * 0.3, rr, 0, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = u.rgba(sk.glow, a * 0.9); ctx.lineWidth = 1.8 + k * 1.8; ctx.beginPath(); ctx.ellipse(0, 0, rr * 0.32, rr, 0, 0, TAU); ctx.stroke();
       ctx.strokeStyle = u.rgba('#ffffff', a * 0.6); ctx.lineWidth = 0.8; ctx.beginPath(); ctx.ellipse(0, 0, rr * 0.3, rr, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
       ctx.restore();
     }
@@ -238,13 +242,13 @@ window.HR = window.HR || {};
 
   // fagulhas que sobem, estalam e apagam
   T.sparks = (ctx, pts, sk, t, heat) => {
-    const u = U(), n = pts.length, st = lite() ? 3 : 2, b = Math.floor(t * 20);
+    const u = U(), n = pts.length, st = lite() ? 2 : 1, b = Math.floor(t * 20);
     ctx.lineCap = 'round';
     for (let i = n - 2; i >= 0; i -= st) {
       const p = pts[i], k = i / n, age = t - p.t, h = hash(i, 1), vx = (h - 0.5) * 60, vy = -40 - hash(i, 2) * 70;
       const a = Math.max(0, 1 - age * 1.5) * Math.min(1, k * 1.3 + 0.2) * (hash(i, b) > 0.15 ? 1 : 0.2);
       if (a <= 0) continue;
-      const x = p.x + vx * age, y = p.y + vy * age + age * age * 60, col = age < 0.15 ? '#ffffff' : age < 0.35 ? '#ffe27a' : age < 0.55 ? '#ff9a3d' : '#ff4a1a', s = (1.2 + k * 1.4) * (1 + heat * 0.5);
+      const x = p.x + vx * age, y = p.y + vy * age + age * age * 60, col = age < 0.15 ? '#ffffff' : age < 0.35 ? '#ffe27a' : age < 0.55 ? '#ff9a3d' : '#ff4a1a', s = (1.8 + k * 2.2) * (1 + heat * 0.5);
       ctx.strokeStyle = u.rgba(col, a * 0.7); ctx.lineWidth = s * 0.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - vx * 0.08, y - (vy + age * 120) * 0.08); ctx.stroke();
       ctx.fillStyle = u.rgba(col, a); ctx.beginPath(); ctx.arc(x, y, s, 0, TAU); ctx.fill();
     }
@@ -268,11 +272,11 @@ window.HR = window.HR || {};
   T.shards = (ctx, pts, sk, t) => {
     const u = U(), n = pts.length, st = lite() ? 3 : 2;
     for (let i = n - 2; i >= 0; i -= st) {
-      const p = pts[i], k = i / n, age = t - p.t, h = hash(i, 3), s = 2.5 + k * 5, a = Math.min(1, k * 1.2);
+      const p = pts[i], k = i / n, age = t - p.t, h = hash(i, 3), s = 3.5 + k * 6.5, a = Math.min(1, 0.2 + k * 1.2);
       ctx.save(); ctx.translate(p.x + (h - 0.5) * 14, p.y + (hash(i, 4) - 0.5) * 10 + age * age * 40); ctx.rotate(age * (h - 0.5) * 8 + i);
       ctx.beginPath(); ctx.moveTo(-s, s * 0.6); ctx.lineTo(-s * 0.2, -s); ctx.lineTo(s, -s * 0.4); ctx.lineTo(s * 0.4, s * 0.8); ctx.closePath();
-      ctx.fillStyle = u.rgba(sk.glow, a * 0.3); ctx.fill();
-      ctx.strokeStyle = u.rgba('#ffffff', a * (0.5 + 0.5 * Math.abs(Math.sin(age * 6 + i)))); ctx.lineWidth = 0.9; ctx.stroke();
+      ctx.fillStyle = u.rgba(sk.glow, a * 0.45); ctx.fill();
+      ctx.strokeStyle = u.rgba('#ffffff', a * (0.6 + 0.4 * Math.abs(Math.sin(age * 6 + i)))); ctx.lineWidth = 1.2; ctx.stroke();
       ctx.restore();
     }
   };
@@ -305,8 +309,8 @@ window.HR = window.HR || {};
   // lanternas de papel subindo, balancando
   T.lanterns = (ctx, pts, sk, t) => {
     const u = U(), n = pts.length;
-    for (let i = n - 3; i >= 0; i -= 4) {
-      const p = pts[i], k = i / n, age = t - p.t, s = 3.5 + k * 5, a = Math.min(1, k * 1.3) * Math.max(0, 1 - age * 0.55), glow = 0.7 + 0.3 * Math.sin(t * 7 + i);
+    for (let i = n - 3; i >= 0; i -= 3) {
+      const p = pts[i], k = i / n, age = t - p.t, s = 4.5 + k * 6, a = Math.min(1, 0.2 + k * 1.3) * Math.max(0, 1 - age * 0.55), glow = 0.7 + 0.3 * Math.sin(t * 7 + i);
       if (a <= 0) continue;
       ctx.save(); ctx.translate(p.x + Math.sin(age * 2 + i) * 6, p.y - age * 42); ctx.rotate(Math.sin(age * 2.5 + i) * 0.2);
       // corpo aceso
@@ -340,12 +344,12 @@ window.HR = window.HR || {};
 
   // espirais que se desenrolam e somem
   T.spiral = (ctx, pts, sk, t, heat) => {
-    const u = U(), n = pts.length, st = lite() ? 6 : 5;
+    const u = U(), n = pts.length, st = lite() ? 5 : 4;
     ctx.lineCap = 'round';
     for (let i = n - 3; i >= 0; i -= st) {
-      const p = pts[i], k = i / n, age = t - p.t, a = Math.min(1, k * 1.3) * Math.max(0, 1 - age * 0.8);
+      const p = pts[i], k = i / n, age = t - p.t, a = Math.min(1, 0.2 + k * 1.3) * Math.max(0, 1 - age * 0.8);
       if (a <= 0) continue;
-      const turns = Math.max(0.6, 2.4 - age * 1.6), rad = (5 + age * 26) * (1 + heat * 0.4), rot = age * 3 + i;
+      const turns = Math.max(0.6, 2.4 - age * 1.6), rad = (7 + age * 30) * (1 + heat * 0.4), rot = age * 3 + i;
       ctx.beginPath();
       for (let j = 0; j <= 22; j++) { const f = j / 22, an = rot + f * turns * TAU, rr = f * rad; j ? ctx.lineTo(p.x + Math.cos(an) * rr, p.y + Math.sin(an) * rr) : ctx.moveTo(p.x, p.y); }
       ctx.strokeStyle = u.rgba(sk.glow, a * 0.3); ctx.lineWidth = 4.5; ctx.stroke();
@@ -374,8 +378,8 @@ window.HR = window.HR || {};
   // mariposas: asas cor de poeira, voo tremido, antenas de pluma
   T.moth = (ctx, pts, sk, t) => {
     const u = U(), n = pts.length, wing = u.mix('#d8c9a8', sk.glow, 0.18);
-    for (let i = n - 3; i >= 0; i -= 4) {
-      const p = pts[i], k = i / n, age = t - p.t, s = 3.5 + k * 5.5, a = Math.min(1, k * 1.2) * Math.max(0, 1 - age * 0.5), flap = 0.2 + 0.8 * Math.abs(Math.sin(t * 21 + i * 1.3));
+    for (let i = n - 3; i >= 0; i -= 3) {
+      const p = pts[i], k = i / n, age = t - p.t, s = 4.5 + k * 6.5, a = Math.min(1, 0.2 + k * 1.2) * Math.max(0, 1 - age * 0.5), flap = 0.2 + 0.8 * Math.abs(Math.sin(t * 21 + i * 1.3));
       if (a <= 0) continue;
       ctx.save(); ctx.translate(p.x + Math.sin(age * 7 + i) * 7, p.y - age * 22 + Math.cos(age * 5 + i) * 6); ctx.rotate(Math.sin(age * 3 + i) * 0.4 - 0.3);
       [-1, 1].forEach(sd => {

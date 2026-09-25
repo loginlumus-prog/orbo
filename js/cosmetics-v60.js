@@ -81,7 +81,7 @@
     T.embers = (ctx, pts, sk, t, heat) => {
       const u = U(), n = pts.length;
       for (let i = 0; i < n; i++) {
-        const k = i / n, p = pts[i], s = (1 + k * 3.5) * (1 + heat * 0.7);
+        const k = i / n, p = pts[i], s = (1.6 + k * 4) * (1 + heat * 0.7);
         const hot = (i % 3 === 0);
         ctx.fillStyle = u.rgba(hot ? sk.glow : '#6b6157', Math.min(1, k * (hot ? 0.95 : 0.55)));
         ctx.beginPath(); ctx.arc(p.x + Math.sin(t * 4 + i) * 2, p.y - (1 - k) * 10 + Math.cos(t * 3 + i) * 2, s, 0, Math.PI * 2); ctx.fill();
@@ -90,10 +90,11 @@
     // ondas de sonar que se abrem para trás
     T.sonar = (ctx, pts, sk, t, heat) => {
       const u = U(), n = pts.length;
-      for (let i = 2; i < n; i += 4) {
-        const k = i / n, p = pts[i], rr = (4 + (1 - k) * 26) * (1 + heat * 0.4);
-        ctx.strokeStyle = u.rgba(sk.glow, Math.min(1, k * 0.5)); ctx.lineWidth = 2 * k + 0.6;
-        ctx.beginPath(); ctx.arc(p.x, p.y, rr, -0.9, 0.9); ctx.stroke();
+      // as ondas abrem PARA TRAS (antes abriam para a frente, contra o movimento)
+      for (let i = 2; i < n; i += 3) {
+        const k = i / n, p = pts[i], rr = (6 + (1 - k) * 30) * (1 + heat * 0.4);
+        ctx.strokeStyle = u.rgba(sk.glow, Math.min(1, 0.18 + k * 0.7)); ctx.lineWidth = 1.2 + 2 * k;
+        ctx.beginPath(); ctx.arc(p.x, p.y, rr, Math.PI - 0.95, Math.PI + 0.95); ctx.stroke();
       }
     };
   }

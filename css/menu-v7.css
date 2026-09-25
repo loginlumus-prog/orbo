@@ -237,3 +237,53 @@
 }
 
 .dock-chip[hidden] { display: none; }
+
+/* ===== plataforma: de onde vem a gema, e o apoio (itch/newgrounds) ===== */
+.plat-gemas { margin: 6px 0 12px; padding: 14px 16px; border-radius: 20px; background: var(--glass); box-shadow: inset 0 0 0 1.5px var(--stroke); }
+.plat-gemas h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 14px; }
+.plat-gemas h4 .ic, .plat-gemas h4 svg { width: 18px; height: 18px; color: #c39bff; }
+.plat-gemas ul { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.plat-apoio { margin: 12px 0; padding: 14px 16px; border-radius: 20px; text-align: center; background: rgba(255, 94, 154, 0.08); box-shadow: inset 0 0 0 1.5px rgba(255, 94, 154, 0.28); }
+.plat-apoio b { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+.plat-apoio b svg { width: 18px; height: 18px; color: #ff5e9a; }
+.plat-apoio p { margin: 6px 0 10px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+
+/* ===== v9: Forja (loja, aba Itens) ===== */
+.forja { margin: 2px 0 14px; padding: 12px; border-radius: 20px; background: linear-gradient(160deg, rgba(255,207,74,0.10), rgba(10,14,32,0.94) 55%); box-shadow: 0 4px 0 rgba(0,0,0,0.42), inset 0 0 0 1.5px rgba(255,207,74,0.30); }
+.forja-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.forja-top > div { display: flex; flex-direction: column; min-width: 0; }
+.forja-top b { font-size: 17px; line-height: 1.2; color: #ffe39a; }
+.forja-top small { font-size: 11.5px; color: var(--muted); }
+.forja-card { --ac: #4cf0ff; display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; padding: 12px; margin-top: 8px; border-radius: 16px; background: rgba(9,13,30,0.72); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.07); }
+.forja-card > .btn { grid-column: 1 / -1; }
+.forja-info { min-width: 0; }
+.forja-info b { display: flex; align-items: baseline; gap: 8px; font-size: 15px; }
+.forja-nv { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.forja-pips { display: flex; gap: 4px; margin: 6px 0 6px; }
+.forja-pips i { width: 22px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.10); }
+.forja-pips i.on { background: var(--ac); box-shadow: 0 0 8px var(--ac); }
+.forja-lista { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.55; color: var(--muted); }
+.forja-lista li.feito { color: #cfe9ff; text-decoration: line-through; text-decoration-color: rgba(207,233,255,0.35); }
+.forja-lista li.prox { color: #ffffff; font-weight: 700; }
+
+/* ===== v9: Barreira (mapa e ficha do sistema) ===== */
+.barreira-card { --ac: #4cf0ff; text-align: left; }
+.barreira-card .bar-head { display: flex; align-items: center; gap: 12px; }
+.barreira-card .bar-head > div { display: flex; flex-direction: column; }
+.barreira-card .bar-num { font-size: 30px; line-height: 1.1; }
+.barreira-card .bar-num small { font-size: 16px; color: var(--muted); }
+.barreira-card .gate-bar { display: block; margin: 12px 0 10px; }
+.barreira-card .bar-txt { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.barreira-card .bar-partes { list-style: none; margin: 0 0 14px; padding: 0; }
+.barreira-card .bar-partes li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; margin-bottom: 4px; border-radius: 12px; background: rgba(255,255,255,0.04); font-size: 13px; }
+.barreira-card .bar-partes li svg { width: 18px; height: 18px; color: var(--ac); flex: none; }
+.barreira-card .bar-partes li span { flex: 1; }
+.barreira-card .bar-fenda { margin: 6px 0 10px; font-size: 12px; text-align: center; color: #ffe39a; }
+.barreira-card .row { display: flex; gap: 8px; margin-top: 8px; }
+.barreira-card .row .btn { flex: 1; }
+.barreira-card .bar-fechar { display: block; margin: 10px auto 0; }
+.seal-card.bar-seal { width: 100%; text-align: left; font: inherit; color: inherit; border: 0; cursor: pointer; }
+.btn-cashout .ic svg { color: #ffcf4a; }
+.barreira-card .gate-bar { height: 6px; border-radius: 3px; }
+.barreira-card .gate-bar span, .bar-seal .gate-bar span { background: #ffcf4a; }
+.bar-seal.ok .gate-bar span { background: #35e29a; }

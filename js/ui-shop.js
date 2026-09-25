@@ -92,10 +92,22 @@
     const skin = p.type === 'skins' ? p.item : equippedSkin();
     const ring = p.big ? { x: cx, y: cy, r: r * 1.9, tilt: Math.sin(t * 0.5 + p.seed) * 0.6, accent: rarColor(rarity(p.type, p.item.id)), flash: 0, hit: false } : null;
     if (ring) HR.Render.drawRing(ctx, ring, 'back', {});
-    if (p.type === 'trails' && p.item.id !== 'none') {
-      const pts = [];
-      for (let i = 0; i < 16; i++) { const k = 16 - i; pts.push({ x: cx - k * S * 0.045, y: cy + Math.sin(t * 2 + p.seed - k * 0.25) * S * 0.04, t: t - k * 0.03 }); }
-      HR.Render.drawTrail(ctx, p.item.id, pts, skin, t);
+    if (p.type === 'trails') {
+      // o rastro da vitrine nasce do mesmo jeito que no jogo: um ponto por quadro,
+      // o mundo andando para tras. Antes eram 16 pontos num trecho curto, e os
+      // rastros feitos de pecas soltas (sonar, aneis, lanternas) quase sumiam.
+      const bx = cx + S * 0.14, dt = 1 / 60, pts = [], vel = S * 4.6;
+      let tt = t - 0.6, by = cy;
+      for (let f = 0; f < 36; f++) {
+        tt += dt; by = cy + Math.sin(tt * 2.6 + p.seed) * S * 0.1;
+        pts.push({ x: bx, y: by, t: tt }); if (pts.length > 22) pts.shift();
+        for (const q of pts) q.x -= vel * dt * 0.55;
+      }
+      const last = pts[pts.length - 1];
+      if (p.item.id !== 'none') HR.Render.drawTrail(ctx, p.item.id, pts, skin, tt);
+      HR.Render.drawBall(ctx, last.x, last.y, r * 0.78, skin, t + p.seed, { vy: Math.cos(tt * 2.6 + p.seed) * S * 0.13 * 2.6 * 3 });
+      if (ring) HR.Render.drawRing(ctx, ring, 'front', {});
+      return;
     }
     HR.Render.drawBall(ctx, cx, cy + fy, r, skin, t + p.seed, { vy: Math.cos(t * 2 + p.seed) * 140 });
     if (ring) HR.Render.drawRing(ctx, ring, 'front', {});

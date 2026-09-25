@@ -26,7 +26,7 @@ Object.assign(HR.I18N.pt, {
   st_g7_oQ: 'Linha fecha?',
   st_g7_oF: 'É a tempestade. Está longe.',
   st_g7_rU: 'Eu também não. Agora está dito.',
-  st_g7_rQ: 'Fecha. Os riscos dizem que alguém segura para não.',
+  st_g7_rQ: 'Fecha. Pelos riscos, alguém segura para não fechar.',
   st_g7_rF: 'Eu li anéis a vida inteira. Não é a tempestade.',
 
   /* ---------------- visitas ---------------- */
@@ -124,7 +124,7 @@ Object.assign(HR.I18N.pt, {
   st_g7b7_1: '@iris Você parou de novo. Por mim.',
   st_g7b7_2: '@faisca Eu paro quantas vezes for.',
   st_g7b7_3: '@iris …Você é esquisita.',
-  st_g7b7_4: '@faisca Você já disse isso. Na Maré.',
+  st_g7b7_4: '@faisca Eu sei.',
   st_g7b7_ask: 'Ela esquentou um grau. Você sentiu?',
   st_g7b7_oU: 'Senti. Nas costas.',
   st_g7b7_oQ: 'Frio volta a ser quente?',
@@ -197,7 +197,7 @@ Object.assign(HR.I18N.en, {
   st_g7_oQ: 'Can a line close?',
   st_g7_oF: 'It is the storm. It is far.',
   st_g7_rU: 'Neither did I. Now it is said.',
-  st_g7_rQ: 'It closes. The scratches say someone holds it open.',
+  st_g7_rQ: 'It closes. By the scratches, someone holds it so it won’t.',
   st_g7_rF: 'I read rings my whole life. It is not the storm.',
 
   st_g7v2_k: 'The voice returns',
@@ -293,7 +293,7 @@ Object.assign(HR.I18N.en, {
   st_g7b7_1: '@iris You stopped again. For me.',
   st_g7b7_2: '@faisca I will stop as many times as it takes.',
   st_g7b7_3: '@iris …You are strange.',
-  st_g7b7_4: '@faisca You said that already. In the Tide.',
+  st_g7b7_4: '@faisca I know.',
   st_g7b7_ask: 'She warmed by one degree. Did you feel it?',
   st_g7b7_oU: 'I felt it. On my back.',
   st_g7b7_oQ: 'Does cold turn warm again?',
@@ -364,7 +364,7 @@ Object.assign(HR.I18N.es, {
   st_g7_oQ: '¿Una línea se cierra?',
   st_g7_oF: 'Es la tormenta. Está lejos.',
   st_g7_rU: 'Yo tampoco. Ya está dicho.',
-  st_g7_rQ: 'Se cierra. Las rayas dicen que alguien la sujeta abierta.',
+  st_g7_rQ: 'Se cierra. Por las rayas, alguien la sujeta para que no.',
   st_g7_rF: 'Leí aros toda mi vida. No es la tormenta.',
 
   st_g7v2_k: 'La voz vuelve',
@@ -460,7 +460,7 @@ Object.assign(HR.I18N.es, {
   st_g7b7_1: '@iris Paraste otra vez. Por mí.',
   st_g7b7_2: '@faisca Paro las veces que haga falta.',
   st_g7b7_3: '@iris …Eres rara.',
-  st_g7b7_4: '@faisca Ya lo dijiste. En la Marea.',
+  st_g7b7_4: '@faisca Lo sé.',
   st_g7b7_ask: 'Ella calentó un grado. ¿Lo sentiste?',
   st_g7b7_oU: 'Lo sentí. En la espalda.',
   st_g7b7_oQ: '¿Lo frío vuelve a ser caliente?',

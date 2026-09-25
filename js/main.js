@@ -12,6 +12,8 @@
   }
 
   async function boot() {
+    // CrazyGames: o SDK tem de estar pronto antes do save (o save pode vir de la)
+    if (HR.Platform && HR.Platform.ready) { try { await HR.Platform.ready; } catch (_) { /* segue sem */ } }
     HR.Store.load();
     if (HR.Perf) HR.Perf.init();
     if (HR.Campaign && HR.Campaign.backfill) HR.Campaign.backfill();
@@ -113,7 +115,8 @@
     if (HR.Daily.status().canClaim && HR.Store.data.runs > 0) setTimeout(() => HR.UI.toast(HR.icon('gift') + ' ' + HR.t('daily_reward'), 'good'), 600);
 
     const isLocal = /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/.test(location.hostname);
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !isLocal) navigator.serviceWorker.register('sw.js').catch(() => {});
+    const noPortal = HR.Platform && HR.Platform.portal;   // portal serve de outro dominio, num iframe: cache proprio so atrapalha
+    if (!noPortal && 'serviceWorker' in navigator && location.protocol.startsWith('http') && !isLocal) navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
