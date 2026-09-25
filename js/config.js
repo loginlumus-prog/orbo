@@ -7,7 +7,7 @@
 window.HR = window.HR || {};
 
 HR.CONFIG = {
-  VERSION: '8.0.0',
+  VERSION: '8.1.0',
   NAME: 'ORBO',
   TAGLINE: { pt: 'Atravesse a galáxia.', en: 'Cross the galaxy.', es: 'Cruza la galaxia.' },
   SAVE_KEY: 'orbo.save.v3',
@@ -109,6 +109,36 @@ HR.CONFIG = {
     guardian:  { dur: 0,  color: '#c3b8ff', icon: 'crown', coins: 30, score: 10, sizes: [2.0, 1.6, 1.25] }
   },
   EVENT: { endlessFrom: 18, every: [22, 30], warnMin: 1.2 },
+
+  // A ordem em que os eventos entram no jogo, e a fase exata da estreia de
+  // cada um (gi = indice global da fase, 0 a 999; gi 2 e a fase 1-1-3).
+  // Regra: nenhum evento estreia num chefe (li 9) nem na primeira fase de
+  // um sistema; o primeiro da vida da pessoa e o mais amigavel de todos.
+  EVENT_POOL: [
+    'cauda', 'bonanza', 'filao', 'warp', 'cofre', 'asteroids', 'enxame',
+    'guardian', 'silencio', 'escolha', 'linha', 'sentinel', 'fenda',
+    'cometa', 'mare'
+  ],
+  // o raro fica FORA do baralho: entra so nas fases da regra abaixo,
+  // cerca de uma em cada quarenta. E o evento que se conta para os amigos.
+  EVENT_RARO: { id: 'gemas', li: 7, cada: 4 },
+  EVENT_ESTREIA: {
+    cauda:     2,    // 1-1-3  a cauda na diagonal: moedas e tres pedras
+    bonanza:   5,    // 1-1-6  chuva de moedas
+    filao:     12,   // 1-2-3  a veia de ouro, com multiplicador
+    warp:      15,   // 1-2-6  tudo acelera
+    cofre:     22,   // 1-3-3  tres passagens e ele arrebenta
+    asteroids: 25,   // 1-3-6  o primeiro que cobra desvio
+    enxame:    32,   // 1-4-3  o Cardume paga o perfeito
+    guardian:  35,   // 1-4-6  tres aneis grandes
+    silencio:  44,   // 1-5-5  a respirada, com pontos em dobro
+    escolha:   102,  // 2-1-3  tres orbes, so um
+    linha:     132,  // 2-4-3  dois aneis e um fio de moedas
+    sentinel:  205,  // 3-1-6  o olho que atira
+    fenda:     242,  // 3-5-3  o rasgo que jorra e fecha
+    cometa:    304,  // 4-1-5  a esteira da Iris
+    mare:      502   // 6-1-3  a luz acaba em volta
+  },
   COMBO_MILESTONES: [5, 10, 20, 35],
   // Temporadas (mês-dia, inclusive). HR.SEASON_FORCE = 'natal' força uma para teste.
   SEASONS: [

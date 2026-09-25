@@ -132,11 +132,48 @@ HR.CONTRACTS_FIXED = 5;
       if (m === 'narrow') P.radius *= 0.9; else if (m === 'dense') P.tbMul *= 0.9; else if (m === 'wind') P.tiltVar = Math.max(P.tiltVar, 0.25) + 0.1;
       else if (m === 'pairs') P.dbl += 0.15; else if (m === 'bursts') P.burst = Math.max(P.burst, 0.2);
     });
-    // eventos: fases 3/6/9 a partir da 21ª; duas por fase no fim do jogo; chefes: um entre as ondas (galáxia: a lista toda)
-    const EV = ['asteroids', 'warp', 'sentinel', 'bonanza', 'guardian'];
+    /* ---------------- eventos (v8) ----------------
+       Antes: nada antes da 21a fase, e so nas fases 3/6/9. As 19 primeiras
+       fases do jogo — as unicas que quase todo mundo joga — eram anel atras
+       de anel, sem nada acontecendo, e o primeiro evento da vida da pessoa
+       caia num CHEFE. Agora cada evento novo estreia numa fase calma, e a
+       partir dai entra no sorteio. Uma fase sim, uma fase nao no comeco;
+       duas por fase no fim. */
     const events = [];
-    if (!isBoss && gi >= 20 && (li === 2 || li === 5 || li === 8)) events.push({ at: Math.round(rings * 0.45), id: EV[(ri * 2 + si * 3 + li) % 5] });
-    if (!isBoss && g > 0.3 && li >= 6) events.push({ at: Math.round(rings * 0.78), id: EV[(ri * 2 + si + li + 3) % 5] });
+    if (!isBoss) {
+      const EST = HR.CONFIG.EVENT_ESTREIA || {};
+      // quem ja estreou ate esta fase entra no sorteio desta galaxia
+      // so entra quem existe de verdade em CONFIG.EVENTS: se o arquivo dos
+      // eventos novos nao carregar, a fase continua valida, so mais vazia
+      const baralho = (HR.CONFIG.EVENT_POOL || ['asteroids', 'warp', 'sentinel', 'bonanza', 'guardian'])
+        .filter(id => HR.CONFIG.EVENTS[id] && gi >= (EST[id] === undefined ? 0 : EST[id]));
+      // a estreia: a fase exata em que o evento aparece pela primeira vez
+      const estreia = Object.keys(EST).filter(id => EST[id] === gi && HR.CONFIG.EVENTS[id]);
+      // o raro: fora do baralho, numa fase a cada quarenta. Nao substitui o
+      // evento normal da fase — some-se a ele, porque achar um raro tem de
+      // parecer sorte, e sorte nao tira nada de ninguem.
+      const RR = HR.CONFIG.EVENT_RARO;
+      if (RR && HR.CONFIG.EVENTS[RR.id] && li === RR.li && (ri + si) % RR.cada === 0 && gi > 40) {
+        events.push({ at: Math.round(rings * 0.6), id: RR.id, raro: true });
+      }
+      if (estreia.length) {
+        events.push({ at: Math.max(2, Math.round(rings * 0.45)), id: estreia[0], estreia: true });
+      } else if (baralho.length) {
+        // ritmo: enquanto o baralho e pequeno, espaca — quatro vezes o mesmo
+        // evento seguido cansa mais rapido do que nao ter evento nenhum.
+        // Com 1 carta: uma fase em cada tres. Com 2: uma sim uma nao.
+        // Depois: 3 em 4 no meio do jogo, e todas no fim.
+        const denso = baralho.length <= 1 ? (li % 3 === 2)
+          : baralho.length === 2 ? (li % 2 === 0)
+            : g > 0.55 ? 1 : g > 0.25 ? (li % 4 !== 3) : (li % 2 === 0);
+        if (denso) events.push({ at: Math.max(2, Math.round(rings * 0.42)), id: baralho[(ri * 7 + si * 3 + li * 5) % baralho.length] });
+        // a segunda, a partir do meio do jogo
+        if (g > 0.35 && li >= 5 && baralho.length > 2) {
+          const seg = baralho[(ri * 5 + si + li * 3 + 4) % baralho.length];
+          if (!events.some(e => e.id === seg)) events.push({ at: Math.round(rings * 0.78), id: seg });
+        }
+      }
+    }
     const BOSS_EV = { pulse: ['asteroids'], tide: ['warp'], swarm: ['asteroids'], shrink: ['guardian'], blink: ['sentinel'], spin: ['warp'], storm: ['asteroids'], eclipse: ['sentinel'], cyclone: ['guardian'], singularity: ['sentinel', 'asteroids', 'warp', 'guardian'] };
     const waves = isBoss ? (galaxyBoss ? HR.BOSSES[R.boss].waves : 3) : 0;
     if (isBoss && gi >= 19) {
