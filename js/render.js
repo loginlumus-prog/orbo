@@ -870,8 +870,11 @@ HR.Render.Background = class {
         const par = 0.04 + (i % 4) * 0.02;
         const x = this.wrap(s.x * W * 1.5 + sx * par, W * 1.5) - W * 0.25;
         const y = this.wrap(s.y * H - t * (8 + i * 1.5) + sy * par, H);
-        ctx.strokeStyle = 'rgba(160,220,255,0.12)'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(x, y, 6 + s.r * 60, 0, Math.PI * 2); ctx.stroke();
+        // v9: eram circulos de 13 a 31 px vazados, que liam como rabisco. Bolha e pequena e tem brilho
+        const br = 2.5 + s.r * 13;
+        ctx.strokeStyle = 'rgba(170,225,255,0.22)'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(x, y, br, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.arc(x - br * 0.35, y - br * 0.35, br * 0.25, 0, Math.PI * 2); ctx.fill();
       });
     } else if (kind === 'grid') {
       ctx.strokeStyle = 'rgba(143,107,255,0.18)'; ctx.lineWidth = 1;
