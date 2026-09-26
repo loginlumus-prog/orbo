@@ -17,14 +17,19 @@ window.HR = window.HR || {};
     (document.getElementById('app') || document.body).appendChild(host);
     return host;
   }
+  // A dica mora dentro do #app, e o #app tem transform: ali "fixed" conta a partir
+  // da moldura do jogo, nao da janela. No celular as duas coincidem; no PC (jogo no
+  // meio, faixas dos lados) a dica saia deslocada pela largura da faixa e aparecia
+  // em cima de outro botao. Por isso a conta e feita na moldura.
   function place(el) {
-    const r = el.getBoundingClientRect(), W = window.innerWidth;
+    const r = el.getBoundingClientRect();
     host.style.left = '0px'; host.style.top = '0px';
-    const hr = host.getBoundingClientRect();
-    let x = r.left + r.width / 2 - hr.width / 2; x = Math.max(8, Math.min(W - hr.width - 8, x));
+    const hr = host.getBoundingClientRect(), ox = hr.left, oy = hr.top;
+    const box = (host.parentElement && host.parentElement.getBoundingClientRect()) || { left: 0, top: 0, right: window.innerWidth };
+    let x = r.left + r.width / 2 - hr.width / 2; x = Math.max(box.left + 8, Math.min(box.right - hr.width - 8, x));
     let y = r.top - hr.height - 10, below = false;
-    if (y < 8) { y = r.bottom + 10; below = true; }
-    host.style.left = x.toFixed(0) + 'px'; host.style.top = y.toFixed(0) + 'px';
+    if (y < box.top + 8) { y = r.bottom + 10; below = true; }
+    host.style.left = (x - ox).toFixed(0) + 'px'; host.style.top = (y - oy).toFixed(0) + 'px';
     host.classList.toggle('below', below);
     host.style.setProperty('--ax', Math.max(12, Math.min(hr.width - 12, r.left + r.width / 2 - x)).toFixed(0) + 'px');
   }

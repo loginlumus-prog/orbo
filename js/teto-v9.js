@@ -182,6 +182,7 @@
   // o agendador: substitui o da Anomalia (mesmas regras de quando nao disparar)
   G.updateAnomaly = function (dt) {
     const run = this.run, A = C.ANOMALY;
+    this.alertaCorre = false;   // o relogio do proximo alerta esta andando? (o aviso do piloto le isto)
     run.anomalyActive = this.rings.some(r => r.type === 'anomaly' && !r.resolved);
     if (this.alerta) {
       atualiza(this, dt);
@@ -196,6 +197,7 @@
     }
     if (!this.alertaT) this.alertaT = A.every * 0.5;
     if (run.anomalyActive || this.anomalyPending || this.alerta || this.correnteLeft > 0) return;
+    this.alertaCorre = true;
     this.alertaT -= dt;
     if (this.alertaT <= 0) {
       dispara(this, escolhe(this));
